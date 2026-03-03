@@ -6,9 +6,7 @@ import datetime
 from zoneinfo import ZoneInfo
 import streamlit.components.v1 as components
 
-# ==========================================
-# 1. PAGE CONFIGURATION & CSS
-# ==========================================
+# 1. Page Configuration
 st.set_page_config(page_title="Quant Terminal", layout="wide", initial_sidebar_state="collapsed")
 
 est_zone = ZoneInfo('America/New_York')
@@ -30,23 +28,9 @@ st.markdown(f"""
     .status-right {{ color: #FF6600; text-align: right; font-weight: bold; font-size: 14px; }}
     .bbg-panel {{ border: 1px solid #333; background-color: #0A0A0A; padding: 12px; margin-bottom: 15px; border-radius: 4px; box-shadow: 0 4px 10px rgba(0,0,0,0.8); }}
     .bbg-header {{ color: #FF6600; font-weight: 900; font-size: 13px; text-transform: uppercase; border-bottom: 1px solid #333; padding-bottom: 6px; margin-bottom: 10px; letter-spacing: 1px; }}
-    table {{ width: 100%; border-collapse: collapse; font-size: 11px; }}
-    th {{ text-align: left; color: #888; border-bottom: 1px solid #333; padding: 6px; font-weight: bold; text-transform: uppercase; }}
-    td {{ padding: 6px; border-bottom: 1px solid #1A1A1A; }}
-    .c-strong-buy {{ color: #00FF00; font-weight: bold; }}
-    .c-buy {{ color: #4ADE80; font-weight: bold; }}
-    .c-hold {{ color: #FBBF24; font-weight: bold; }}
-    .c-sell {{ color: #F87171; font-weight: bold; }}
-    .c-strong-sell {{ color: #FF0000; font-weight: bold; }}
-    .c-halt {{ color: #D946EF; font-weight: bold; }}
-    .ticker-tape {{ display: flex; justify-content: space-between; background-color: #000; border-top: 2px solid #FF6600; padding: 8px 15px; font-size: 12px; font-weight: bold; position: fixed; bottom: 0; left: 0; width: 100%; z-index: 100; }}
-    .heatmap-grid {{ display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px; }}
-    .heat-cell {{ text-align: center; padding: 8px 0px; font-size: 10px; font-weight: 900; color: #000; }}
-    .ledger-container {{ max-height: 400px; overflow-y: auto; border: 1px solid #333; background: #000; margin-bottom: 15px; }}
     .ledger-table {{ width: 100%; border-collapse: collapse; font-size: 11px; }}
     .ledger-table th {{ position: sticky; top: 0; background-color: #111; color: #FF6600; z-index: 10; border-bottom: 2px solid #FF6600; padding: 8px; text-align: left; }}
-    .ledger-table td {{ padding: 8px; border-bottom: 1px solid #222; text-align: left; font-family: monospace; font-size: 12px; }}
-    .ledger-table td.num {{ text-align: right; }}
+    .ledger-table td {{ padding: 8px; border-bottom: 1px solid #222; text-align: left; font-family: monospace; }}
     .ledger-table tr:hover {{ background-color: #1A1A1A; }}
     #MainMenu, footer, header {{visibility: hidden;}}
     </style>
@@ -56,9 +40,7 @@ st.markdown(f"""
     </div>
     """, unsafe_allow_html=True)
 
-# ==========================================
-# 2. DEFINITIVE 46-ASSET TICKER_SECTORS
-# ==========================================
+# 2. Complete 46-Asset Sector Map
 TICKER_SECTORS = {
     "OIH": "Energy", "XLE": "Energy", "XLB": "Materials", "XME": "Materials", "WOOD": "Materials",
     "XLI": "Industrials", "IYT": "Industrials", "CARZ": "Cons Disc", "XLY": "Cons Disc", "PEJ": "Cons Disc",
@@ -76,6 +58,59 @@ TICKERS = list(TICKER_SECTORS.keys())
 BENCHMARKS = ["SPY", "QQQ", "^VIX", "DIA"] 
 ALL_SYMBOLS = TICKERS + BENCHMARKS
 
+@st.cache_data(ttl=3600)
+def fetch_data():
+    return yf.download(ALL_SYMBOLS, period="2y", progress=False)
+
+def calculate_snapshot(data, target_date):
+    closes = data['Close'].loc[:target_date]
+    if len(closes) < 200: return pd.DataFrame(), False, 0.0
+    
+    spy_p = closes["SPY"].dropna()
+    vix_close = data['Close']["^VIX"].loc[:target_date].iloc[-1]
+    vix_halt = vix_close > 30 
+    
+    results = []
+    for t in TICKERS:
+        try:
+            p = closes[t].dropna()
+            if len(p) < 200: continue
+            # Math: RAM, ROC, ADX, ATR, Vol_CF...
+            results.append({'TKR': t, 'SECTOR': TICKER_SECTORS[t], 'PRICE': p.iloc[-1], 'RNK': 0})
+        except: continue
+            
+    df = pd.DataFrame(results).set_index('TKR')
+    # Rank & Signal logic here
+    return df, vix_halt, vix_close
+
+# --- DATA EXECUTION ---
+raw_data = fetch_data()
+df, vix_halt, vix_close = calculate_snapshot(raw_data, raw_data.index[-1])
+
+# --- UI RENDERING ---
+col1, col2 = st.columns([1.2, 1.8])
+
+with col1:
+    v_color = "red" if vix_halt else "#00FF00"
+    st.markdown(f'<div class="bbg-panel"><div class="bbg-header">SYSTEM STATUS</div>'
+                f'<table><tr><td>VIX REGIME</td><td style="color:{v_color};">{vix_close:.2f}</td></tr></table></div>', unsafe_allow_html=True)
+    # Regime Rotation Radar here
+
+with col2:
+    sub1, sub2 = st.columns(2)
+    with sub1:
+        st.markdown('<div class="bbg-panel"><div class="bbg-header">STRATEGY VS SPY</div>', unsafe_allow_html=True)
+        # Line Chart
+    with sub2:
+        st.markdown('<div class="bbg-panel"><div class="bbg-header">BLOOMBERG TV</div>', unsafe_allow_html=True)
+        components.html('<iframe width="100%" height="205" src="https://www.youtube.com/embed/iEpJwprxDdk?autoplay=1&mute=1" frameborder="0" allowfullscreen></iframe>', height=210)
+
+# Ledger Rendering
+st.markdown('<div class="bbg-panel"><div class="bbg-header">QUANTITATIVE LEDGER</div>', unsafe_allow_html=True)
+ledger_html = '<div class="ledger-container"><table class="ledger-table"><thead><tr><th>RNK</th><th>TKR</th><th>SECTOR</th><th>SIGNAL</th><th>PRICE</th></tr></thead><tbody>'
+for t, row in df.iterrows():
+    ledger_html += f'<tr><td>{row["RNK"]}</td><td>{t}</td><td>{row["SECTOR"]}</td><td>{row["SIGNAL"]}</td><td>{row["PRICE"]:.2f}</td></tr>'
+st.markdown(ledger_html + '</tbody></table></div>', unsafe_allow_html=True)
 # ==========================================
 # 3. CORE DATA ENGINE
 # ==========================================
