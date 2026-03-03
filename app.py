@@ -3,27 +3,46 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 
-# 1. Bloomberg Terminal UI Configuration
+# 1. Page & CSS Configuration (Bloomberg TV Aesthetic)
 st.set_page_config(page_title="Quant Terminal", layout="wide", initial_sidebar_state="collapsed")
 
-# Inject Custom CSS for Helvetica, Black Background, and Bloomberg Colors
 st.markdown("""
     <style>
-    .stApp { background-color: #000000; }
-    * { font-family: 'Helvetica', sans-serif !important; font-weight: bold !important; color: #FFFFFF; }
-    h1, h2, h3 { color: #FF9900 !important; text-transform: uppercase; }
-    .dataframe { font-size: 12px !important; text-align: right; }
-    .dataframe th { background-color: #000000 !important; color: #FF9900 !important; border-bottom: 2px solid #FF9900 !important; text-align: right !important; }
-    .dataframe td { border-bottom: 1px solid #333333 !important; }
-    .buy-signal { color: #00FF00 !important; }
-    .sell-signal { color: #FF0000 !important; }
-    .hold-signal { color: #FFFF00 !important; }
+    /* Global Base */
+    .stApp { background-color: #0c0c0c; }
+    * { font-family: 'Helvetica', sans-serif !important; color: #FFFFFF; }
+    
+    /* Bloomberg Orange Panels */
+    .bbg-panel {
+        border: 3px solid #FF8C00;
+        background-color: #000000;
+        padding: 10px;
+        margin-bottom: 15px;
+        border-radius: 2px;
+    }
+    .bbg-header {
+        background-color: #FF8C00;
+        color: #000000 !important;
+        font-weight: bold;
+        padding: 5px;
+        margin: -10px -10px 10px -10px;
+        font-size: 14px;
+        text-transform: uppercase;
+    }
+    
+    /* Ticker Text Styles */
+    .tkr-up { color: #00FF00 !important; font-weight: bold; }
+    .tkr-down { color: #FF0000 !important; font-weight: bold; }
+    .tkr-neutral { color: #FFFFFF !important; }
+    
+    /* Hide Streamlit default UI elements */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
     </style>
     """, unsafe_allow_html=True)
 
-st.title("SYS.OP.NORMAL // QUANT TERMINAL")
-
-# 2. Universe Definition
+# 2. Universes
+BENCHMARKS = ["SPY", "QQQ", "^VIX", "^TNX"] 
 TICKERS = [
     "AMLP", "BDRY", "BIER", "BJK", "BNGE", "CARZ", "CCRD", "COAL", "COPX", "CRAK", 
     "CRUZ", "DTCR", "EATZ", "FINX", "FIW", "GDX", "GERM", "GRID", "IAI", "IAK", 
@@ -34,110 +53,106 @@ TICKERS = [
     "SIL", "SKYY", "SLX", "SOCL", "SOXX", "VEGI", "VIS", "VNQ", "WOOD", "XBI", 
     "XLC", "XLI", "XLK", "XLP", "XLU", "XLV", "XLY", "XME", "XOP", "XRT", "XSD", "XTN", "XT"
 ]
-BENCHMARK = "SPY"
-ALL_SYMBOLS = TICKERS + [BENCHMARK]
 
-# 3. Data Engine (Cached to prevent reloading on every tap)
-@st.cache_data(ttl=3600) # Caches data for 1 hour
-def fetch_and_calculate():
-    data = yf.download(ALL_SYMBOLS, period="1y", progress=False)
-    prices = data['Close']
-    volumes = data['Volume']
-    
-    results = []
-    for ticker in TICKERS:
-        try:
-            p = prices[ticker].dropna()
-            v = volumes[ticker].dropna()
-            spy_p = prices[BENCHMARK].dropna()
-            
-            if len(p) < 200: continue
-                
-            ret_1m_raw = p.pct_change(21).iloc[-1] * 100
-            ret_1m = p.pct_change(21).iloc[-1]
-            vol_1m = p.pct_change().tail(21).std() * np.sqrt(252)
-            ram = ret_1m / vol_1m if vol_1m != 0 else 0
-            
-            roc_20 = p.pct_change(20).iloc[-1]
-            roc_60 = p.pct_change(60).iloc[-1]
-            roc_accel = roc_20 - (roc_60 / 3)
-            
-            ret_3m = p.pct_change(63).iloc[-1]
-            spy_ret_3m = spy_p.pct_change(63).iloc[-1]
-            rel_strength = ret_3m - spy_ret_3m
-            
-            sma_200 = p.rolling(200).mean().iloc[-1]
-            sma_50 = p.rolling(50).mean()
-            sma_50_current = sma_50.iloc[-1]
-            sma_50_past = sma_50.iloc[-21]
-            sma_50_slope = (sma_50_current - sma_50_past) / sma_50_past
-            above_200 = p.iloc[-1] > sma_200
-            
-            vol_20 = v.rolling(20).mean().iloc[-1]
-            vol_90 = v.rolling(90).mean().iloc[-1]
-            vol_conf = vol_20 / vol_90 if vol_90 != 0 else 1
-            
-            rolling_max = p.tail(126).cummax()
-            max_dd = ((p.tail(126) - rolling_max) / rolling_max).min()
-            
-            results.append({
-                'TKR': ticker, 'Ret_1M': ret_1m_raw, 'RAM': ram, 
-                'ROC_AC': roc_accel, 'REL_STR': rel_strength, 
-                '50D_SLP': sma_50_slope, 'VOL_CF': vol_conf, 
-                'MAX_DD': max_dd, 'Above_200': above_200, 'PRICE': p.iloc[-1]
-            })
-        except Exception:
-            continue
-            
-    df = pd.DataFrame(results).set_index('TKR')
-    factors = ['RAM', 'ROC_AC', 'REL_STR', '50D_SLP', 'VOL_CF', 'MAX_DD']
-    z_scores = (df[factors] - df[factors].mean()) / df[factors].std()
-                
-    df['SCORE'] = (
-        (z_scores['RAM'] * 0.25) + (z_scores['REL_STR'] * 0.20) +
-        (z_scores['ROC_AC'] * 0.20) + (z_scores['50D_SLP'] * 0.15) +
-        (z_scores['VOL_CF'] * 0.10) + (z_scores['MAX_DD'] * -0.10)
-    ) * 100
-    
-    df = df.sort_values(by='SCORE', ascending=False)
-    df['RNK'] = range(1, len(df) + 1)
-    
-    signals = []
-    for idx, row in df.iterrows():
-        if not row['Above_200']: signals.append("STRONG SELL" if row['RNK'] > 15 else "SELL")
-        elif row['RNK'] <= 10: signals.append("STRONG BUY")
-        elif 10 < row['RNK'] <= 15: signals.append("HOLD")
-        else: signals.append("SELL")
-            
-    df['SIGNAL'] = signals
-    return df
+@st.cache_data(ttl=3600)
+def fetch_data():
+    all_data = yf.download(TICKERS + BENCHMARKS, period="1y", progress=False)
+    return all_data['Close'], all_data['Volume']
 
-# Run the engine
-with st.spinner('Downloading Market Data...'):
-    df = fetch_and_calculate()
+@st.cache_data(ttl=3600)
+def fetch_news(ticker_symbol):
+    try:
+        t = yf.Ticker(ticker_symbol)
+        news = t.news[:3] # Get top 3 articles
+        return [{"title": n['title'], "publisher": n['publisher']} for n in news]
+    except Exception:
+        return [{"title": "News feed unavailable.", "publisher": "System"}]
 
-# 4. Display Heatmap (Using Streamlit Columns)
-st.subheader("1-MONTH PERFORMANCE HEATMAP")
-cols = st.columns(6) # 6 columns for mobile screen fit
-heat_df = df.sort_values(by='Ret_1M', ascending=False)
+# 3. Execution
+with st.spinner('SYNCING GLOBAL DATA...'):
+    prices, volumes = fetch_data()
 
-for i, (ticker, row) in enumerate(heat_df.iterrows()):
-    val = row['Ret_1M']
-    color = "#00FF00" if val > 5 else "#006600" if val > 0 else "#660000" if val > -5 else "#FF0000"
-    text_color = "#000000" if color == "#00FF00" else "#FFFFFF"
-    
-    with cols[i % 6]:
+# Process Benchmarks
+bench_stats = []
+for b in BENCHMARKS:
+    try:
+        current = prices[b].iloc[-1]
+        prev = prices[b].iloc[-2]
+        pct_change = ((current - prev) / prev) * 100
+        bench_stats.append({'ticker': b, 'price': current, 'change': pct_change})
+    except:
+        pass
+
+# Process Quant Engine (Simplified for UI Focus)
+results = []
+for t in TICKERS:
+    try:
+        p = prices[t].dropna()
+        if len(p) < 200: continue
+        current_p = p.iloc[-1]
+        prev_p = p.iloc[-2]
+        day_change = ((current_p - prev_p) / prev_p) * 100
+        
+        # 1M RAM approximation
+        ret_1m = p.pct_change(21).iloc[-1]
+        vol_1m = p.pct_change().tail(21).std() * np.sqrt(252)
+        ram = ret_1m / vol_1m if vol_1m != 0 else 0
+        
+        results.append({'Ticker': t, 'Price': current_p, 'Day_Change': day_change, 'RAM': ram})
+    except:
+        continue
+
+df = pd.DataFrame(results).set_index('Ticker')
+df = df.sort_values(by='RAM', ascending=False)
+top_signal = df.index[0] if not df.empty else "SPY"
+news_feed = fetch_news(top_signal)
+
+# 4. Bloomberg UI Layout Setup
+col_main, col_right = st.columns([3, 1])
+
+with col_right:
+    # Top Right: Benchmarks
+    st.markdown('<div class="bbg-panel"><div class="bbg-header">GLOBAL BENCHMARKS</div>', unsafe_allow_html=True)
+    for b in bench_stats:
+        color_class = "tkr-up" if b['change'] > 0 else "tkr-down" if b['change'] < 0 else "tkr-neutral"
+        sign = "+" if b['change'] > 0 else ""
+        name = b['ticker'].replace("^", "")
         st.markdown(f"""
-        <div style="background-color: {color}; color: {text_color}; text-align: center; padding: 5px; margin-bottom: 5px; border-radius: 3px; font-size: 10px;">
-            {ticker}<br>{val:.1f}%
-        </div>
+            <div style="margin-bottom: 8px; border-bottom: 1px solid #333; padding-bottom: 4px;">
+                <span style="font-weight:bold; font-size:16px;">{name}</span><br>
+                <span style="font-size:18px;">{b['price']:.2f}</span> 
+                <span class="{color_class}" style="font-size:14px; float:right;">{sign}{b['change']:.2f}%</span>
+            </div>
         """, unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
-# 5. Display Main Ledger
-st.subheader("QUANTITATIVE FACTOR LEDGER")
-# Format dataframe for clean display
-display_df = df[['RNK', 'SIGNAL', 'PRICE', 'SCORE', 'RAM', 'ROC_AC', 'REL_STR', '50D_SLP', 'VOL_CF', 'MAX_DD']].copy()
-display_df = display_df.round(2)
+with col_main:
+    # Top Left: Position Movers
+    st.markdown('<div class="bbg-panel"><div class="bbg-header">INTRADAY VELOCITY MOVERS</div>', unsafe_allow_html=True)
+    movers_df = df.sort_values(by='Day_Change', ascending=False)
+    
+    m_cols = st.columns(2)
+    with m_cols[0]:
+        st.markdown("**TOP GAINERS**")
+        for t, row in movers_df.head(3).iterrows():
+            st.markdown(f"<span class='tkr-up'>{t}</span>: +{row['Day_Change']:.2f}%", unsafe_allow_html=True)
+    with m_cols[1]:
+        st.markdown("**TOP LOSERS**")
+        for t, row in movers_df.tail(3).iterrows():
+            st.markdown(f"<span class='tkr-down'>{t}</span>: {row['Day_Change']:.2f}%", unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
-# Display the interactive dataframe
-st.dataframe(display_df, use_container_width=True, height=600)
+    # Bottom Left: Top News
+    st.markdown(f'<div class="bbg-panel"><div class="bbg-header">TOP NEWS: {top_signal} (HIGHEST QUANT SCORE)</div>', unsafe_allow_html=True)
+    for item in news_feed:
+        st.markdown(f"▶ **{item['publisher']}**: {item['title']}")
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    # Bottom Center: The Main Ledger
+    st.markdown('<div class="bbg-panel"><div class="bbg-header">SYSTEMATIC ENGINE LEDGER</div>', unsafe_allow_html=True)
+    display_df = df.copy()
+    display_df['Price'] = display_df['Price'].round(2)
+    display_df['Day_Change'] = display_df['Day_Change'].round(2)
+    display_df['RAM Score'] = display_df['RAM'].round(2)
+    st.dataframe(display_df[['Price', 'Day_Change', 'RAM Score']].head(20), use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
