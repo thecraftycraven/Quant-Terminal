@@ -6,9 +6,7 @@ import datetime
 from zoneinfo import ZoneInfo
 import streamlit.components.v1 as components
 import requests
-
 st.set_page_config(page_title="NY LATINO FINANCIAL TERMINAL", layout="wide", initial_sidebar_state="collapsed")
-
 est_zone = ZoneInfo("America/New_York")
 now_est  = datetime.datetime.now(est_zone)
 time_str = now_est.strftime("%H:%M:%S ET")
@@ -17,7 +15,6 @@ is_weekend   = now_est.weekday() >= 5
 is_open      = datetime.time(9,30) <= now_est.time() <= datetime.time(16,0)
 market_status = "OPEN" if (not is_weekend and is_open) else "CLOSED"
 status_color  = "#FF8000" if market_status == "OPEN" else "#CC0000"
-
 CSS = """
 <style>
 @import url("https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@300;400;500;600;700&display=swap");
@@ -28,28 +25,23 @@ html, body, [class*="stApp"] { background-color: #000000 !important; color: #FFF
 #MainMenu, footer, header, .stDeployButton, [data-testid="stToolbar"] { visibility: hidden !important; display: none !important; }
 section[data-testid="stSidebar"] { display: none !important; }
 [data-testid="stDecoration"] { display: none !important; }
-
 .bbg-status { display:flex; justify-content:space-between; align-items:center; background:#000; border-bottom:2px solid #FF8000; padding:4px 12px; position:sticky; top:0; z-index:9999; height:28px; }
 .bbg-status-l { font-size:11px; font-weight:700; letter-spacing:1.5px; }
 .bbg-status-c { color:#FF8000; font-size:10px; letter-spacing:2px; font-weight:600; }
 .bbg-status-r { color:#AAAAAA; font-size:10px; text-align:right; }
-
 .bbg-macro-row { display:grid; grid-template-columns:repeat(13,1fr); border-bottom:1px solid #333; background:#050505; margin-top:10px; }
 .bbg-macro-cell { padding:10px 6px; border-right:1px solid #1A1A1A; text-align:center; }
 .bbg-macro-cell:last-child { border-right:none; }
 .bbg-macro-lbl { color:#888; font-size:8px; letter-spacing:1px; text-transform:uppercase; margin-bottom:3px; }
 .bbg-macro-val { font-size:14px; font-weight:700; line-height:1; }
 .bbg-macro-sub { color:#555; font-size:8px; margin-top:2px; }
-
 .yc-inline { display:flex; align-items:flex-end; gap:2px; height:26px; padding:0 2px; }
 .yc-inline-col { flex:1; display:flex; flex-direction:column; align-items:center; }
 .yc-inline-bar { background:#FF8000; border-radius:1px 1px 0 0; width:100%; min-height:2px; }
 .yc-inline-lbl { color:#444; font-size:5px; margin-top:1px; }
-
 .bbg-panel { border:1px solid #222; background:#0A0A0A; padding:0; margin-bottom:4px; }
 .bbg-panel-hdr { background:#111; color:#FF8000; font-size:10px; font-weight:700; letter-spacing:2px; padding:4px 8px; border-bottom:1px solid #333; text-transform:uppercase; }
 .bbg-panel-body { padding:4px 6px; }
-
 .bbg-top5 { display:grid; grid-template-columns:repeat(5,1fr); }
 .bbg-top5-wrap { margin-top: 35px; }
 .bbg-tv-wrap { margin-top: 35px; display:flex; flex-direction:column; }
@@ -69,7 +61,6 @@ section[data-testid="stSidebar"] { display: none !important; }
 .bar-bg  { background:#1A1A1A; height:3px; margin-top:4px; }
 .bar-fill { height:3px; }
 .bbg-t5-rsn { color:#444; font-size:8px; margin-top:3px; }
-
 .bbg-tbl { width:100%; border-collapse:collapse; font-size:10px; }
 .bbg-tbl th { background:#111; color:#FF8000; font-size:9px; font-weight:600; padding:5px 6px; border-bottom:1px solid #FF8000; text-align:right; letter-spacing:1px; white-space:nowrap; position:sticky; top:0; z-index:10; }
 .bbg-tbl th.l { text-align:left; }
@@ -78,23 +69,18 @@ section[data-testid="stSidebar"] { display: none !important; }
 .bbg-tbl td.sec { text-align:left; color:#555; font-size:9px; }
 .bbg-tbl tr:hover td { background:#0D0D0D; }
 .bbg-scroll { max-height:380px; overflow-y:auto; scrollbar-width:thin; scrollbar-color:#FF8000 #111; }
-
 .sig-sb { color:#FF8000; font-weight:700; }
 .sig-b  { color:#FFCC00; font-weight:600; }
 .sig-h  { color:#888; }
 .sig-s  { color:#CC3333; }
 .sig-ss { color:#FF0000; font-weight:700; }
 .sig-ht { color:#FF00FF; font-weight:700; }
-
-/* HEATMAP: small squares, 9 columns */
 .bbg-hm { display:grid; grid-template-columns:repeat(6,1fr); gap:2px; padding:6px; }
 .bbg-hm-cell { display:flex; justify-content:space-between; align-items:center; padding:3px 6px; font-size:9px; font-weight:700; border-radius:2px; white-space:nowrap; }
-
 .stTabs [data-baseweb="tab-list"] { background:#000 !important; border-bottom:1px solid #333 !important; gap:0 !important; padding:0 !important; }
 .stTabs [data-baseweb="tab"] { background:#000 !important; color:#555 !important; font-size:10px !important; letter-spacing:1.5px !important; padding:6px 18px !important; border-radius:0 !important; border:none !important; }
 .stTabs [aria-selected="true"] { background:#111 !important; color:#FF8000 !important; border-bottom:2px solid #FF8000 !important; }
 .stTabs [data-baseweb="tab-panel"] { padding:0 !important; }
-
 .notes-area { background:#050505; border:1px solid #222; color:#CCC; font-family:"Source Code Pro",monospace; font-size:11px; width:100%; min-height:300px; padding:10px; resize:vertical; outline:none; }
 .notes-area:focus { border-color:#FF8000; }
 textarea { background:#050505 !important; color:#CCC !important; border:1px solid #222 !important; border-radius:2px !important; font-family:"Source Code Pro",monospace !important; }
@@ -103,28 +89,23 @@ textarea:focus { border-color:#FF8000 !important; box-shadow:none !important; ou
 [data-testid="stTextArea"] textarea:focus { border-color:#FF8000 !important; box-shadow:none !important; }
 [data-testid="stTextArea"] label { display:none !important; }
 [data-testid="stTextArea"] { padding:0 !important; }
-
 .bbg-tape { position:fixed; bottom:0; left:0; width:100%; background:#000; border-top:1px solid #FF8000; padding:4px 12px; font-size:10px; display:flex; gap:20px; z-index:9998; }
 .tape-sym { color:#FF8000; font-weight:700; margin-right:4px; }
 .tape-prc { color:#FFF; }
 .tape-up  { color:#00CC00; }
 .tape-dn  { color:#CC0000; }
-
 [data-testid="stHorizontalBlock"] { gap:4px !important; padding:0 4px !important; }
 [data-testid="stVerticalBlock"] { gap:0 !important; }
 div[data-testid="column"] { padding:0 2px !important; }
 </style>
 """
 st.markdown(CSS, unsafe_allow_html=True)
-
 STATUS_HTML = f"""<div class="bbg-status">
     <div class="bbg-status-l" style="color:{status_color};">■ MKT {market_status}</div>
     <div class="bbg-status-c">NEW YORK LATINO FINANCIAL TERMINAL &nbsp;·&nbsp; SOLOMON STRATEGY</div>
     <div class="bbg-status-r">{time_str}&nbsp;&nbsp;{date_str}</div>
 </div>"""
 st.markdown(STATUS_HTML, unsafe_allow_html=True)
-
-# ── UNIVERSE ──────────────────────────────────────────────────────────────────
 TICKER_SECTORS = {
     "OIH":"Energy","XLE":"Energy","XLB":"Materials","XME":"Materials","WOOD":"Materials",
     "XLI":"Industrials","IYT":"Industrials","CARZ":"Cons Disc","XLY":"Cons Disc",
@@ -140,12 +121,10 @@ TICKER_SECTORS = {
 }
 TICKERS    = list(TICKER_SECTORS.keys())
 BENCHMARKS = ["SPY","QQQ","DIA","^VIX","^TNX","^TYX","GC=F","CL=F"]
-
-# ── API KEYS ──────────────────────────────────────────────────────────────────
 FRED_API_KEY = "93069da065d835f300947c9dd312c50d"
 ALPHA_KEY    = "I7L9I79E7WRJGLFC"
 FMP_KEY      = "JNYpveoF4uOcnTzewvlbRPkyJt1sEn8T"
-
+NEWSAPI_KEY  = "584f5ee8a6134eb99d95f14d2f8146f8"
 YIELD_CURVE_IDS = {
     "DGS1MO":"1M","DGS3MO":"3M","DGS6MO":"6M",
     "DGS1":"1Y","DGS2":"2Y","DGS5":"5Y","DGS10":"10Y","DGS30":"30Y"
@@ -156,7 +135,6 @@ FRED_MACRO_IDS = {
     "DEXUSEU":"EUR/USD","UMCSENT":"Cons Sent",
     "UNRATE":"Unemployment","CPIAUCSL":"CPI","T10Y2Y":"2s10s Spread",
 }
-
 @st.cache_data(ttl=3600)
 def fred_latest(series_id):
     try:
@@ -170,15 +148,12 @@ def fred_latest(series_id):
             return float(obs[0]["value"]) if obs else None
     except:
         return None
-
 @st.cache_data(ttl=3600)
 def fetch_yield_curve():
     return {lbl: fred_latest(sid) for sid, lbl in YIELD_CURVE_IDS.items()}
-
 @st.cache_data(ttl=3600)
 def fetch_fred_macro():
     return {lbl: fred_latest(sid) for sid, lbl in FRED_MACRO_IDS.items()}
-
 @st.cache_data(ttl=7200)
 def fetch_alpha_vantage_sector():
     try:
@@ -189,7 +164,6 @@ def fetch_alpha_vantage_sector():
     except:
         pass
     return {}
-
 @st.cache_data(ttl=7200)
 def fetch_bls_cpi():
     try:
@@ -204,16 +178,13 @@ def fetch_bls_cpi():
     except:
         pass
     return None, None, None
-
-@st.cache_data(ttl=1800)
 @st.cache_data(ttl=3600)
 def fetch_fmp_macro_calendar():
-    """FMP economic calendar — upcoming events"""
     try:
         today = now_est.strftime("%Y-%m-%d")
         future = (now_est + datetime.timedelta(days=14)).strftime("%Y-%m-%d")
         r = requests.get(
-            f"https://financialmodelingprep.com/api/v3/economic_calendar",
+            "https://financialmodelingprep.com/api/v3/economic_calendar",
             params={"from": today, "to": future, "apikey": FMP_KEY},
             timeout=8
         )
@@ -222,10 +193,8 @@ def fetch_fmp_macro_calendar():
     except:
         pass
     return []
-
 @st.cache_data(ttl=3600)
 def fetch_fmp_sector_pe():
-    """FMP sector P/E ratios"""
     try:
         r = requests.get(
             "https://financialmodelingprep.com/api/v4/sector_price_earning_ratio",
@@ -237,23 +206,29 @@ def fetch_fmp_sector_pe():
     except:
         pass
     return []
-
 @st.cache_data(ttl=1800)
-def fetch_fmp_market_hours():
-    """FMP market hours / status"""
+def fetch_newsapi():
     try:
         r = requests.get(
-            "https://financialmodelingprep.com/api/v3/market-hours",
-            params={"apikey": FMP_KEY}, timeout=6
+            "https://newsapi.org/v2/top-headlines",
+            params={"category":"business","language":"en","pageSize":"20","apiKey":NEWSAPI_KEY},
+            timeout=8
         )
         if r.status_code == 200:
-            return r.json()
+            return r.json().get("articles", [])
     except:
         pass
-    return {}
-
+    return []
+@st.cache_data(ttl=3600)
+def fetch_global_indices():
+    syms = ["^GSPC","^DJI","^IXIC","^NDX","^RUT","^VIX",
+            "^GDAXI","^FTSE","^FCHI","^N225","^HSI","000001.SS","^GSPTSE"]
+    try:
+        data = yf.download(syms, period="ytd", progress=False, auto_adjust=True)["Close"]
+        return data
+    except:
+        return pd.DataFrame()
 def fetch_financial_news():
-    """Alpha Vantage news sentiment"""
     try:
         r = requests.get("https://www.alphavantage.co/query",
             params={"function":"NEWS_SENTIMENT","apikey":ALPHA_KEY,"limit":"20","sort":"LATEST"},
@@ -264,11 +239,9 @@ def fetch_financial_news():
     except:
         pass
     return []
-
 @st.cache_data(ttl=3600)
 def fetch_market_data():
     return yf.download(TICKERS + BENCHMARKS, period="2y", progress=False, auto_adjust=True)
-
 def calculate_factors(data, target_date):
     closes = data["Close"].loc[:target_date]
     highs  = data["High"].loc[:target_date]
@@ -276,57 +249,46 @@ def calculate_factors(data, target_date):
     vols   = data["Volume"].loc[:target_date]
     if len(closes) < 200:
         return pd.DataFrame(), False, 0.0
-
     spy_p     = closes["SPY"].dropna()
     vix_close = data["Close"]["^VIX"].loc[:target_date].dropna().iloc[-1]
     vix_halt  = vix_close > 30
     tnx_val   = data["Close"]["^TNX"].loc[:target_date].dropna().iloc[-1] if "^TNX" in data["Close"].columns else None
-
     results = []
     for t in TICKERS:
         try:
             p = closes[t].dropna(); h = highs[t].dropna()
             l = lows[t].dropna();   v = vols[t].dropna()
             if len(p) < 200: continue
-
             ytd_px = p[p.index.year == target_date.year]
             ytd    = ((p.iloc[-1]/ytd_px.iloc[0])-1)*100 if not ytd_px.empty else 0
-
             ret_1m = p.pct_change(21).iloc[-1]
             ret_3m = p.pct_change(63).iloc[-1]
             ret_6m = p.pct_change(126).iloc[-1]
             ret_9m = p.pct_change(189).iloc[-1]
-
             vol_1m = p.pct_change().tail(21).std() * np.sqrt(252)
             ram    = ret_1m / vol_1m if vol_1m != 0 else 0
             rel_str = ret_3m - spy_p.pct_change(63).iloc[-1]
-
             sma50  = p.rolling(50).mean()
             sma200 = p.rolling(200).mean()
             slp50  = (sma50.iloc[-1] - sma50.iloc[-21]) / sma50.iloc[-21]
             above200 = p.iloc[-1] > sma200.iloc[-1]
-
             v90    = v.rolling(90).mean().iloc[-1]
             vol_cf = (v.rolling(20).mean().iloc[-1] / v90) if v90 != 0 else 1
-
             tr   = pd.concat([h-l, np.abs(h-p.shift()), np.abs(l-p.shift())], axis=1).max(axis=1)
             atr  = tr.rolling(14).mean().iloc[-1]
             stop = p.tail(20).max() - (2.5 * atr)
             sd   = (p.iloc[-1] - stop) / p.iloc[-1]
             alloc_base = min((0.01/sd)*100, 25) if sd > 0 else 0
-
             up  = h-h.shift(1); dw = l.shift(1)-l
             tr14 = tr.rolling(14).sum()
             pdi = 100*(pd.Series(np.where((up>dw)&(up>0),up,0),index=p.index).rolling(14).sum()/tr14)
             mdi = 100*(pd.Series(np.where((dw>up)&(dw>0),dw,0),index=p.index).rolling(14).sum()/tr14)
             adx = (100*np.abs(pdi-mdi)/(pdi+mdi)).rolling(14).mean().iloc[-1]
             roc_ac = p.pct_change(20).iloc[-1] - (p.pct_change(60).iloc[-1]/3)
-
             rate_adj = 0
             if tnx_val and tnx_val > 4.5:
                 if TICKER_SECTORS.get(t,"") in ["Safe Harbor","Utilities","Real Estate"]:
                     rate_adj = -0.3
-
             results.append({
                 "TKR":t,"SECTOR":TICKER_SECTORS[t],"PRICE":p.iloc[-1],"YTD":ytd,
                 "RET_1M":ret_1m*100,"RET_3M":ret_3m*100,"RET_6M":ret_6m*100,"RET_9M":ret_9m*100,
@@ -335,17 +297,14 @@ def calculate_factors(data, target_date):
             })
         except:
             continue
-
     if not results:
         return pd.DataFrame(), vix_halt, vix_close
-
     df = pd.DataFrame(results).set_index("TKR")
     f  = ["RAM","REL_STR","50D_SLP","VOL_CF","ROC_AC"]
     z  = (df[f]-df[f].mean())/df[f].std()
     df["SCORE"] = (z["RAM"]*.25+z["REL_STR"]*.20+z["50D_SLP"]*.20+z["VOL_CF"]*.20+z["ROC_AC"]*.15)*100 + df["RATE_ADJ"]*10
     df = df.sort_values("SCORE",ascending=False)
     df["RNK"] = range(1,len(df)+1)
-
     sigs,ress,allocs=[],[],[]
     for idx,row in df.iterrows():
         fails=[]
@@ -357,7 +316,6 @@ def calculate_factors(data, target_date):
         if row["ROC_AC"]<=0:     fails.append("Decel ROC")
         if row["50D_SLP"]<=0:    fails.append("Neg 50D Slope")
         rnk=row["RNK"]; n=len(fails)
-
         if vix_halt:              sig,res,alloc="HALT","VIX > 30",0
         elif not row["Above_200"] or row["PRICE"]<row["STOP"]: sig,res,alloc="STRONG SELL",fails[0] if fails else "ATR Stop",0
         elif rnk<=5 and n==0:    sig,res,alloc="STRONG BUY","ALL CLEAR",min(row["ALLOC_BASE"],20)
@@ -367,10 +325,8 @@ def calculate_factors(data, target_date):
         elif rnk<=10:            sig,res,alloc="HOLD",", ".join(fails[:1]),0
         else:                    sig,res,alloc="SELL",", ".join(fails[:2]) if fails else f"Rank #{rnk}",0
         sigs.append(sig);ress.append(res);allocs.append(alloc)
-
     df["SIGNAL"]=sigs; df["REASON"]=ress; df["ALLOC"]=allocs
     return df,vix_halt,vix_close
-
 @st.cache_data(ttl=3600)
 def run_backtest(data):
     closes  = data["Close"]
@@ -390,8 +346,6 @@ def run_backtest(data):
         log.append({"Month":s.strftime("%b %y"),"Targets":", ".join(buys) if buys else "CASH",
                     "Strategy":strat_r,"SPY":spy_r,"Alpha":strat_r-spy_r})
     return pd.DataFrame(log)
-
-# ── FETCH ─────────────────────────────────────────────────────────────────────
 with st.spinner(""):
     raw      = fetch_market_data()
     df,v_halt,v_close = calculate_factors(raw, raw["Close"].index[-1])
@@ -403,11 +357,11 @@ with st.spinner(""):
     news_feed = fetch_financial_news()
     fmp_calendar = fetch_fmp_macro_calendar()
     fmp_sector_pe = fetch_fmp_sector_pe()
-
+    newsapi_articles = fetch_newsapi()
+    global_idx = fetch_global_indices()
 closes = raw["Close"]
 top5_df = df[df["RNK"]<=5]
 top5_tickers = top5_df.index.tolist()
-
 safe_e=["BIL","TLT","IEF","IAU","XLU","XLP"]
 inf_e =["PDBC","XLE","XME","OIH","DBA","SLV","DBB"]
 sc_cnt=sum(t in safe_e for t in top5_tickers)
@@ -415,12 +369,10 @@ ic_cnt=sum(t in inf_e  for t in top5_tickers)
 if sc_cnt>=2:   regime,rc="RISK-OFF","#FFCC00"
 elif ic_cnt>=2: regime,rc="INFLATIONARY","#FF8000"
 else:           regime,rc="RISK-ON","#00CC00"
-
 y2=fred_mac.get("2Y Yield"); y10=fred_mac.get("10Y Yield")
 spread=(y10-y2) if (y2 and y10) else None
 cs_lbl="INVERTED" if spread and spread<0 else "NORMAL"
 cs_col="#CC0000" if cs_lbl=="INVERTED" else "#00CC00"
-
 tnx_val=closes["^TNX"].dropna().iloc[-1] if "^TNX" in closes.columns else None
 tyx_val=closes["^TYX"].dropna().iloc[-1] if "^TYX" in closes.columns else None
 gc_val =closes["GC=F"].dropna().iloc[-1]  if "GC=F" in closes.columns else None
@@ -430,15 +382,12 @@ bei_val=fred_mac.get("10Y BEI")
 eurusd =fred_mac.get("EUR/USD")
 sent   =fred_mac.get("Cons Sent")
 vix_col="#CC0000" if v_close>30 else "#FF8000" if v_close>20 else "#00CC00"
-
 def mc(label, val, sub="", color="#FFFFFF", fmt="{:.2f}"):
     try:
         v = fmt.format(val) if (val is not None and not isinstance(val, str)) else (val if isinstance(val, str) else "N/A")
     except Exception:
         v = "N/A"
     return f'<div class="bbg-macro-cell"><div class="bbg-macro-lbl">{label}</div><div class="bbg-macro-val" style="color:{color};">{v}</div><div class="bbg-macro-sub">{sub}</div></div>'
-
-# ── MACRO BAR — labelled assets ───────────────────────────────────────────────
 macro_html = '<div class="bbg-macro-row">'
 macro_html += mc("VIX INDEX", v_close, "CBOE Fear Index", vix_col)
 macro_html += mc("10Y YIELD", tnx_val, "US Treasury Note", "#FF8000")
@@ -451,14 +400,11 @@ macro_html += mc("EUR/USD FX", eurusd, "Euro vs Dollar", "#FFFFFF")
 macro_html += mc("UMICH SENT", sent, "Consumer Sentiment", "#00CC00" if sent and sent>80 else "#FF8000" if sent and sent>60 else "#CC0000")
 cpi_sub = f"All Urban {cpi_per or chr(32)} {cpi_yr or chr(32)}"
 macro_html += mc("BLS CPI", cpi_val, cpi_sub, "#FF8000")
-
 if spread is not None:
-    macro_html += f'''<div class="bbg-macro-cell"><div class="bbg-macro-lbl">2s10s SPREAD</div><div class="bbg-macro-val" style="color:{cs_col};">{spread:+.2f}%</div><div class="bbg-macro-sub">Yield Curve {cs_lbl}</div></div>'''
+    macro_html += f'<div class="bbg-macro-cell"><div class="bbg-macro-lbl">2s10s SPREAD</div><div class="bbg-macro-val" style="color:{cs_col};">{spread:+.2f}%</div><div class="bbg-macro-sub">Yield Curve {cs_lbl}</div></div>'
 else:
     macro_html += mc("2s10s SPREAD","N/A","Yield Curve","#555")
-
-macro_html += f'''<div class="bbg-macro-cell"><div class="bbg-macro-lbl">REGIME</div><div class="bbg-macro-val" style="color:{rc}; font-size:9px;">{regime}</div><div class="bbg-macro-sub">Capital Flow Signal</div></div>'''
-
+macro_html += f'<div class="bbg-macro-cell"><div class="bbg-macro-lbl">REGIME</div><div class="bbg-macro-val" style="color:{rc}; font-size:9px;">{regime}</div><div class="bbg-macro-sub">Capital Flow Signal</div></div>'
 yc_labels=["1M","3M","6M","1Y","2Y","5Y","10Y","30Y"]
 yc_vals  =[yc.get(l) for l in yc_labels]
 yc_valid =[(l,v) for l,v in zip(yc_labels,yc_vals) if v is not None]
@@ -468,16 +414,13 @@ if yc_valid:
     macro_html += '<div class="yc-inline">'
     for lbl,val in yc_valid:
         bh=max(2,int((val/mx_yc)*22)) if mx_yc>0 else 2
-        macro_html += f'''<div class="yc-inline-col"><div class="yc-inline-bar" style="height:{bh}px;"></div><div class="yc-inline-lbl">{lbl}</div></div>'''
+        macro_html += f'<div class="yc-inline-col"><div class="yc-inline-bar" style="height:{bh}px;"></div><div class="yc-inline-lbl">{lbl}</div></div>'
     macro_html += '</div>'
 else:
     macro_html += '<div style="color:#444;font-size:8px;padding-top:4px;">Loading...</div>'
 macro_html += '</div></div>'
 st.markdown(macro_html, unsafe_allow_html=True)
-
-# ── TOP 5 + BLOOMBERG TV ──────────────────────────────────────────────────────
 col_t5, col_tv = st.columns([3.8, 1.2])
-
 with col_t5:
     cards = '<div class="bbg-top5-wrap"><div class="bbg-panel"><div class="bbg-panel-hdr">TOP 5 ROTATION TARGETS — SOLOMON STRATEGY</div><div class="bbg-top5">'
     for tkr,row in top5_df.iterrows():
@@ -499,7 +442,6 @@ with col_t5:
         </div>'''
     cards += '</div></div></div>'
     st.markdown(cards, unsafe_allow_html=True)
-
 with col_tv:
     st.markdown('<div class="bbg-tv-wrap"><div class="bbg-panel"><div class="bbg-panel-hdr">LIVE — BLOOMBERG TV</div>', unsafe_allow_html=True)
     components.html(
@@ -507,11 +449,7 @@ with col_tv:
         height=165
     )
     st.markdown('</div></div>', unsafe_allow_html=True)
-
-# ── TABS ──────────────────────────────────────────────────────────────────────
 tab1,tab2,tab3,tab4,tab5,tab6 = st.tabs(["  CHART  ","  LEDGER  ","  HEATMAP  ","  BACKTEST  ","  NEWS & NOTES  ","  API STATUS  "])
-
-# ── TAB 1: CHARTS ─────────────────────────────────────────────────────────────
 with tab1:
     c1,c2=st.columns(2)
     with c1:
@@ -552,8 +490,48 @@ with tab1:
                 av_html+=f'<tr><td class="l">{sec}</td><td>{perf}</td></tr>'
         av_html+='</tbody></table>'
         st.markdown(av_html+'</div></div>', unsafe_allow_html=True)
-
-# ── TAB 2: LEDGER ─────────────────────────────────────────────────────────────
+    # ── BOTTOM ROW: SECTOR ALLOCATION PIE + GLOBAL INDICES ───────────────────
+    b1,b2=st.columns(2)
+    with b1:
+        st.markdown('<div class="bbg-panel"><div class="bbg-panel-hdr">ALLOCATION BY SECTOR</div><div class="bbg-panel-body">', unsafe_allow_html=True)
+        sector_alloc={}
+        for tkr,row in top5_df.iterrows():
+            sec=row["SECTOR"]
+            sector_alloc[sec]=sector_alloc.get(sec,0)+row["ALLOC"]
+        total_alloc=sum(sector_alloc.values())
+        cash=max(0,100-total_alloc)
+        if cash>0: sector_alloc["Cash/BIL"]=cash
+        colors_pie=["#FF8000","#FFCC00","#00CC00","#4488FF","#CC3333","#FF4488","#44FFCC","#888888","#FFAA00","#AA44FF"]
+        pie_html=""
+        total=sum(sector_alloc.values())
+        for i,(lbl,sz) in enumerate(sector_alloc.items()):
+            pct=sz/total*100
+            col_=colors_pie[i%len(colors_pie)]
+            pie_html+=f'<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><div style="width:12px;height:12px;background:{col_};border-radius:2px;flex-shrink:0;"></div><div style="flex:1;font-size:10px;color:#CCC;">{lbl}</div><div style="width:140px;background:#1A1A1A;height:8px;border-radius:2px;"><div style="width:{pct:.0f}%;background:{col_};height:8px;border-radius:2px;"></div></div><div style="width:48px;text-align:right;font-size:10px;color:{col_};font-weight:700;">{sz:.1f}%</div></div>'
+        st.markdown(pie_html, unsafe_allow_html=True)
+        st.markdown('</div></div>', unsafe_allow_html=True)
+    with b2:
+        st.markdown('<div class="bbg-panel"><div class="bbg-panel-hdr">YTD — GLOBAL INDICES</div><div class="bbg-panel-body">', unsafe_allow_html=True)
+        INDEX_LABELS={
+            "^GSPC":"S&P 500","^DJI":"Dow Jones","^IXIC":"NASDAQ Comp","^NDX":"NASDAQ 100",
+            "^RUT":"Russell 2K","^VIX":"VIX","^GDAXI":"DAX","^FTSE":"FTSE 100",
+            "^FCHI":"CAC 40","^N225":"Nikkei 225","^HSI":"Hang Seng",
+            "000001.SS":"Shanghai","^GSPTSE":"TSX Composite"
+        }
+        if not global_idx.empty:
+            idx_rows={}
+            for col in global_idx.columns:
+                s=global_idx[col].dropna()
+                s_ytd=s[s.index.year>=now_est.year]
+                if not s_ytd.empty and len(s_ytd)>1:
+                    lbl=INDEX_LABELS.get(col,col)
+                    idx_rows[lbl]=((s_ytd/s_ytd.iloc[0])-1)*100
+            if idx_rows:
+                idx_df=pd.DataFrame(idx_rows).dropna(how="all")
+                st.line_chart(idx_df,height=260,use_container_width=True)
+        else:
+            st.markdown('<div style="color:#555;font-size:10px;padding:20px;">Loading global indices...</div>', unsafe_allow_html=True)
+        st.markdown('</div></div>', unsafe_allow_html=True)
 with tab2:
     def sc_cls(s):
         if "STRONG BUY" in s: return "sig-sb"
@@ -587,8 +565,6 @@ with tab2:
         </tr>'''
     tbl+='</tbody></table></div></div>'
     st.markdown(tbl, unsafe_allow_html=True)
-
-# ── TAB 3: HEATMAP ────────────────────────────────────────────────────────────
 with tab3:
     h1,h2=st.columns(2)
     with h1:
@@ -616,8 +592,6 @@ with tab3:
             bdr="border:1px solid #FF8000;" if "BUY" in row["SIGNAL"] else "border:1px solid #1A1A1A;"
             hm2+=f'<div class="bbg-hm-cell" style="background:{bg};color:{fg};{bdr}"><span>{tkr}</span><span>{s:.0f}</span></div>'
         st.markdown(hm2+'</div></div>', unsafe_allow_html=True)
-
-# ── TAB 4: BACKTEST ───────────────────────────────────────────────────────────
 with tab4:
     bc1,bc2,bc3=st.columns([1.3,1.7,1.0])
     with bc1:
@@ -631,8 +605,6 @@ with tab4:
             tbl2+=f'<tr><td class="l">{r["Month"]}</td><td class="l" style="color:#666;font-size:9px;">{r["Targets"]}</td><td style="color:{sc_};">{r["Strategy"]:.1f}%</td><td style="color:#555;">{r["SPY"]:.1f}%</td><td style="color:{ac_};font-weight:700;">{r["Alpha"]:+.1f}%</td></tr>'
         tbl2+='</tbody></table></div></div>'
         st.markdown(tbl2, unsafe_allow_html=True)
-
-        # ── CRITERIA LEGEND ─────────────────────────────────────────────────
         leg='<div class="bbg-panel" style="margin-top:4px;"><div class="bbg-panel-hdr">SOLOMON SIGNAL CRITERIA</div><div class="bbg-panel-body">'
         leg+='<table class="bbg-tbl"><thead><tr><th class="l">SIGNAL</th><th class="l">CRITERIA</th><th>ALLOC</th></tr></thead><tbody>'
         criteria=[
@@ -648,18 +620,14 @@ with tab4:
             leg+=f'<tr><td class="l" style="color:{col};font-weight:700;">{sig}</td><td class="l" style="color:#555;font-size:9px;">{crit}</td><td style="color:#FF8000;">{alloc}</td></tr>'
         leg+='</tbody></table></div></div>'
         st.markdown(leg, unsafe_allow_html=True)
-
     with bc2:
         st.markdown('<div class="bbg-panel"><div class="bbg-panel-hdr">STRATEGY vs SPY — MONTHLY RETURNS</div><div class="bbg-panel-body">', unsafe_allow_html=True)
         if not bt_df.empty:
-            # Sort by calendar month order, not alphabetical
             bt_sorted = bt_df.copy()
             bt_sorted.index = range(len(bt_sorted))
             chart_data = bt_sorted.set_index("Month")[["Strategy","SPY"]]
             st.bar_chart(chart_data, height=220, use_container_width=True, color=["#FF8000","#444444"])
         st.markdown('</div></div>', unsafe_allow_html=True)
-
-        # ── CUMULATIVE CURVE ────────────────────────────────────────────────
         st.markdown('<div class="bbg-panel"><div class="bbg-panel-hdr">CUMULATIVE RETURNS</div><div class="bbg-panel-body">', unsafe_allow_html=True)
         if not bt_df.empty:
             bt_cum=bt_df.copy()
@@ -667,9 +635,7 @@ with tab4:
             bt_cum["SPY Cumul"]  =(1+bt_cum["SPY"]/100).cumprod()*100-100
             st.line_chart(bt_cum.set_index("Month")[["Strat Cumul","SPY Cumul"]], height=160, use_container_width=True)
         st.markdown('</div></div>', unsafe_allow_html=True)
-
     with bc3:
-        # ── SUMMARY STATS ───────────────────────────────────────────────────
         st.markdown('<div class="bbg-panel"><div class="bbg-panel-hdr">SUMMARY STATS</div><div class="bbg-panel-body">', unsafe_allow_html=True)
         if not bt_df.empty:
             ts =bt_df["Strategy"].sum(); tsp=bt_df["SPY"].sum(); ta=bt_df["Alpha"].sum()
@@ -693,8 +659,6 @@ with tab4:
                 <tr><td class="l">Worst SPY Mo</td><td style="color:#CC0000;">{max_dd_spy:.1f}%</td></tr>
             </table>''', unsafe_allow_html=True)
         st.markdown('</div></div>', unsafe_allow_html=True)
-
-        # ── CURRENT ALLOCATION ──────────────────────────────────────────────
         st.markdown('<div class="bbg-panel" style="margin-top:4px;"><div class="bbg-panel-hdr">CURRENT ALLOCATION</div><div class="bbg-panel-body">', unsafe_allow_html=True)
         alloc_html='<table class="bbg-tbl"><thead><tr><th class="l">ASSET</th><th class="l">SIGNAL</th><th>ALLOC</th></tr></thead><tbody>'
         for tkr,row in top5_df.iterrows():
@@ -706,8 +670,6 @@ with tab4:
         alloc_html+=f'<tr style="border-top:1px solid #FF8000;"><td class="l" style="color:#FF8000;font-weight:700;">TOTAL</td><td></td><td style="color:#FF8000;font-weight:700;">100.0%</td></tr>'
         alloc_html+='</tbody></table>'
         st.markdown(alloc_html+'</div></div>', unsafe_allow_html=True)
-
-        # ── FMP ECONOMIC CALENDAR ────────────────────────────────────────────
         st.markdown('<div class="bbg-panel" style="margin-top:4px;"><div class="bbg-panel-hdr">FMP — UPCOMING ECONOMIC EVENTS</div><div class="bbg-panel-body">', unsafe_allow_html=True)
         if fmp_calendar:
             cal_html='<table class="bbg-tbl"><thead><tr><th class="l">DATE</th><th class="l">EVENT</th><th>ACTUAL</th><th>EST</th><th>IMPACT</th></tr></thead><tbody>'
@@ -723,29 +685,33 @@ with tab4:
             st.markdown(cal_html+'</div></div>', unsafe_allow_html=True)
         else:
             st.markdown('<div style="color:#555;font-size:9px;">No upcoming events or FMP calendar loading...</div></div></div>', unsafe_allow_html=True)
-
-# ── TAB 5: NEWS & NOTES ───────────────────────────────────────────────────────
 with tab5:
     n1,n2=st.columns([2.2,1.8])
-    # Force both columns to equal height
     st.markdown('<style>[data-testid="stHorizontalBlock"]{align-items:stretch;} [data-testid="stTextArea"]{height:100%;} [data-testid="stTextArea"] textarea{height:100% !important; min-height:500px;}</style>', unsafe_allow_html=True)
     with n1:
-        st.markdown('<div class="bbg-panel"><div class="bbg-panel-hdr">FINANCIAL NEWS — ALPHA VANTAGE SENTIMENT FEED</div>', unsafe_allow_html=True)
-        if news_feed:
+        st.markdown('<div class="bbg-panel"><div class="bbg-panel-hdr">FINANCIAL NEWS — LIVE BUSINESS HEADLINES</div>', unsafe_allow_html=True)
+        if newsapi_articles:
+            news_html='<div class="bbg-scroll"><table class="bbg-tbl"><thead><tr><th class="l">HEADLINE</th><th class="l">SOURCE</th><th class="l">TIME</th></tr></thead><tbody>'
+            for item in newsapi_articles:
+                title  = (item.get("title","") or "")[:90]
+                source = (item.get("source",{}).get("name","") or "")
+                pub    = (item.get("publishedAt","") or "")[:16].replace("T"," ")
+                if not title or title == "[Removed]": continue
+                news_html+=f'<tr><td class="l" style="white-space:normal;max-width:420px;word-wrap:break-word;">{title}</td><td class="l" style="color:#555;font-size:9px;white-space:nowrap;">{source}</td><td class="l" style="color:#444;font-size:9px;white-space:nowrap;">{pub}</td></tr>'
+            news_html+='</tbody></table></div>'
+        elif news_feed:
             news_html='<div class="bbg-scroll"><table class="bbg-tbl"><thead><tr><th class="l">HEADLINE</th><th class="l">SOURCE</th><th>SENTIMENT</th><th class="l">TIME</th></tr></thead><tbody>'
             for item in news_feed:
                 title  =item.get("title","")[:80]
                 source =item.get("source","")
                 time_p =item.get("time_published","")[:12]
-                overall_score=item.get("overall_sentiment_score",0)
                 overall_label=item.get("overall_sentiment_label","Neutral")
                 sc_col="#00CC00" if "Bullish" in overall_label else "#CC0000" if "Bearish" in overall_label else "#888"
-                news_html+=f'<tr><td class="l" style="white-space:normal; max-width:400px; word-wrap:break-word;">{title}</td><td class="l" style="color:#555;font-size:9px;white-space:nowrap;">{source}</td><td style="color:{sc_col};font-size:9px;white-space:nowrap;">{overall_label}</td><td class="l" style="color:#444;font-size:9px;white-space:nowrap;">{time_p}</td></tr>'
+                news_html+=f'<tr><td class="l" style="white-space:normal;max-width:400px;word-wrap:break-word;">{title}</td><td class="l" style="color:#555;font-size:9px;white-space:nowrap;">{source}</td><td style="color:{sc_col};font-size:9px;white-space:nowrap;">{overall_label}</td><td class="l" style="color:#444;font-size:9px;white-space:nowrap;">{time_p}</td></tr>'
             news_html+='</tbody></table></div>'
         else:
-            news_html='<div style="padding:15px; color:#555; font-size:10px;">News feed requires Alpha Vantage premium plan for NEWS_SENTIMENT endpoint.<br><br>Alternative: Add NewsAPI.org key (free tier available) for live financial headlines.</div>'
+            news_html='<div style="padding:15px;color:#555;font-size:10px;">News loading...</div>'
         st.markdown(news_html+'</div>', unsafe_allow_html=True)
-
     with n2:
         st.markdown('<div class="bbg-panel" style="margin-top:0px;"><div class="bbg-panel-hdr">ANALYST NOTES — TRADE JOURNAL</div><div class="bbg-panel-body">', unsafe_allow_html=True)
         st.markdown('<div style="color:#555;font-size:9px;margin-bottom:3px;letter-spacing:1px;">TYPE YOUR NOTES BELOW — USE FOR TRADE RATIONALE, OBSERVATIONS, REMINDERS</div>', unsafe_allow_html=True)
@@ -757,8 +723,6 @@ with tab5:
             key="trade_notes"
         )
         st.markdown('</div></div>', unsafe_allow_html=True)
-
-# ── TAB 6: API STATUS ─────────────────────────────────────────────────────────
 with tab6:
     fred_ok=any(v is not None for v in fred_mac.values())
     av_ok  =bool(av_sec)
@@ -768,6 +732,7 @@ with tab6:
         ("Yahoo Finance (yfinance)",   "All 46 ETF prices, OHLCV, benchmarks, gold/oil futures",          True,  "Active — no key required"),
         ("Alpha Vantage",              "Sector performance, news sentiment, fundamentals",                  av_ok, "Key active — premium plan needed for news"),
         ("BLS — Bureau of Labor Stats","CPI index, PPI, unemployment series",                              bls_ok,"Public API — bls.gov"),
+        ("NewsAPI.org",                "Live business headlines, top stories",                              bool(newsapi_articles), "Key active — newsapi.org"),
         ("Nasdaq Data Link",           "COT reports, futures positioning, alternative data",               False, "Register at data.nasdaq.com"),
         ("CFTC",                       "Commitment of Traders — futures net positioning",                  False, "Free CSV — cftc.gov/MarketReports"),
         ("SEC EDGAR",                  "ETF 13F filings, institutional ownership flow",                    False, "Free REST — efts.sec.gov"),
@@ -786,8 +751,6 @@ with tab6:
         tbl3+=f'<tr><td class="l">{lbl}</td><td style="color:#FF8000;">{fmt}</td><td style="color:{sc2};font-size:9px;">{"● LIVE" if ok2 else "○ N/A"}</td></tr>'
     tbl3+='</tbody></table></div>'
     st.markdown(tbl3, unsafe_allow_html=True)
-
-# ── TICKER TAPE ───────────────────────────────────────────────────────────────
 tape_syms=["SPY","QQQ","DIA","^VIX","^TNX","GC=F","CL=F"]
 tape='<div class="bbg-tape">'
 for sym in tape_syms:
