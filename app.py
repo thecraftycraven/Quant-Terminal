@@ -714,7 +714,7 @@ with tab5:
         st.markdown(news_html+'</div>', unsafe_allow_html=True)
     with n2:
         st.markdown('<div class="bbg-panel" style="margin-top:4px;"><div class="bbg-panel-hdr">ANALYST NOTES — TRADE JOURNAL</div><div class="bbg-panel-body">', unsafe_allow_html=True)
-        st.markdown('<div style="color:#555;font-size:9px;margin-bottom:3px;letter-spacing:1px;">TYPE YOUR NOTES BELOW — USE FOR TRADE RATIONALE, OBSERVATIONS, REMINDERS</div>', unsafe_allow_html=True)
+        st.markdown('<div style="color:#555;font-size:9px;margin-bottom:1px;letter-spacing:1px;">TYPE YOUR NOTES BELOW — USE FOR TRADE RATIONALE, OBSERVATIONS, REMINDERS</div>', unsafe_allow_html=True)
         st.text_area(
             label="",
             placeholder="e.g.\n- OIH: Energy capex cycle looks strong. Hold through earnings.\n- Monitor 10Y yield — if breaks 4.8% rotate defensive.\n- FBTC halving cycle Q2 2025 setup. Scale in on dips.\n- Review positions end of month vs SMA filter.",
