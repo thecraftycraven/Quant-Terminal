@@ -17,7 +17,7 @@ date_str = now_est.strftime("%b %d, %Y").upper()
 is_weekend = now_est.weekday() >= 5
 is_open_hours = datetime.time(9, 30) <= now_est.time() <= datetime.time(16, 0)
 market_status = "MARKET CLOSED" if is_weekend or not is_open_hours else "MARKET OPEN"
-status_color = "#00FFFF" if market_status == "MARKET OPEN" else "#FF0000"
+status_color = "#00FF00" if market_status == "MARKET OPEN" else "#FF0000"
 
 # CSS Override for Extreme Density
 st.markdown(f"""
@@ -65,8 +65,13 @@ st.markdown(f"""
     .heatmap-grid {{ display: grid; grid-template-columns: repeat(8, 1fr); gap: 1px; }}
     .heat-cell {{ text-align: center; padding: 4px 0px; font-size: 10px; font-weight: bold; }}
     
+    /* Streamlit DataFrame Overrides */
+    .dataframe {{ font-size: 10px !important; text-align: right; }}
+    .dataframe th {{ background-color: #111111 !important; color: #FF8C00 !important; border-bottom: 2px solid #FF8C00 !important; }}
+    .dataframe td {{ border-bottom: 1px solid #333333 !important; padding: 4px !important; }}
+    
     #MainMenu, footer, header {{visibility: hidden;}}
-    .stLineChart {{ margin-top: -20px; }} /* Tighten chart padding */
+    .stLineChart {{ margin-top: -20px; }} 
     </style>
     
     <div class="status-bar">
@@ -153,11 +158,10 @@ with st.spinner('SYNCING GLOBAL DATA...'):
     raw_prices, raw_volumes = fetch_data()
     df = calculate_factors(raw_prices, raw_volumes, now_est.year)
 
-# 4. Interface Layout
-col1, col2 = st.columns([1.2, 1.8]) # Left side slightly narrower
+# 4. Interface Layout: Top Panels (Visuals & Rules)
+col1, col2 = st.columns([1.2, 1.8]) 
 
 with col1:
-    # Methodologies: Weights
     st.markdown("""
         <div class="bbg-panel">
             <div class="bbg-header">WEIGHTING THE FACTORS</div>
@@ -173,7 +177,6 @@ with col1:
         </div>
         """, unsafe_allow_html=True)
         
-    # Methodologies: Signals
     st.markdown("""
         <div class="bbg-panel">
             <div class="bbg-header">ENTRY / EXIT SIGNALS</div>
@@ -185,17 +188,11 @@ with col1:
                 <tr><td class="c-sell">SELL</td><td>Dropped out of top 15</td></tr>
                 <tr><td class="c-strong-sell">STRONG SELL</td><td>Below 200DMA</td></tr>
             </table>
-            <div style="font-size: 10px; color: #aaa; margin-top: 8px;">
-                *HOLD buffer prevents unnecessary churning.<br>
-                *Hard stop-loss rule: Execute if held position drops 8% from entry.
-            </div>
         </div>
         """, unsafe_allow_html=True)
 
 with col2:
     top_asset = df.index[0] if not df.empty else "SPY"
-    
-    # Top Asset Chart
     st.markdown(f"""
         <div class="bbg-panel" style="padding-bottom: 0px;">
             <div class="bbg-header" style="color:#00FFFF !important;">TARGET ACQUISITION: {top_asset}</div>
@@ -206,25 +203,33 @@ with col2:
         </div>
     """, unsafe_allow_html=True)
     
-    # Plotly/Streamlit native chart for the top asset (Last 3 months)
     chart_data = raw_prices[top_asset].dropna().tail(63)
     st.line_chart(chart_data, height=140, use_container_width=True)
 
-    # 8-Column Heatmap
     st.markdown('<div class="bbg-panel"><div class="bbg-header">ETF YTD PERFORMANCE HEATMAP</div>', unsafe_allow_html=True)
-    
     heat_df = df.sort_values(by='YTD', ascending=False)
     heatmap_html = '<div class="heatmap-grid">'
     for ticker, row in heat_df.iterrows():
         val = row['YTD']
         color = "#00FF00" if val > 15 else "#006600" if val > 0 else "#660000" if val > -10 else "#FF0000"
         text_color = "#000000" if color == "#00FF00" else "#FFFFFF"
-        # Strict single-line formatting to prevent markdown errors
         heatmap_html += f'<div class="heat-cell" style="background-color:{color}; color:{text_color};">{ticker}<br>{val:.1f}%</div>'
     heatmap_html += '</div></div>'
     st.markdown(heatmap_html, unsafe_allow_html=True)
 
-# 5. Bottom Ticker Tape
+# 5. Interface Layout: Bottom Panel (The Master Ledger)
+st.markdown('<div class="bbg-panel"><div class="bbg-header">QUANTITATIVE FACTOR LEDGER</div>', unsafe_allow_html=True)
+
+display_df = df[['RNK', 'SIGNAL', 'PRICE', 'SCORE', 'YTD', 'RAM', 'ROC_AC', 'REL_STR', '50D_SLP', 'VOL_CF', 'MAX_DD']].copy()
+
+def style_signals(val):
+    color = '#00FF00' if 'STRONG BUY' in val else '#66FF66' if 'BUY' in val else '#FFFF00' if 'HOLD' in val else '#FF0000'
+    return f'color: {color}; font-weight: bold;'
+
+st.dataframe(display_df.round(2).style.map(style_signals, subset=['SIGNAL']), use_container_width=True, height=350)
+st.markdown('</div>', unsafe_allow_html=True)
+
+# 6. Bottom Ticker Tape
 tape_html = '<div class="ticker-tape">'
 for b in BENCHMARKS:
     try:
