@@ -268,9 +268,18 @@ with col2:
 # 5. Interface Layout: Bottom Panel
 st.markdown('<div class="bbg-panel"><div class="bbg-header">QUANTITATIVE FACTOR LEDGER</div>', unsafe_allow_html=True)
 
-display_df = df[['RNK', 'SIGNAL', 'FAIL_REASON', 'ALLOC_%', 'PRICE', 'STOP_PRC', 'ADX', 'SCORE', 'YTD', 'RAM', 'ROC_AC', 'REL_STR', '50D_SLP', 'VOL_CF']].copy()
+# 1. Explicitly copy the exact columns needed
+cols_to_display = ['RNK', 'SIGNAL', 'FAIL_REASON', 'ALLOC_%', 'PRICE', 'STOP_PRC', 'ADX', 'SCORE', 'YTD', 'RAM', 'ROC_AC', 'REL_STR', '50D_SLP', 'VOL_CF']
+display_df = df[cols_to_display].copy()
 
+# 2. Explicitly round ONLY the numeric columns to prevent string corruption
+numeric_cols = ['ALLOC_%', 'PRICE', 'STOP_PRC', 'ADX', 'SCORE', 'YTD', 'RAM', 'ROC_AC', 'REL_STR', '50D_SLP', 'VOL_CF']
+for col in numeric_cols:
+    display_df[col] = pd.to_numeric(display_df[col], errors='coerce').round(2)
+
+# 3. Define strict color mapping
 def style_signals(val):
+    if not isinstance(val, str): return ''
     if 'STRONG BUY' in val: color = '#00FF00'
     elif 'BUY' in val: color = '#66FF66'
     elif 'HOLD' in val: color = '#FFFF00'
@@ -278,9 +287,11 @@ def style_signals(val):
     else: color = '#FF0000'
     return f'color: {color}; font-weight: bold;'
 
-st.dataframe(display_df.round(2).style.map(style_signals, subset=['SIGNAL']), use_container_width=True, height=350)
-st.markdown('</div>', unsafe_allow_html=True)
+# 4. Apply style and render
+styled_df = display_df.style.map(style_signals, subset=['SIGNAL'])
+st.dataframe(styled_df, use_container_width=True, height=400)
 
+st.markdown('</div>', unsafe_allow_html=True)
 # 6. Bottom Ticker Tape
 tape_html = '<div class="ticker-tape">'
 for b in BENCHMARKS:
