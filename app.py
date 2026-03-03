@@ -442,12 +442,17 @@ with col_t5:
     st.markdown(cards, unsafe_allow_html=True)
 
 with col_tv:
+    # Adjust the '20px' below to move it down more or less
+    st.markdown('<div style="margin-top: 15px;">', unsafe_allow_html=True) 
+    
     st.markdown('<div class="bbg-panel"><div class="bbg-panel-hdr">LIVE — BLOOMBERG TV</div>', unsafe_allow_html=True)
     components.html(
-        '<iframe width="100%" height="162" src="https://www.youtube.com/embed/iEpJwprxDdk?autoplay=1&mute=1" frameborder="0" allowfullscreen style="display:block;"></iframe>',
-        height=164
+        '<iframe width="100%" height="180" src="https://www.youtube.com/embed/iEpJwprxDdk?autoplay=1&mute=1" frameborder="0" allowfullscreen style="display:block;"></iframe>',
+        height=185
     )
     st.markdown('</div>', unsafe_allow_html=True)
+    
+    st.markdown('</div>', unsafe_allow_html=True) # Closes the margin div
 
 # ── TABS ──────────────────────────────────────────────────────────────────────
 tab1,tab2,tab3,tab4,tab5,tab6 = st.tabs(["  CHART  ","  LEDGER  ","  HEATMAP  ","  BACKTEST  ","  NEWS & NOTES  ","  API STATUS  "])
