@@ -20,38 +20,84 @@ market_status = "MARKET CLOSED" if is_weekend or not is_open_hours else "MARKET 
 status_color = "#00FF00" if market_status == "MARKET OPEN" else "#FF0000"
 
 # CSS Override for Extreme Density
+# CSS Override for Modern Glassmorphism Density
 st.markdown(f"""
     <style>
-    .stApp {{ background-color: #0c0c0c; }}
-    * {{ font-family: 'Helvetica', sans-serif !important; color: #FFFFFF; }}
-    .status-bar {{ display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #00FFFF; padding: 5px 0px; margin-top: -50px; margin-bottom: 10px; }}
-    .status-left {{ color: {status_color}; font-weight: bold; font-size: 14px; text-transform: uppercase; }}
-    .status-right {{ color: #00FFFF; text-align: right; font-weight: bold; font-size: 14px; }}
-    .bbg-panel {{ border: 1px solid #444; background-color: #111; padding: 8px; margin-bottom: 10px; border-radius: 2px; }}
-    .bbg-header {{ color: #FFFFFF; font-weight: bold; font-size: 14px; text-transform: uppercase; border-bottom: 1px solid #444; padding-bottom: 4px; margin-bottom: 8px; }}
-    table {{ width: 100%; border-collapse: collapse; font-size: 11px; }}
-    th {{ text-align: left; color: #aaa; border-bottom: 1px solid #333; padding: 4px; }}
-    td {{ padding: 4px; border-bottom: 1px solid #222; }}
+    /* Global Base */
+    .stApp {{
+        background: radial-gradient(circle at top right, #0B0E14, #050608);
+        color: #E2E8F0;
+    }}
+    * {{ font-family: 'Inter', 'Segoe UI', sans-serif !important; letter-spacing: 0.5px; }}
+    
+    /* Top Status Bar */
+    .status-bar {{
+        display: flex; justify-content: space-between; align-items: center;
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+        padding: 8px 15px; margin-top: -50px; margin-bottom: 15px;
+        border-radius: 0 0 10px 10px;
+        box-shadow: 0 4px 15px rgba(0, 255, 255, 0.05);
+    }}
+    .status-left {{ color: {status_color}; font-weight: 800; font-size: 13px; text-transform: uppercase; text-shadow: 0 0 8px {status_color}; }}
+    .status-right {{ color: #38BDF8; text-align: right; font-weight: 600; font-size: 13px; }}
+    
+    /* Modern Glass Panels */
+    .bbg-panel {{
+        background: rgba(30, 41, 59, 0.4);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        padding: 12px; margin-bottom: 15px; border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        transition: transform 0.2s ease;
+    }}
+    .bbg-panel:hover {{ border: 1px solid rgba(56, 189, 248, 0.3); }}
+    
+    .bbg-header {{
+        color: #38BDF8; font-weight: 800; font-size: 12px; text-transform: uppercase; 
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 6px; margin-bottom: 10px;
+        letter-spacing: 1.5px;
+    }}
+    
+    /* Tables */
+    table {{ width: 100%; border-collapse: separate; border-spacing: 0; font-size: 11px; }}
+    th {{ text-align: left; color: #94A3B8; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding: 6px 4px; font-weight: 600; }}
+    td {{ padding: 6px 4px; border-bottom: 1px solid rgba(255, 255, 255, 0.03); color: #F8FAFC; }}
     .td-right {{ text-align: right; }}
-    .c-strong-buy {{ color: #00FF00; font-weight: bold; }}
-    .c-buy {{ color: #66FF66; font-weight: bold; }}
-    .c-hold {{ color: #FFFF00; font-weight: bold; }}
-    .c-sell {{ color: #FF6666; font-weight: bold; }}
-    .c-strong-sell {{ color: #FF0000; font-weight: bold; }}
-    .c-halt {{ color: #FF00FF; font-weight: bold; }}
-    .ticker-tape {{ display: flex; justify-content: space-between; background-color: #111; border-top: 2px solid #333; padding: 5px 10px; font-size: 12px; font-weight: bold; }}
-    .heatmap-grid {{ display: grid; grid-template-columns: repeat(8, 1fr); gap: 1px; }}
-    .heat-cell {{ text-align: center; padding: 4px 0px; font-size: 10px; font-weight: bold; }}
-    .dataframe {{ font-size: 10px !important; text-align: right; }}
-    .dataframe th {{ background-color: #111111 !important; color: #FF8C00 !important; border-bottom: 2px solid #FF8C00 !important; }}
-    .dataframe td {{ border-bottom: 1px solid #333333 !important; padding: 4px !important; }}
+    
+    /* Signal Neon Colors */
+    .c-strong-buy {{ color: #10B981; font-weight: 800; text-shadow: 0 0 5px rgba(16, 185, 129, 0.4); }}
+    .c-buy {{ color: #34D399; font-weight: 700; }}
+    .c-hold {{ color: #FBBF24; font-weight: 700; }}
+    .c-sell {{ color: #F87171; font-weight: 700; }}
+    .c-strong-sell {{ color: #EF4444; font-weight: 800; text-shadow: 0 0 5px rgba(239, 68, 68, 0.4); }}
+    .c-halt {{ color: #D946EF; font-weight: 800; text-shadow: 0 0 5px rgba(217, 70, 239, 0.4); }}
+    
+    /* Ticker Tape Bottom */
+    .ticker-tape {{
+        display: flex; justify-content: space-between; 
+        background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(10px);
+        border-top: 1px solid rgba(0, 255, 255, 0.2); padding: 8px 15px; font-size: 11px; font-weight: 700;
+        position: fixed; bottom: 0; left: 0; width: 100%; z-index: 100;
+    }}
+    
+    /* Heatmap Grid */
+    .heatmap-grid {{ display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px; }}
+    .heat-cell {{ text-align: center; padding: 6px 0px; font-size: 10px; font-weight: 700; border-radius: 4px; }}
+    
+    /* Streamlit DataFrame Overrides */
+    .dataframe {{ font-size: 11px !important; text-align: right; }}
+    .dataframe th {{ background-color: rgba(15, 23, 42, 0.8) !important; color: #38BDF8 !important; border-bottom: 1px solid #38BDF8 !important; }}
+    .dataframe td {{ border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important; padding: 6px !important; }}
+    
     #MainMenu, footer, header {{visibility: hidden;}}
-    .stLineChart {{ margin-top: -20px; }} 
+    .stLineChart {{ margin-top: -15px; }} 
     </style>
     
     <div class="status-bar">
         <div class="status-left">● {market_status} | SYS.OP.NORMAL</div>
-        <div class="status-right">{time_str} | <span style="font-size:10px;">{date_str}</span></div>
+        <div class="status-right">{time_str} | <span style="font-size:10px; color:#94A3B8;">{date_str}</span></div>
     </div>
     """, unsafe_allow_html=True)
 
