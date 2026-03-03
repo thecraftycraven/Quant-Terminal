@@ -718,7 +718,7 @@ with tab5:
         st.text_area(
             label="",
             placeholder="e.g.\n- OIH: Energy capex cycle looks strong. Hold through earnings.\n- Monitor 10Y yield — if breaks 4.8% rotate defensive.\n- FBTC halving cycle Q2 2025 setup. Scale in on dips.\n- Review positions end of month vs SMA filter.",
-            height=500,
+            height=300,
             label_visibility="collapsed",
             key="trade_notes"
         )
