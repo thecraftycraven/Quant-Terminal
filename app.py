@@ -106,10 +106,43 @@ st.markdown(CSS, unsafe_allow_html=True)
 STATUS_HTML = f"""<div class="bbg-status">
     <div class="bbg-status-l" style="color:{status_color};">■ MKT {market_status}</div>
     <div class="bbg-status-c">NEW YORK LATINO FINANCIAL TERMINAL &nbsp;·&nbsp; SOLOMON STRATEGY</div>
-    <div class="bbg-status-r">{time_str}&nbsp;&nbsp;{date_str}</div>
+    <div class="bbg-status-r"><span id="live-clock" style="color:#AAAAAA;font-size:10px;">{time_str}</span>&nbsp;&nbsp;<span style="color:#AAAAAA;font-size:10px;">{date_str}</span></div>
 </div>"""
 st.markdown(STATUS_HTML, unsafe_allow_html=True)
 status_placeholder = st.empty()
+
+# ── LIVE CLOCK — updates every second via JS ──────────────────────────────────
+components.html("""
+<script>
+(function() {
+    function updateClock() {
+        var now = new Date();
+        var et = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
+        var h = String(et.getHours()).padStart(2,'0');
+        var m = String(et.getMinutes()).padStart(2,'0');
+        var s = String(et.getSeconds()).padStart(2,'0');
+        var timeStr = h + ':' + m + ':' + s + ' ET';
+        // Walk up to parent Streamlit document and find the clock span
+        try {
+            var el = window.parent.document.getElementById('live-clock');
+            if (el) { el.textContent = timeStr; return; }
+        } catch(e) {}
+        // Fallback: search all iframes in parent
+        try {
+            var frames = window.parent.document.querySelectorAll('iframe');
+            frames.forEach(function(f) {
+                try {
+                    var el = f.contentDocument.getElementById('live-clock');
+                    if (el) el.textContent = timeStr;
+                } catch(e) {}
+            });
+        } catch(e) {}
+    }
+    updateClock();
+    setInterval(updateClock, 1000);
+})();
+</script>
+""", height=0)
 TICKER_SECTORS = {
     "OIH":"Energy","XLE":"Energy","XLB":"Materials","XME":"Materials","WOOD":"Materials",
     "XLI":"Industrials","IYT":"Industrials","CARZ":"Cons Disc","XLY":"Cons Disc",
@@ -1151,22 +1184,27 @@ tape+='</div>'
 st.markdown(tape, unsafe_allow_html=True)
 
 # ── AUTO REFRESH ──────────────────────────────────────────────────────────────
-# During market hours: refresh every 30s
-# Outside market hours: refresh every 5 minutes (keeps clock live)
 refresh_ms = 30000 if (is_open and not is_weekend) else 300000
 components.html(f"""
 <script>
-    // Wait for Streamlit to fully load then set refresh interval
-    function triggerRefresh() {{
-        // Find the Streamlit rerun button and click it, or reload
-        const buttons = window.parent.document.querySelectorAll('button');
-        let rerunBtn = null;
-        buttons.forEach(b => {{
-            if (b.innerText === '' || b.title === 'Rerun') rerunBtn = b;
-        }});
-        // Force page reload as most reliable method
-        window.parent.location.reload();
+(function() {{
+    function clickRerun() {{
+        // Streamlit's rerun button is in the parent frame toolbar
+        var doc = window.parent.document;
+        // Try multiple selectors Streamlit uses across versions
+        var btn = doc.querySelector('[data-testid="stRerunButton"]')
+                || doc.querySelector('button[title="Rerun"]')
+                || doc.querySelector('.stToolbarActions button');
+        if (btn) {{
+            btn.click();
+        }} else {{
+            // Fallback: dispatch keyboard shortcut R which triggers rerun
+            doc.dispatchEvent(new KeyboardEvent('keydown', {{
+                key: 'r', code: 'KeyR', bubbles: true
+            }}));
+        }}
     }}
-    setTimeout(triggerRefresh, {refresh_ms});
+    setTimeout(clickRerun, {refresh_ms});
+}})();
 </script>
 """, height=0)
