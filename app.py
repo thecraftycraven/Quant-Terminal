@@ -51,10 +51,9 @@ st.markdown(f"""
     
     .ledger-container {{ max-height: 400px; overflow-y: auto; border: 1px solid #333; background: #000; margin-bottom: 40px; }}
     .ledger-table {{ width: 100%; border-collapse: collapse; font-size: 11px; }}
-    .ledger-table th {{ position: sticky; top: 0; background-color: #111; color: #FF6600; z-index: 10; border-bottom: 2px solid #FF6600; padding: 8px; text-align: right; }}
-    .ledger-table th:first-child {{ text-align: left; }}
-    .ledger-table td {{ padding: 8px; border-bottom: 1px solid #222; text-align: right; font-family: monospace; font-size: 12px; }}
-    .ledger-table td:first-child {{ text-align: left; font-family: 'Helvetica', sans-serif; font-weight: bold; color: #FFF; }}
+    .ledger-table th {{ position: sticky; top: 0; background-color: #111; color: #FF6600; z-index: 10; border-bottom: 2px solid #FF6600; padding: 8px; text-align: left; }}
+    .ledger-table td {{ padding: 8px; border-bottom: 1px solid #222; text-align: left; font-family: monospace; font-size: 12px; }}
+    .ledger-table td.num {{ text-align: right; }}
     .ledger-table tr:hover {{ background-color: #1A1A1A; }}
     
     #MainMenu, footer, header {{visibility: hidden;}}
@@ -68,18 +67,29 @@ st.markdown(f"""
     """, unsafe_allow_html=True)
 
 # ==========================================
-# 2. GICS-ALIGNED UNIVERSE DEFINITION
+# 2. SECTOR-MAPPED UNIVERSE DEFINITION
 # ==========================================
 BENCHMARKS = ["SPY", "QQQ", "^VIX", "DIA"] 
-TICKERS = [
-    "OIH", "XLE", "XLB", "ITB", "PKG", "XME", "WOOD",
-    "XLI", "ROBO", "IYT", "CARZ", "XLY", "PEJ", "XRT",
-    "XLP", "PBJ", "EZU", "IHI", "XBI",
-    "KBE", "IAI", "KIE", "IGV", "SKYY", "SMH",
-    "IYZ", "XLC", "XLU", "FCG", "IDU", "PHO", "ICLN",
-    "VNQ", "REET", "EFA", "VWO", "INDY", "KWEB", 
-    "GLD", "PDBC", "IBIT", "BIL", "TLT"
-]
+
+TICKER_SECTORS = {
+    "OIH": "Energy", "XLE": "Energy",
+    "XLB": "Materials", "XME": "Materials", "WOOD": "Materials",
+    "XLI": "Industrials", "IYT": "Industrials",
+    "CARZ": "Cons Discretionary", "XLY": "Cons Discretionary", "PEJ": "Cons Discretionary", "XRT": "Cons Discretionary",
+    "XLP": "Cons Staples", "PBJ": "Cons Staples",
+    "IHI": "Health Care", "XBI": "Health Care",
+    "KBE": "Financials", "IAI": "Financials", "KIE": "Financials",
+    "IGV": "Info Tech", "SMH": "Info Tech",
+    "IYZ": "Comm Services", "XLC": "Comm Services",
+    "XLU": "Utilities", "FCG": "Utilities", "IDU": "Utilities", "PHO": "Utilities", "ICLN": "Utilities",
+    "VNQ": "Real Estate", "REET": "Real Estate",
+    "EFA": "Global Overlay", "VWO": "Global Overlay", "INDY": "Global Overlay", "KWEB": "Global Overlay",
+    "DBA": "Uncorrelated", "PDBC": "Uncorrelated", "UUP": "Uncorrelated", "VIXY": "Uncorrelated", "SLV": "Uncorrelated", "TIP": "Uncorrelated", "DBB": "Uncorrelated", "CWB": "Uncorrelated",
+    "IAU": "Macro", "FBTC": "Macro",
+    "BIL": "Safe Harbor", "IEF": "Safe Harbor", "TLT": "Safe Harbor"
+}
+
+TICKERS = list(TICKER_SECTORS.keys())
 ALL_SYMBOLS = TICKERS + BENCHMARKS
 
 # ==========================================
@@ -146,7 +156,7 @@ def calculate_factors(closes, highs, lows, volumes, current_year):
             adx = dx.rolling(14).mean().iloc[-1]
             
             results.append({
-                'TKR': ticker, 'PRICE': p.iloc[-1], 'YTD': ytd_ret, 'RAM': ram, 
+                'TKR': ticker, 'SECTOR': TICKER_SECTORS[ticker], 'PRICE': p.iloc[-1], 'YTD': ytd_ret, 'RAM': ram, 
                 'ROC_AC': roc_accel, 'REL_STR': rel_strength, '50D_SLP': sma_50_slope, 
                 'VOL_CF': vol_conf, 'ADX': adx, 'STOP_PRC': trailing_stop, 'ALLOC': alloc_pct, 
                 'Above_200': p.iloc[-1] > p.rolling(200).mean().iloc[-1]
@@ -194,7 +204,6 @@ def calculate_factors(closes, highs, lows, volumes, current_year):
             reasons.append("PASSED (Rank Buffer)")
         else: 
             signals.append("SELL")
-            # Explicitly force the explanation for falling outside the Top 10 zone
             if rnk > 10:
                 reasons.append(f"{reason} [Rank #{rnk}]" if reason else f"Out of target zone [Rank #{rnk}]")
             else:
@@ -212,7 +221,6 @@ with st.spinner('SYNCING QUANTITATIVE ENGINE...'):
 c_ytd = c[c.index.year == now_est.year]
 if not c_ytd.empty:
     spy_ytd = (c_ytd['SPY'] / c_ytd['SPY'].iloc[0] - 1) * 100
-    # Line chart tracks the elite Top 5
     elite_targets = df[df['RNK'] <= 5].index.tolist()
     strat_prices = c_ytd[elite_targets].mean(axis=1)
     strat_ytd = (strat_prices / strat_prices.iloc[0] - 1) * 100
@@ -220,10 +228,10 @@ if not c_ytd.empty:
 else:
     chart_data = pd.DataFrame()
 
-# Regime Logic
+# Updated Regime Logic (Reflecting the new universe)
 top_5 = df.head(5).index.tolist()
-safe_harbor_etfs = ["BIL", "TLT", "GLD", "XLU", "XLP", "EZU"]
-inflation_etfs = ["PDBC", "XLE", "XME", "OIH"]
+safe_harbor_etfs = ["BIL", "TLT", "IEF", "IAU", "XLU", "XLP"]
+inflation_etfs = ["PDBC", "DBA", "DBB", "XLE", "XME", "OIH"]
 safe_count = sum(el in safe_harbor_etfs for el in top_5)
 inf_count = sum(el in inflation_etfs for el in top_5)
 
@@ -316,7 +324,7 @@ with col2:
 # ==========================================
 st.markdown('<div class="bbg-panel"><div class="bbg-header">QUANTITATIVE FACTOR LEDGER</div>', unsafe_allow_html=True)
 
-ledger_html = '<div class="ledger-container"><table class="ledger-table"><thead><tr><th>TKR</th><th>RNK</th><th>SIGNAL</th><th>REASON</th><th>ALLOC</th><th>PRICE</th><th>STOP</th><th>ADX</th><th>SCORE</th><th>YTD</th><th>RAM</th><th>VOL_CF</th></tr></thead><tbody>'
+ledger_html = '<div class="ledger-container"><table class="ledger-table"><thead><tr><th>SECTOR</th><th>TKR</th><th>RNK</th><th>SIGNAL</th><th>REASON</th><th>ALLOC</th><th>PRICE</th><th>STOP</th><th>ADX</th><th>SCORE</th><th>YTD</th><th>RAM</th><th>VOL_CF</th></tr></thead><tbody>'
 
 for tkr, row in df.iterrows():
     sig = row['SIGNAL']
@@ -326,7 +334,7 @@ for tkr, row in df.iterrows():
     elif 'HALT' in sig: s_col = '#D946EF'
     else: s_col = '#FF0000'
     
-    ledger_html += f'<tr><td>{tkr}</td><td>{row["RNK"]}</td><td style="color:{s_col}; font-weight:bold;">{sig}</td><td style="color:#aaa;">{row["REASON"]}</td><td style="color:#FF6600;">{row["ALLOC"]:.1f}%</td><td>{row["PRICE"]:.2f}</td><td>{row["STOP_PRC"]:.2f}</td><td>{row["ADX"]:.1f}</td><td>{row["SCORE"]:.1f}</td><td style="color:{"#00FF00" if row["YTD"]>0 else "#FF0000"};">{row["YTD"]:.1f}%</td><td>{row["RAM"]:.2f}</td><td>{row["VOL_CF"]:.2f}</td></tr>'
+    ledger_html += f'<tr><td style="color:#888;">{row["SECTOR"]}</td><td style="font-weight:bold; color:#FFF;">{tkr}</td><td class="num">{row["RNK"]}</td><td style="color:{s_col}; font-weight:bold;">{sig}</td><td style="color:#aaa;">{row["REASON"]}</td><td class="num" style="color:#FF6600;">{row["ALLOC"]:.1f}%</td><td class="num">{row["PRICE"]:.2f}</td><td class="num">{row["STOP_PRC"]:.2f}</td><td class="num">{row["ADX"]:.1f}</td><td class="num">{row["SCORE"]:.1f}</td><td class="num" style="color:{"#00FF00" if row["YTD"]>0 else "#FF0000"};">{row["YTD"]:.1f}%</td><td class="num">{row["RAM"]:.2f}</td><td class="num">{row["VOL_CF"]:.2f}</td></tr>'
 
 ledger_html += '</tbody></table></div></div>'
 st.markdown(ledger_html, unsafe_allow_html=True)
