@@ -630,7 +630,8 @@ with tab4:
             for _, r in bt_sorted.iterrows():
                 vega_data.append({"Month": r["Month"], "value": r["Strategy"], "series": "Strategy"})
                 vega_data.append({"Month": r["Month"], "value": r["SPY"], "series": "SPY"})
-            st.vega_lite_chart({"values": vega_data}, {
+            st.vega_lite_chart({
+                "data": {"values": vega_data},
                 "mark": "bar",
                 "encoding": {
                     "x": {"field": "Month", "type": "ordinal", "sort": month_order, "axis": {"grid": False}, "title": ""},
@@ -651,7 +652,8 @@ with tab4:
             for _, r in bt_cum.iterrows():
                 cum_data.append({"Month": r["Month"], "value": r["Strat Cumul"], "series": "Strategy"})
                 cum_data.append({"Month": r["Month"], "value": r["SPY Cumul"], "series": "SPY"})
-            st.vega_lite_chart({"values": cum_data}, {
+            st.vega_lite_chart({
+                "data": {"values": cum_data},
                 "mark": "line",
                 "encoding": {
                     "x": {"field": "Month", "type": "ordinal", "sort": month_order_cum, "axis": {"grid": False}, "title": ""},
