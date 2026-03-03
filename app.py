@@ -164,7 +164,7 @@ div[data-testid="column"] {{ padding: 0 2px !important; }}
 # ==========================================
 # 3. UNIVERSE
 # ==========================================
-TICKER_SECTORS = {{
+TICKER_SECTORS = {
     "OIH":"Energy","XLE":"Energy","XLB":"Materials","XME":"Materials","WOOD":"Materials",
     "XLI":"Industrials","IYT":"Industrials","CARZ":"Cons Disc","XLY":"Cons Disc",
     "PEJ":"Cons Disc","XRT":"Cons Disc","XLP":"Cons Staples","PBJ":"Cons Staples",
@@ -176,7 +176,7 @@ TICKER_SECTORS = {{
     "DBA":"Uncorrelated","PDBC":"Uncorrelated","UUP":"Uncorrelated","VIXY":"Uncorrelated",
     "SLV":"Uncorrelated","TIP":"Uncorrelated","DBB":"Uncorrelated","CWB":"Uncorrelated",
     "IAU":"Macro","FBTC":"Macro","BIL":"Safe Harbor","IEF":"Safe Harbor","TLT":"Safe Harbor"
-}}
+}
 TICKERS    = list(TICKER_SECTORS.keys())
 BENCHMARKS = ["SPY","QQQ","DIA","^VIX","^TNX","^TYX","GC=F","CL=F"]
 
@@ -187,24 +187,24 @@ FRED_API_KEY   = "93069da065d835f300947c9dd312c50d"
 ALPHA_KEY      = "I7L9I79E7WRJGLFC"
 BLS_URL        = "https://data.bls.gov/pdq/SurveyOutputServlet"
 
-YIELD_CURVE_IDS = {{
+YIELD_CURVE_IDS = {
     "DGS1MO":"1M","DGS3MO":"3M","DGS6MO":"6M",
     "DGS1":"1Y","DGS2":"2Y","DGS5":"5Y","DGS10":"10Y","DGS30":"30Y"
-}}
-FRED_MACRO_IDS = {{
+}
+FRED_MACRO_IDS = {
     "DGS2":"2Y Yield","DGS10":"10Y Yield","DGS30":"30Y Yield",
     "T10YIE":"10Y BEI","BAMLH0A0HYM2":"HY Spread",
     "DEXUSEU":"EUR/USD","UMCSENT":"Cons Sent",
     "UNRATE":"Unemployment","CPIAUCSL":"CPI","T10Y2Y":"2s10s Spread",
-}}
+}
 
 @st.cache_data(ttl=3600)
 def fred_latest(series_id):
     try:
         r = requests.get(
             "https://api.stlouisfed.org/fred/series/observations",
-            params={{"series_id":series_id,"api_key":FRED_API_KEY,"file_type":"json",
-                    "sort_order":"desc","limit":5}},
+            params={"series_id":series_id,"api_key":FRED_API_KEY,"file_type":"json",
+                    "sort_order":"desc","limit":5},
             timeout=6
         )
         if r.status_code == 200:
@@ -215,11 +215,11 @@ def fred_latest(series_id):
 
 @st.cache_data(ttl=3600)
 def fetch_yield_curve():
-    return {{lbl: fred_latest(sid) for sid, lbl in YIELD_CURVE_IDS.items()}}
+    return {lbl: fred_latest(sid) for sid, lbl in YIELD_CURVE_IDS.items()}
 
 @st.cache_data(ttl=3600)
 def fetch_fred_macro():
-    return {{lbl: fred_latest(sid) for sid, lbl in FRED_MACRO_IDS.items()}}
+    return {lbl: fred_latest(sid) for sid, lbl in FRED_MACRO_IDS.items()}
 
 @st.cache_data(ttl=7200)
 def fetch_alpha_vantage_sector():
@@ -227,32 +227,32 @@ def fetch_alpha_vantage_sector():
     try:
         r = requests.get(
             "https://www.alphavantage.co/query",
-            params={{"function":"SECTOR","apikey":ALPHA_KEY}},
+            params={"function":"SECTOR","apikey":ALPHA_KEY},
             timeout=8
         )
         if r.status_code == 200:
             data = r.json()
-            return data.get("Rank A: Real-Time Performance", {{}})
+            return data.get("Rank A: Real-Time Performance", {})
     except:
         pass
-    return {{}}
+    return {}
 
 @st.cache_data(ttl=7200)
 def fetch_bls_cpi():
     """BLS CPI latest reading"""
     try:
-        payload = {{
+        payload = {
             "seriesid":["CUSR0000SA0"],
             "startyear": str(now_est.year - 1),
             "endyear":   str(now_est.year),
-        }}
+        }
         r = requests.post(
             "https://api.bls.gov/publicAPI/v2/timeseries/data/",
             json=payload, timeout=8,
-            headers={{"Content-type":"application/json"}}
+            headers={"Content-type":"application/json"}
         )
         if r.status_code == 200:
-            series = r.json().get("Results",{{}}).get("series",[])
+            series = r.json().get("Results",{}).get("series",[])
             if series:
                 latest = series[0]["data"][0]
                 return float(latest["value"]), latest["periodName"], latest["year"]
@@ -333,7 +333,7 @@ def calculate_factors(data, target_date):
                 if TICKER_SECTORS.get(t,"") in ["Safe Harbor","Utilities","Real Estate"]:
                     rate_adj = -0.3
 
-            results.append({{
+            results.append({
                 'TKR':t, 'SECTOR':TICKER_SECTORS[t],
                 'PRICE':p.iloc[-1], 'YTD':ytd,
                 'RET_1M':ret_1m*100, 'RET_3M':ret_3m*100,
@@ -342,7 +342,7 @@ def calculate_factors(data, target_date):
                 'VOL_CF':vol_cf, 'ADX':adx, 'STOP':stop, 'ROC_AC':roc_ac,
                 'ALLOC_BASE':alloc_base, 'Above_200':above200, 'Above_50':above50,
                 'RATE_ADJ':rate_adj,
-            }})
+            })
         except:
             continue
 
@@ -431,10 +431,10 @@ def run_backtest(data):
         buys = snap[snap['SIGNAL'].isin(['STRONG BUY','BUY'])].head(5).index.tolist()
         spy_r   = ((closes.loc[e,'SPY'] / closes.loc[s,'SPY']) - 1) * 100
         strat_r = ((closes.loc[e,buys].mean() / closes.loc[s,buys].mean()) - 1)*100 if buys else 0
-        log.append({{
+        log.append({
             "Month":s.strftime('%b %y'), "Targets":", ".join(buys) if buys else "CASH",
             "Strategy":strat_r, "SPY":spy_r, "Alpha":strat_r - spy_r
-        }})
+        })
     return pd.DataFrame(log)
 
 # ==========================================
