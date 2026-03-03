@@ -25,37 +25,30 @@ st.markdown(f"""
     <style>
     .stApp {{ background-color: #050505; }}
     * {{ font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif !important; color: #E0E0E0; letter-spacing: 0.2px; }}
-    
     .status-bar {{ display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #FF6600; padding: 8px 15px; margin-top: -50px; margin-bottom: 15px; background: #000000; }}
     .status-left {{ color: {status_color}; font-weight: 900; font-size: 14px; text-transform: uppercase; }}
     .status-right {{ color: #FF6600; text-align: right; font-weight: bold; font-size: 14px; }}
-    
     .bbg-panel {{ border: 1px solid #333; background-color: #0A0A0A; padding: 12px; margin-bottom: 15px; border-radius: 4px; box-shadow: 0 4px 10px rgba(0,0,0,0.8); }}
     .bbg-header {{ color: #FF6600; font-weight: 900; font-size: 13px; text-transform: uppercase; border-bottom: 1px solid #333; padding-bottom: 6px; margin-bottom: 10px; letter-spacing: 1px; }}
-    
     table {{ width: 100%; border-collapse: collapse; font-size: 11px; }}
     th {{ text-align: left; color: #888; border-bottom: 1px solid #333; padding: 6px; font-weight: bold; text-transform: uppercase; }}
     td {{ padding: 6px; border-bottom: 1px solid #1A1A1A; }}
     .td-right {{ text-align: right; }}
-    
     .c-strong-buy {{ color: #00FF00; font-weight: bold; }}
     .c-buy {{ color: #4ADE80; font-weight: bold; }}
     .c-hold {{ color: #FBBF24; font-weight: bold; }}
     .c-sell {{ color: #F87171; font-weight: bold; }}
     .c-strong-sell {{ color: #FF0000; font-weight: bold; }}
     .c-halt {{ color: #D946EF; font-weight: bold; }}
-    
     .ticker-tape {{ display: flex; justify-content: space-between; background-color: #000; border-top: 2px solid #FF6600; padding: 8px 15px; font-size: 12px; font-weight: bold; position: fixed; bottom: 0; left: 0; width: 100%; z-index: 100; }}
     .heatmap-grid {{ display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px; }}
     .heat-cell {{ text-align: center; padding: 8px 0px; font-size: 10px; font-weight: 900; color: #000; }}
-    
     .ledger-container {{ max-height: 400px; overflow-y: auto; border: 1px solid #333; background: #000; margin-bottom: 40px; }}
     .ledger-table {{ width: 100%; border-collapse: collapse; font-size: 11px; }}
     .ledger-table th {{ position: sticky; top: 0; background-color: #111; color: #FF6600; z-index: 10; border-bottom: 2px solid #FF6600; padding: 8px; text-align: left; }}
     .ledger-table td {{ padding: 8px; border-bottom: 1px solid #222; text-align: left; font-family: monospace; font-size: 12px; }}
     .ledger-table td.num {{ text-align: right; }}
     .ledger-table tr:hover {{ background-color: #1A1A1A; }}
-    
     #MainMenu, footer, header {{visibility: hidden;}}
     .stLineChart {{ margin-top: -15px; }} 
     </style>
@@ -67,29 +60,43 @@ st.markdown(f"""
     """, unsafe_allow_html=True)
 
 # ==========================================
-# 2. SECTOR-MAPPED UNIVERSE DEFINITION
+# 2. DEFINITIVE SECTOR-MAPPED UNIVERSE
 # ==========================================
-BENCHMARKS = ["SPY", "QQQ", "^VIX", "DIA"] 
-
 TICKER_SECTORS = {
-    "OIH": "Energy", "XLE": "Energy",
-    "XLB": "Materials", "XME": "Materials", "WOOD": "Materials",
-    "XLI": "Industrials", "IYT": "Industrials",
-    "CARZ": "Cons Discretionary", "XLY": "Cons Discretionary", "PEJ": "Cons Discretionary", "XRT": "Cons Discretionary",
-    "XLP": "Cons Staples", "PBJ": "Cons Staples",
-    "IHI": "Health Care", "XBI": "Health Care",
-    "KBE": "Financials", "IAI": "Financials", "KIE": "Financials",
-    "IGV": "Info Tech", "SMH": "Info Tech",
-    "IYZ": "Comm Services", "XLC": "Comm Services",
-    "XLU": "Utilities", "FCG": "Utilities", "IDU": "Utilities", "PHO": "Utilities", "ICLN": "Utilities",
-    "VNQ": "Real Estate", "REET": "Real Estate",
-    "EFA": "Global Overlay", "VWO": "Global Overlay", "INDY": "Global Overlay", "KWEB": "Global Overlay",
-    "DBA": "Uncorrelated", "PDBC": "Uncorrelated", "UUP": "Uncorrelated", "VIXY": "Uncorrelated", "SLV": "Uncorrelated", "TIP": "Uncorrelated", "DBB": "Uncorrelated", "CWB": "Uncorrelated",
-    "IAU": "Macro", "FBTC": "Macro",
-    "BIL": "Safe Harbor", "IEF": "Safe Harbor", "TLT": "Safe Harbor"
+    # ENERGY
+    "OIH": "Energy Services", "XLE": "Oil & Gas",
+    # MATERIALS
+    "XLB": "Chemicals", "XME": "Metals & Mining", "WOOD": "Timber & Forest",
+    # INDUSTRIALS
+    "XLI": "Capital Goods", "IYT": "Transportation",
+    # CONSUMER DISCRETIONARY
+    "CARZ": "Automobiles", "XLY": "Cons Durables", "PEJ": "Cons Services", "XRT": "Retailing",
+    # CONSUMER STAPLES
+    "XLP": "Food Retailing", "PBJ": "Food & Bev",
+    # HEALTH CARE
+    "IHI": "Health Equip", "XBI": "Biotech/Pharma",
+    # FINANCIALS
+    "KBE": "Banks", "IAI": "Diversified Fin", "KIE": "Insurance",
+    # INFORMATION TECHNOLOGY
+    "IGV": "Software/Services", "SMH": "Semiconductors",
+    # COMMUNICATION SERVICES
+    "IYZ": "Telecom Services", "XLC": "Media/Ent",
+    # UTILITIES
+    "XLU": "Electric Utilities", "FCG": "Gas Utilities", "IDU": "Multi-Utilities", "PHO": "Water Utilities", "ICLN": "Renewable Elec",
+    # REAL ESTATE
+    "VNQ": "Equity REITs", "REET": "RE Mgmt & Dev",
+    # GLOBAL OVERLAYS
+    "EFA": "Developed Markets", "VWO": "Emerging Markets", "INDY": "India", "KWEB": "China",
+    # UNCORRELATED ASSETS
+    "DBA": "Ag Commodities", "PDBC": "Broad Commodities", "UUP": "US Dollar Index", "VIXY": "Tail Risk", "SLV": "Silver", "TIP": "Inflation Bonds", "DBB": "Base Metals", "CWB": "Convertible Bonds",
+    # MACRO
+    "IAU": "Gold", "FBTC": "Bitcoin",
+    # SAFE HARBORS
+    "BIL": "Cash/T-Bills", "IEF": "Intermediate Bonds", "TLT": "Long Bonds"
 }
 
 TICKERS = list(TICKER_SECTORS.keys())
+BENCHMARKS = ["SPY", "QQQ", "^VIX", "DIA"] 
 ALL_SYMBOLS = TICKERS + BENCHMARKS
 
 # ==========================================
@@ -97,7 +104,8 @@ ALL_SYMBOLS = TICKERS + BENCHMARKS
 # ==========================================
 @st.cache_data(ttl=3600)
 def fetch_data():
-    data = yf.download(ALL_SYMBOLS, period="1y", progress=False) 
+    # pull 2y to ensure 200DMA works for older assets
+    data = yf.download(ALL_SYMBOLS, period="2y", progress=False) 
     return data['Close'], data['High'], data['Low'], data['Volume']
 
 def calculate_factors(closes, highs, lows, volumes, current_year):
@@ -112,7 +120,6 @@ def calculate_factors(closes, highs, lows, volumes, current_year):
             h = highs[ticker].dropna()
             l = lows[ticker].dropna()
             v = volumes[ticker].dropna()
-            
             if len(p) < 200: continue 
             
             p_year = p[p.index.year == current_year]
@@ -121,123 +128,52 @@ def calculate_factors(closes, highs, lows, volumes, current_year):
             ret_1m = p.pct_change(21).iloc[-1]
             vol_1m = p.pct_change().tail(21).std() * np.sqrt(252)
             ram = ret_1m / vol_1m if vol_1m != 0 else 0
-            
-            roc_20 = p.pct_change(20).iloc[-1]
-            roc_60 = p.pct_change(60).iloc[-1]
-            roc_accel = roc_20 - (roc_60 / 3)
             rel_strength = p.pct_change(63).iloc[-1] - spy_p.pct_change(63).iloc[-1]
-            
             sma_50 = p.rolling(50).mean()
             sma_50_slope = (sma_50.iloc[-1] - sma_50.iloc[-21]) / sma_50.iloc[-21]
-            vol_90 = v.rolling(90).mean().iloc[-1]
-            vol_conf = (v.rolling(20).mean().iloc[-1] / vol_90) if vol_90 != 0 else 1
+            vol_conf = (v.rolling(20).mean().iloc[-1] / v.rolling(90).mean().iloc[-1]) if v.rolling(90).mean().iloc[-1] != 0 else 1
+            atr = (h - l).rolling(14).mean().iloc[-1]
+            stop_prc = p.tail(20).max() - (2.5 * atr)
             
-            high_low = h - l
-            high_close = np.abs(h - p.shift())
-            low_close = np.abs(l - p.shift())
-            tr = pd.concat([high_low, high_close, low_close], axis=1).max(axis=1)
-            atr = tr.rolling(14).mean().iloc[-1]
-            
-            peak_20d = p.tail(20).max()
-            trailing_stop = peak_20d - (2.5 * atr)
-            
-            stop_dist_pct = (p.iloc[-1] - trailing_stop) / p.iloc[-1]
-            alloc_pct = (0.01 / stop_dist_pct) * 100 if stop_dist_pct > 0 else 0
-            alloc_pct = min(alloc_pct, 25.0) 
-            
-            up_move = h - h.shift(1)
-            down_move = l.shift(1) - l
-            plus_dm = np.where((up_move > down_move) & (up_move > 0), up_move, 0)
-            minus_dm = np.where((down_move > up_move) & (down_move > 0), down_move, 0)
+            tr = pd.concat([h - l, np.abs(h - p.shift()), np.abs(l - p.shift())], axis=1).max(axis=1)
+            up = h - h.shift(1); dw = l.shift(1) - l
             tr14 = tr.rolling(14).sum()
-            plus_di = 100 * (pd.Series(plus_dm, index=p.index).rolling(14).sum() / tr14)
-            minus_di = 100 * (pd.Series(minus_dm, index=p.index).rolling(14).sum() / tr14)
-            dx = 100 * np.abs(plus_di - minus_di) / (plus_di + minus_di)
-            adx = dx.rolling(14).mean().iloc[-1]
+            plus_di = 100 * (pd.Series(np.where((up > dw) & (up > 0), up, 0), index=p.index).rolling(14).sum() / tr14)
+            minus_di = 100 * (pd.Series(np.where((dw > up) & (dw > 0), dw, 0), index=p.index).rolling(14).sum() / tr14)
+            adx = (100 * np.abs(plus_di - minus_di) / (plus_di + minus_di)).rolling(14).mean().iloc[-1]
             
             results.append({
                 'TKR': ticker, 'SECTOR': TICKER_SECTORS[ticker], 'PRICE': p.iloc[-1], 'YTD': ytd_ret, 'RAM': ram, 
-                'ROC_AC': roc_accel, 'REL_STR': rel_strength, '50D_SLP': sma_50_slope, 
-                'VOL_CF': vol_conf, 'ADX': adx, 'STOP_PRC': trailing_stop, 'ALLOC': alloc_pct, 
+                'REL_STR': rel_strength, '50D_SLP': sma_50_slope, 'VOL_CF': vol_conf, 'ADX': adx, 'STOP_PRC': stop_prc, 
                 'Above_200': p.iloc[-1] > p.rolling(200).mean().iloc[-1]
             })
         except: continue
             
     df = pd.DataFrame(results).set_index('TKR')
-    f = ['RAM', 'ROC_AC', 'REL_STR', '50D_SLP', 'VOL_CF'] 
+    f = ['RAM', 'REL_STR', '50D_SLP', 'VOL_CF'] 
     z = (df[f] - df[f].mean()) / df[f].std()
-    
-    df['SCORE'] = (z['RAM']*.25 + z['REL_STR']*.20 + z['ROC_AC']*.20 + z['50D_SLP']*.20 + z['VOL_CF']*.15) * 100
+    df['SCORE'] = (z['RAM']*.25 + z['REL_STR']*.25 + z['50D_SLP']*.25 + z['VOL_CF']*.25) * 100
     df = df.sort_values(by='SCORE', ascending=False)
     df['RNK'] = range(1, len(df) + 1)
     
-    signals = []
-    reasons = []
-    
+    signals, reasons = [], []
     for idx, row in df.iterrows():
         reason = ""
         if not row['Above_200']: reason = "Below 200DMA"
         elif row['ADX'] <= 25: reason = f"Choppy (ADX:{row['ADX']:.1f})"
-        elif row['VOL_CF'] < 1.2: reason = f"Low Vol ({row['VOL_CF']:.2f}x)"
-        elif row['RAM'] <= 0: reason = "Neg Momentum"
-        elif row['REL_STR'] <= 0: reason = "Lagging SPY"
-        elif row['ROC_AC'] <= 0: reason = "Decel ROC"
-        elif row['50D_SLP'] <= 0: reason = "Neg 50DMA"
+        elif row['VOL_CF'] < 1.1: reason = "Low Vol"
         
-        fits_all = (reason == "")
-        rnk = row['RNK']
-        
-        if vix_halt:
-            signals.append("HALT")
-            reasons.append("VIX > 30")
-        elif not row['Above_200'] or row['PRICE'] < row['STOP_PRC']: 
-            signals.append("STRONG SELL")
-            reasons.append(reason if reason else "Hit ATR Stop")
-        elif fits_all and rnk <= 5:
-            signals.append("STRONG BUY")
-            reasons.append("PASSED (Top 5)")
-        elif rnk <= 5:
-            signals.append("BUY")
-            reasons.append(reason)
-        elif fits_all and 5 < rnk <= 10:
-            signals.append("HOLD")
-            reasons.append("PASSED (Rank Buffer)")
-        else: 
-            signals.append("SELL")
-            if rnk > 10:
-                reasons.append(f"{reason} [Rank #{rnk}]" if reason else f"Out of target zone [Rank #{rnk}]")
-            else:
-                reasons.append(reason)
+        if vix_halt: signals.append("HALT"); reasons.append("VIX > 30")
+        elif reason == "" and row['RNK'] <= 5: signals.append("STRONG BUY"); reasons.append("PASSED")
+        elif row['RNK'] <= 10: signals.append("HOLD"); reasons.append("Buffer")
+        else: signals.append("SELL"); reasons.append(reason if reason else f"Rank #{row['RNK']}")
             
-    df['SIGNAL'] = signals
-    df['REASON'] = reasons
+    df['SIGNAL'] = signals; df['REASON'] = reasons
     return df, vix_halt, vix_close
 
 with st.spinner('SYNCING QUANTITATIVE ENGINE...'):
     c, h, l, v = fetch_data()
     df, vix_halt, vix_close = calculate_factors(c, h, l, v, now_est.year)
-
-# Chart Math
-c_ytd = c[c.index.year == now_est.year]
-if not c_ytd.empty:
-    spy_ytd = (c_ytd['SPY'] / c_ytd['SPY'].iloc[0] - 1) * 100
-    elite_targets = df[df['RNK'] <= 5].index.tolist()
-    strat_prices = c_ytd[elite_targets].mean(axis=1)
-    strat_ytd = (strat_prices / strat_prices.iloc[0] - 1) * 100
-    chart_data = pd.DataFrame({"Strategy (Top 5)": strat_ytd, "S&P 500 (SPY)": spy_ytd}).dropna()
-else:
-    chart_data = pd.DataFrame()
-
-# Updated Regime Logic (Reflecting the new universe)
-top_5 = df.head(5).index.tolist()
-safe_harbor_etfs = ["BIL", "TLT", "IEF", "IAU", "XLU", "XLP"]
-inflation_etfs = ["PDBC", "DBA", "DBB", "XLE", "XME", "OIH"]
-safe_count = sum(el in safe_harbor_etfs for el in top_5)
-inf_count = sum(el in inflation_etfs for el in top_5)
-
-if safe_count >= 2: regime, r_color = "RISK-OFF (DEFENSIVE/CASH LEADERSHIP)", "#FBBF24"
-elif inf_count >= 2: regime, r_color = "INFLATIONARY (COMMODITY LEADERSHIP)", "#FF6600"
-else: regime, r_color = "RISK-ON (EQUITY/GROWTH EXPANSION)", "#00FF00"
 
 # ==========================================
 # 4. INTERFACE LAYOUT
@@ -246,157 +182,54 @@ col1, col2 = st.columns([1.2, 1.8])
 
 with col1:
     v_color = "red" if vix_halt else "#00FF00"
-    st.markdown(f"""
-        <div class="bbg-panel">
-            <div class="bbg-header">SYSTEM ARCHITECTURE</div>
-            <table>
-                <tr><th>Component</th><th class="td-right">Status</th></tr>
-                <tr><td>Macro Regime (VIX)</td><td class="td-right" style="color:{v_color};">{vix_close:.2f}</td></tr>
-                <tr><td>Chop Filter (ADX > 25)</td><td class="td-right" style="color:#00FF00;">ACTIVE</td></tr>
-                <tr><td>Dynamic Exit (2.5x ATR)</td><td class="td-right" style="color:#00FF00;">ACTIVE</td></tr>
-                <tr><td>Vol Confirmation (>1.2x)</td><td class="td-right" style="color:#00FF00;">ACTIVE</td></tr>
-            </table>
-        </div>
-        """, unsafe_allow_html=True)
-        
-    st.markdown("""
-        <div class="bbg-panel">
-            <div class="bbg-header">ELITE ENTRY / EXIT</div>
-            <table>
-                <tr><th>Signal</th><th>Rule</th></tr>
-                <tr><td class="c-strong-buy">STRONG BUY</td><td>Perfect Alignment (Top 5)</td></tr>
-                <tr><td class="c-buy">BUY</td><td>Top 5, imperfect setup</td></tr>
-                <tr><td class="c-hold">HOLD</td><td>Perfect Alignment (Rank 6-10)</td></tr>
-                <tr><td class="c-sell">SELL</td><td>Failed rule or Rank > 10</td></tr>
-                <tr><td class="c-halt">HALT</td><td>VIX > 30 (Risk-Off)</td></tr>
-                <tr><td class="c-strong-sell">STRONG SELL</td><td>Below 200DMA or Hit ATR Stop</td></tr>
-            </table>
-        </div>
-        """, unsafe_allow_html=True)
-        
-    st.markdown(f"""
-        <div class="bbg-panel">
-            <div class="bbg-header">REGIME ROTATION RADAR</div>
-            <div style="text-align:center; padding: 10px 0;">
-                <span style="font-size:11px; color:#888;">CURRENT CAPITAL FLOW STATE:</span><br>
-                <span style="font-size:16px; font-weight:bold; color:{r_color};">{regime}</span>
-            </div>
-            <div style="font-size:10px; color:#888; text-align:center; margin-top:5px;">Analyzed via Top 5 Asset Covariance</div>
-        </div>
-        """, unsafe_allow_html=True)
+    st.markdown(f'<div class="bbg-panel"><div class="bbg-header">SYSTEM ARCHITECTURE</div><table><tr><td>Macro Regime (VIX)</td><td class="td-right" style="color:{v_color};">{vix_close:.2f}</td></tr></table></div>', unsafe_allow_html=True)
+    st.markdown('<div class="bbg-panel"><div class="bbg-header">ELITE ENTRY / EXIT</div><table><tr><td class="c-strong-buy">STRONG BUY</td><td>Perfect Alignment (Top 5)</td></tr><tr><td class="c-buy">BUY</td><td>Top 5, imperfect setup</td></tr><tr><td class="c-hold">HOLD</td><td>Buffer zone (Rank 6-10)</td></tr></table></div>', unsafe_allow_html=True)
+    
+    top_5 = df.head(5).index.tolist()
+    safe_harbor = ["BIL", "TLT", "IEF", "IAU"]
+    regime, r_color = ("RISK-OFF (DEFENSIVE)", "#FBBF24") if any(x in top_5 for x in safe_harbor) else ("RISK-ON (GROWTH)", "#00FF00")
+    st.markdown(f'<div class="bbg-panel"><div class="bbg-header">REGIME ROTATION RADAR</div><div style="text-align:center; padding: 10px 0;"><span style="font-size:16px; font-weight:bold; color:{r_color};">{regime}</span></div></div>', unsafe_allow_html=True)
 
 with col2:
-    sub_col1, sub_col2 = st.columns(2)
-    
-    with sub_col1:
+    sub1, sub2 = st.columns(2)
+    with sub1:
         st.markdown('<div class="bbg-panel" style="padding-bottom:0px;"><div class="bbg-header">YTD EQUITY CURVE VS SPY</div>', unsafe_allow_html=True)
-        if not chart_data.empty:
-            st.line_chart(chart_data, color=["#00FFFF", "#FF0000"], height=205, use_container_width=True)
-        else:
-            st.write("Awaiting sufficient YTD data to render curve.")
+        spy_c = (c['SPY'] / c['SPY'][c.index.year == now_est.year][0] - 1) * 100
+        st.line_chart(spy_c.tail(60), height=205)
         st.markdown('</div>', unsafe_allow_html=True)
-        
-    with sub_col2:
+    with sub2:
         st.markdown('<div class="bbg-panel" style="padding-bottom:0px;"><div class="bbg-header">LIVE MACRO: BLOOMBERG TV</div>', unsafe_allow_html=True)
-        youtube_html = """
-        <iframe width="100%" height="205" 
-        src="https://www.youtube.com/embed/iEpJwprxDdk?autoplay=1&mute=1" 
-        title="Bloomberg Global Financial News" frameborder="0" 
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-        allowfullscreen></iframe>
-        """
-        components.html(youtube_html, height=210)
+        components.html('<iframe width="100%" height="205" src="https://www.youtube.com/embed/iEpJwprxDdk?autoplay=1&mute=1" frameborder="0" allowfullscreen></iframe>', height=210)
         st.markdown('</div>', unsafe_allow_html=True)
 
+    # 4F. THE HEATMAP (ALL 46 ASSETS)
     st.markdown('<div class="bbg-panel"><div class="bbg-header">ETF YTD PERFORMANCE HEATMAP</div>', unsafe_allow_html=True)
-    heat_df = df.sort_values(by='YTD', ascending=False)
+    heat_df = df.sort_values('YTD', ascending=False)
     heatmap_html = '<div class="heatmap-grid">'
     for ticker, row in heat_df.iterrows():
         val = row['YTD']
         color = "#00FF00" if val > 15 else "#006600" if val > 0 else "#660000" if val > -10 else "#FF0000"
-        t_color = "#000" if color == "#00FF00" else "#FFF"
-        heatmap_html += f'<div class="heat-cell" style="background-color:{color}; color:{t_color};">{ticker}<br>{val:.1f}%</div>'
-    heatmap_html += '</div></div>'
-    st.markdown(heatmap_html, unsafe_allow_html=True)
+        heatmap_html += f'<div class="heat-cell" style="background-color:{color}; color:{"#000" if color=="#00FF00" else "#FFF"};">{ticker}<br>{val:.1f}%</div>'
+    st.markdown(heatmap_html + '</div></div>', unsafe_allow_html=True)
 
 # ==========================================
-# 5. CUSTOM HTML LEDGER
+# 5. CUSTOM HTML LEDGER (RANK, TKR, SECTOR)
 # ==========================================
 st.markdown('<div class="bbg-panel"><div class="bbg-header">QUANTITATIVE FACTOR LEDGER</div>', unsafe_allow_html=True)
-
-ledger_html = '<div class="ledger-container"><table class="ledger-table"><thead><tr><th>SECTOR</th><th>TKR</th><th>RNK</th><th>SIGNAL</th><th>REASON</th><th>ALLOC</th><th>PRICE</th><th>STOP</th><th>ADX</th><th>SCORE</th><th>YTD</th><th>RAM</th><th>VOL_CF</th></tr></thead><tbody>'
-
+ledger_html = '<div class="ledger-container"><table class="ledger-table"><thead><tr><th>RNK</th><th>TKR</th><th>SECTOR</th><th>SIGNAL</th><th>REASON</th><th>PRICE</th><th>YTD</th><th>SCORE</th></tr></thead><tbody>'
 for tkr, row in df.iterrows():
     sig = row['SIGNAL']
-    if 'STRONG BUY' in sig: s_col = '#00FF00'
-    elif 'BUY' in sig: s_col = '#4ADE80'
-    elif 'HOLD' in sig: s_col = '#FBBF24'
-    elif 'HALT' in sig: s_col = '#D946EF'
-    else: s_col = '#FF0000'
-    
-    ledger_html += f'<tr><td style="color:#888;">{row["SECTOR"]}</td><td style="font-weight:bold; color:#FFF;">{tkr}</td><td class="num">{row["RNK"]}</td><td style="color:{s_col}; font-weight:bold;">{sig}</td><td style="color:#aaa;">{row["REASON"]}</td><td class="num" style="color:#FF6600;">{row["ALLOC"]:.1f}%</td><td class="num">{row["PRICE"]:.2f}</td><td class="num">{row["STOP_PRC"]:.2f}</td><td class="num">{row["ADX"]:.1f}</td><td class="num">{row["SCORE"]:.1f}</td><td class="num" style="color:{"#00FF00" if row["YTD"]>0 else "#FF0000"};">{row["YTD"]:.1f}%</td><td class="num">{row["RAM"]:.2f}</td><td class="num">{row["VOL_CF"]:.2f}</td></tr>'
-
-ledger_html += '</tbody></table></div></div>'
-st.markdown(ledger_html, unsafe_allow_html=True)
+    s_col = '#00FF00' if 'BUY' in sig else '#FBBF24' if 'HOLD' in sig else '#FF0000'
+    ledger_html += f'<tr><td>{row["RNK"]}</td><td style="font-weight:bold; color:#FF6600;">{tkr}</td><td style="color:#888;">{row["SECTOR"]}</td><td style="color:{s_col}; font-weight:bold;">{sig}</td><td>{row["REASON"]}</td><td class="num">{row["PRICE"]:.2f}</td><td class="num">{row["YTD"]:.1f}%</td><td class="num">{row["SCORE"]:.1f}</td></tr>'
+st.markdown(ledger_html + '</tbody></table></div>', unsafe_allow_html=True)
 
 # ==========================================
-# 6. ADMINISTRATOR TOOLS: DEEP MARKET SCANNER
-# ==========================================
-with st.expander("⚙️ ADMINISTRATOR TOOLS: DEEP MARKET SCANNER"):
-    st.markdown('<div class="bbg-header" style="margin-top: 10px;">AUTONOMOUS UNIVERSE DISCOVERY</div>', unsafe_allow_html=True)
-    st.write("Execute live data-mining against the Nasdaq FTP directory to locate assets fitting your structural parameters ($300M-$2B AUM, >1M Weekly Vol).")
-    
-    if st.button("INITIATE MARKET SCAN"):
-        scan_container = st.empty()
-        progress_bar = st.progress(0)
-        
-        with st.spinner("STEP 1: Scraping official Nasdaq FTP directory..."):
-            url = "ftp://ftp.nasdaqtrader.com/SymbolDirectory/nasdaqtraded.txt"
-            try:
-                ftp_df = pd.read_csv(url, sep='|')
-                etfs = ftp_df[(ftp_df['ETF'] == 'Y') & (ftp_df['Test Issue'] == 'N')]
-                all_tickers = [t.replace('$', '-').replace('.', '-') for t in etfs['Symbol'].dropna().tolist()]
-                scan_container.success(f"Located {len(all_tickers)} total ETFs in the US market.")
-            except Exception as e:
-                scan_container.error(f"FTP Scrape Failed: {e}")
-                all_tickers = []
-
-        if all_tickers:
-            with st.spinner("STEP 2: Executing fundamental gatekeeper (AUM & Volume)..."):
-                survivors = []
-                test_batch = all_tickers[:100] 
-                
-                for i, ticker in enumerate(test_batch):
-                    try:
-                        progress_bar.progress((i + 1) / len(test_batch))
-                        info = yf.Ticker(ticker).info
-                        aum = info.get('totalAssets', 0) or 0
-                        vol = info.get('averageVolume', 0) or 0
-                        weekly_vol = vol * 5
-                        
-                        if (300000000 <= aum <= 2000000000) and (weekly_vol >= 1000000):
-                            survivors.append(ticker)
-                    except:
-                        pass
-                
-                scan_container.success(f"Scan complete. {len(survivors)} ETFs survived the liquidity gauntlet.")
-                
-                if survivors:
-                    st.write(f"**NEW UNIVERSE TARGETS:** {', '.join(survivors)}")
-                    st.info("Copy these targets into your master TICKERS array to permanently track them.")
-
-# ==========================================
-# 7. BOTTOM TICKER TAPE
+# 6. BOTTOM TICKER TAPE
 # ==========================================
 tape_html = '<div class="ticker-tape">'
 for b in BENCHMARKS:
     try:
-        cur = c[b].dropna().iloc[-1]
-        pct = ((cur - c[b].dropna().iloc[-2]) / c[b].dropna().iloc[-2]) * 100
-        c_class = "c-strong-buy" if pct > 0 else "c-strong-sell"
-        sym = b.replace("^", "")
-        tape_html += f'<span>{sym} <span style="color:#FFF;">{cur:.2f}</span> <span class="{c_class}">{pct:+.2f}%</span></span>'
+        cur = c[b].dropna().iloc[-1]; prev = c[b].dropna().iloc[-2]; pct = ((cur-prev)/prev)*100
+        tape_html += f'<span>{b.replace("^","")} <span style="color:#FFF;">{cur:.2f}</span> <span style="color:{"#00FF00" if pct>0 else "#FF0000"};">{pct:+.2f}%</span></span>'
     except: pass
-tape_html += '</div>'
-st.markdown(tape_html, unsafe_allow_html=True)
-
+st.markdown(tape_html + '</div>', unsafe_allow_html=True)
