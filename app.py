@@ -68,27 +68,32 @@ st.markdown(f"""
     """, unsafe_allow_html=True)
 
 # ==========================================
-# 2. UNIVERSE DEFINITION
+# 2. GICS-ALIGNED UNIVERSE DEFINITION
 # ==========================================
 BENCHMARKS = ["SPY", "QQQ", "^VIX", "DIA"] 
 TICKERS = [
-    "AMLP", "BDRY", "BJK", "COAL", "COPX", "CRAK", "CRUZ", "EATZ", "FINX", "FIW", 
-    "GDX", "GERM", "GRID", "IAK", "IBB", "ICLN", "IEO", "IGV", "IHF", "IHI", 
-    "INDS", "ITA", "ITB", "IYC", "IYF", "IYJ", "IYK", "IYM", "IYT", "IYW", "IYZ", 
-    "JETS", "KBWB", "KRE", "MOO", "NERD", "OIH", "ONLN", "PAVE", "PBJ", "PEJ", 
-    "PHO", "PICK", "REET", "REM", "REZ", "RTH", "RTM", "RWR", "SIL", "SKYY", "SLX", 
-    "SOCL", "SOXX", "VEGI", "VIS", "VNQ", "WOOD", "XBI", "XLC", "XLI", "XLK", 
-    "XLP", "XLU", "XLV", "XLY", "XME", "XOP", "XRT", "XSD", "XTN", "XT",
-    "SH", "PSQ", "DOG", "TBF"
+    # Energy & Materials
+    "OIH", "XLE", "XLB", "ITB", "PKG", "XME", "WOOD",
+    # Industrials & Discretionary
+    "XLI", "ROBO", "IYT", "CARZ", "XLY", "PEJ", "XRT",
+    # Staples & Healthcare
+    "XLP", "PBJ", "EZU", "IHI", "XBI",
+    # Financials & Technology
+    "KBE", "IAI", "KIE", "IGV", "SKYY", "SMH",
+    # Communications & Utilities
+    "IYZ", "XLC", "XLU", "FCG", "IDU", "PHO", "ICLN",
+    # Real Estate & Global Overlay
+    "VNQ", "REET", "EFA", "VWO", "INDY", "KWEB", 
+    # Macro & Safe Harbors
+    "GLD", "PDBC", "IBIT", "BIL", "TLT"
 ]
 ALL_SYMBOLS = TICKERS + BENCHMARKS
 
 # ==========================================
-# 3. DATA ENGINE (RESTORED TO 1 YEAR FOR MATH)
+# 3. DATA ENGINE
 # ==========================================
 @st.cache_data(ttl=3600)
 def fetch_data():
-    # MUST BE 1Y to calculate 200DMA and 90-Day Volume
     data = yf.download(ALL_SYMBOLS, period="1y", progress=False) 
     return data['Close'], data['High'], data['Low'], data['Volume']
 
@@ -105,7 +110,6 @@ def calculate_factors(closes, highs, lows, volumes, current_year):
             l = lows[ticker].dropna()
             v = volumes[ticker].dropna()
             
-            # The Critical Guardrail: Ensure we have enough data to do the math
             if len(p) < 200: continue 
             
             p_year = p[p.index.year == current_year]
@@ -206,28 +210,29 @@ with st.spinner('SYNCING QUANTITATIVE ENGINE...'):
     c, h, l, v = fetch_data()
     df, vix_halt, vix_close = calculate_factors(c, h, l, v, now_est.year)
 
-# Correctly Slicing YTD data for the Line Chart
+# Chart Math
 c_ytd = c[c.index.year == now_est.year]
 if not c_ytd.empty:
     spy_ytd = (c_ytd['SPY'] / c_ytd['SPY'].iloc[0] - 1) * 100
     strong_buys = df[df['SIGNAL'] == 'STRONG BUY'].index.tolist()
     if not strong_buys: 
-        strong_buys = df.head(3).index.tolist() # Fallback to Top 3 if no pure setups exist
+        strong_buys = df.head(3).index.tolist() 
     strat_prices = c_ytd[strong_buys].mean(axis=1)
     strat_ytd = (strat_prices / strat_prices.iloc[0] - 1) * 100
     chart_data = pd.DataFrame({"Strategy (Current Targets)": strat_ytd, "S&P 500 (SPY)": spy_ytd}).dropna()
 else:
     chart_data = pd.DataFrame()
 
-# Regime Logic
+# Updated Regime Logic (Reflecting the new universe)
 top_5 = df.head(5).index.tolist()
-inverse_etfs = ["SH", "PSQ", "DOG", "TBF"]
-defensive_etfs = ["GLD", "SLV", "XLU", "TLT", "IEF"]
-inv_count = sum(el in inverse_etfs for el in top_5)
-def_count = sum(el in defensive_etfs for el in top_5)
-if inv_count >= 2: regime, r_color = "BEAR MARKET (INVERSE LEADERSHIP)", "#FF0000"
-elif def_count >= 2: regime, r_color = "RISK-OFF (DEFENSIVE LEADERSHIP)", "#FBBF24"
-else: regime, r_color = "RISK-ON (EQUITY EXPANSION)", "#00FF00"
+safe_harbor_etfs = ["BIL", "TLT", "GLD", "XLU", "XLP", "EZU"]
+inflation_etfs = ["PDBC", "XLE", "XME", "OIH"]
+safe_count = sum(el in safe_harbor_etfs for el in top_5)
+inf_count = sum(el in inflation_etfs for el in top_5)
+
+if safe_count >= 2: regime, r_color = "RISK-OFF (DEFENSIVE/CASH LEADERSHIP)", "#FBBF24"
+elif inf_count >= 2: regime, r_color = "INFLATIONARY (COMMODITY LEADERSHIP)", "#FF6600"
+else: regime, r_color = "RISK-ON (EQUITY/GROWTH EXPANSION)", "#00FF00"
 
 # ==========================================
 # 4. INTERFACE LAYOUT
