@@ -88,7 +88,7 @@ ALL_SYMBOLS = TICKERS + BENCHMARKS
 # ==========================================
 @st.cache_data(ttl=3600)
 def fetch_data():
-    data = yf.download(ALL_SYMBOLS, period="1y", progress=False)
+    data = yf.download(ALL_SYMBOLS, period="YTD", progress=False) # Changed to YTD for chart math
     return data['Close'], data['High'], data['Low'], data['Volume']
 
 def calculate_factors(closes, highs, lows, volumes, current_year):
@@ -103,22 +103,22 @@ def calculate_factors(closes, highs, lows, volumes, current_year):
             h = highs[ticker].dropna()
             l = lows[ticker].dropna()
             v = volumes[ticker].dropna()
-            if len(p) < 200: continue
+            if len(p) < 40: continue # Reduced length check for YTD processing
             
-            p_year = p[p.index.year == current_year]
-            ytd_ret = ((p.iloc[-1] - p_year.iloc[0]) / p_year.iloc[0]) * 100 if len(p_year) > 0 else 0
+            ytd_ret = ((p.iloc[-1] - p.iloc[0]) / p.iloc[0]) * 100
+            
+            # Approximating factors for limited YTD data
             ret_1m = p.pct_change(21).iloc[-1]
             vol_1m = p.pct_change().tail(21).std() * np.sqrt(252)
             ram = ret_1m / vol_1m if vol_1m != 0 else 0
             
             roc_20 = p.pct_change(20).iloc[-1]
-            roc_60 = p.pct_change(60).iloc[-1]
-            roc_accel = roc_20 - (roc_60 / 3)
-            rel_strength = p.pct_change(63).iloc[-1] - spy_p.pct_change(63).iloc[-1]
+            roc_accel = roc_20 
+            rel_strength = p.pct_change(40).iloc[-1] - spy_p.pct_change(40).iloc[-1]
             
-            sma_50 = p.rolling(50).mean()
-            sma_50_slope = (sma_50.iloc[-1] - sma_50.iloc[-21]) / sma_50.iloc[-21]
-            vol_90 = v.rolling(90).mean().iloc[-1]
+            sma_50 = p.rolling(50).mean() if len(p) >= 50 else p.rolling(len(p)-1).mean()
+            sma_50_slope = (sma_50.iloc[-1] - sma_50.iloc[-21]) / sma_50.iloc[-21] if len(p) >= 50 else 0
+            vol_90 = v.rolling(90).mean().iloc[-1] if len(v) >= 90 else v.mean()
             vol_conf = (v.rolling(20).mean().iloc[-1] / vol_90) if vol_90 != 0 else 1
             
             high_low = h - l
@@ -148,7 +148,7 @@ def calculate_factors(closes, highs, lows, volumes, current_year):
                 'TKR': ticker, 'PRICE': p.iloc[-1], 'YTD': ytd_ret, 'RAM': ram, 
                 'ROC_AC': roc_accel, 'REL_STR': rel_strength, '50D_SLP': sma_50_slope, 
                 'VOL_CF': vol_conf, 'ADX': adx, 'STOP_PRC': trailing_stop, 'ALLOC': alloc_pct, 
-                'Above_200': p.iloc[-1] > p.rolling(200).mean().iloc[-1]
+                'Above_200': p.iloc[-1] > p.rolling(200).mean().iloc[-1] if len(p) >= 200 else True
             })
         except: continue
             
@@ -202,6 +202,19 @@ with st.spinner('SYNCING QUANTITATIVE ENGINE...'):
     c, h, l, v = fetch_data()
     df, vix_halt, vix_close = calculate_factors(c, h, l, v, now_est.year)
 
+# Strategy vs SPY Chart Math
+spy_ytd = (c['SPY'] / c['SPY'].iloc[0] - 1) * 100
+strong_buys = df[df['SIGNAL'] == 'STRONG BUY'].index.tolist()
+if not strong_buys: 
+    strong_buys = df.head(3).index.tolist() # Fallback if no perfect setups exist
+strat_prices = c[strong_buys].mean(axis=1)
+strat_ytd = (strat_prices / strat_prices.iloc[0] - 1) * 100
+
+chart_data = pd.DataFrame({
+    "Strategy (Current Targets)": strat_ytd,
+    "S&P 500 (SPY)": spy_ytd
+}).dropna()
+
 # Regime Logic
 top_5 = df.head(5).index.tolist()
 inverse_etfs = ["SH", "PSQ", "DOG", "TBF"]
@@ -218,7 +231,6 @@ else: regime, r_color = "RISK-ON (EQUITY EXPANSION)", "#00FF00"
 col1, col2 = st.columns([1.2, 1.8]) 
 
 with col1:
-    # 4A. System Architecture
     v_color = "red" if vix_halt else "#00FF00"
     st.markdown(f"""
         <div class="bbg-panel">
@@ -233,7 +245,6 @@ with col1:
         </div>
         """, unsafe_allow_html=True)
         
-    # 4B. Rules Logic
     st.markdown("""
         <div class="bbg-panel">
             <div class="bbg-header">ELITE ENTRY / EXIT</div>
@@ -249,7 +260,6 @@ with col1:
         </div>
         """, unsafe_allow_html=True)
         
-    # 4C. Regime Radar
     st.markdown(f"""
         <div class="bbg-panel">
             <div class="bbg-header">REGIME ROTATION RADAR</div>
@@ -261,35 +271,28 @@ with col1:
         </div>
         """, unsafe_allow_html=True)
 
-    # 4D. Bloomberg Livestream
-    st.markdown('<div class="bbg-panel" style="padding-bottom:0px;"><div class="bbg-header">LIVE MACRO FEED: BLOOMBERG TV</div>', unsafe_allow_html=True)
-    youtube_html = """
-    <iframe width="100%" height="220" 
-    src="https://www.youtube.com/embed/iEpJwprxDdk?autoplay=1&mute=1" 
-    title="Bloomberg Global Financial News" frameborder="0" 
-    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-    allowfullscreen></iframe>
-    """
-    components.html(youtube_html, height=225)
-    st.markdown('</div>', unsafe_allow_html=True)
-
 with col2:
-    # 4E. Target Acquisition & Line Chart
-    top_asset = df.index[0] if not df.empty else "SPY"
-    st.markdown(f"""
-        <div class="bbg-panel" style="padding-bottom: 0px;">
-            <div class="bbg-header">TARGET ACQUISITION: {top_asset}</div>
-            <div style="display:flex; justify-content:space-between; margin-bottom: 5px;">
-                <span style="font-size:24px; font-weight:bold; color:#FF6600;">${df.loc[top_asset, 'PRICE']:.2f}</span>
-                <span style="font-size:12px; color:#aaa;">ATR Stop: ${df.loc[top_asset, 'STOP_PRC']:.2f} | Score: {df.loc[top_asset, 'SCORE']:.1f}</span>
-            </div>
-        </div>
-    """, unsafe_allow_html=True)
+    # Split the top area of the right column into two side-by-side boxes
+    sub_col1, sub_col2 = st.columns(2)
     
-    chart_data = c[top_asset].dropna().tail(63)
-    st.line_chart(chart_data, height=140, use_container_width=True)
+    with sub_col1:
+        st.markdown('<div class="bbg-panel" style="padding-bottom:0px;"><div class="bbg-header">YTD EQUITY CURVE VS SPY</div>', unsafe_allow_html=True)
+        st.line_chart(chart_data, color=["#00FFFF", "#FF0000"], height=205, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+    with sub_col2:
+        st.markdown('<div class="bbg-panel" style="padding-bottom:0px;"><div class="bbg-header">LIVE MACRO: BLOOMBERG TV</div>', unsafe_allow_html=True)
+        youtube_html = """
+        <iframe width="100%" height="205" 
+        src="https://www.youtube.com/embed/iEpJwprxDdk?autoplay=1&mute=1" 
+        title="Bloomberg Global Financial News" frameborder="0" 
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+        allowfullscreen></iframe>
+        """
+        components.html(youtube_html, height=210)
+        st.markdown('</div>', unsafe_allow_html=True)
 
-    # 4F. Heatmap
+    # The Heatmap spans the full width of col2, beneath the chart and video
     st.markdown('<div class="bbg-panel"><div class="bbg-header">ETF YTD PERFORMANCE HEATMAP</div>', unsafe_allow_html=True)
     heat_df = df.sort_values(by='YTD', ascending=False)
     heatmap_html = '<div class="heatmap-grid">'
@@ -297,26 +300,19 @@ with col2:
         val = row['YTD']
         color = "#00FF00" if val > 15 else "#006600" if val > 0 else "#660000" if val > -10 else "#FF0000"
         t_color = "#000" if color == "#00FF00" else "#FFF"
+        # Flattened HTML to prevent Streamlit from turning it into a markdown code block
         heatmap_html += f'<div class="heat-cell" style="background-color:{color}; color:{t_color};">{ticker}<br>{val:.1f}%</div>'
     heatmap_html += '</div></div>'
     st.markdown(heatmap_html, unsafe_allow_html=True)
 
 # ==========================================
-# 5. CUSTOM HTML LEDGER
+# 5. CUSTOM HTML LEDGER (FIXED PARSING)
 # ==========================================
 st.markdown('<div class="bbg-panel"><div class="bbg-header">QUANTITATIVE FACTOR LEDGER</div>', unsafe_allow_html=True)
 
-ledger_html = """
-<div class="ledger-container">
-    <table class="ledger-table">
-        <thead>
-            <tr>
-                <th>TKR</th><th>RNK</th><th>SIGNAL</th><th>REASON</th><th>ALLOC</th><th>PRICE</th>
-                <th>STOP</th><th>ADX</th><th>SCORE</th><th>YTD</th><th>RAM</th><th>VOL_CF</th>
-            </tr>
-        </thead>
-        <tbody>
-"""
+# The HTML string is built sequentially without indents to bypass the markdown bug
+ledger_html = '<div class="ledger-container"><table class="ledger-table"><thead><tr><th>TKR</th><th>RNK</th><th>SIGNAL</th><th>REASON</th><th>ALLOC</th><th>PRICE</th><th>STOP</th><th>ADX</th><th>SCORE</th><th>YTD</th><th>RAM</th><th>VOL_CF</th></tr></thead><tbody>'
+
 for tkr, row in df.iterrows():
     sig = row['SIGNAL']
     if 'STRONG BUY' in sig: s_col = '#00FF00'
@@ -325,74 +321,14 @@ for tkr, row in df.iterrows():
     elif 'HALT' in sig: s_col = '#D946EF'
     else: s_col = '#FF0000'
     
-    ledger_html += f"""
-        <tr>
-            <td>{tkr}</td>
-            <td>{row['RNK']}</td>
-            <td style="color:{s_col}; font-weight:bold;">{sig}</td>
-            <td style="color:#aaa;">{row['REASON']}</td>
-            <td style="color:#FF6600;">{row['ALLOC']:.1f}%</td>
-            <td>{row['PRICE']:.2f}</td>
-            <td>{row['STOP_PRC']:.2f}</td>
-            <td>{row['ADX']:.1f}</td>
-            <td>{row['SCORE']:.1f}</td>
-            <td style="color:{'#00FF00' if row['YTD']>0 else '#FF0000'};">{row['YTD']:.1f}%</td>
-            <td>{row['RAM']:.2f}</td>
-            <td>{row['VOL_CF']:.2f}</td>
-        </tr>
-    """
-ledger_html += "</tbody></table></div></div>"
+    # Strictly flattened string formatting
+    ledger_html += f'<tr><td>{tkr}</td><td>{row["RNK"]}</td><td style="color:{s_col}; font-weight:bold;">{sig}</td><td style="color:#aaa;">{row["REASON"]}</td><td style="color:#FF6600;">{row["ALLOC"]:.1f}%</td><td>{row["PRICE"]:.2f}</td><td>{row["STOP_PRC"]:.2f}</td><td>{row["ADX"]:.1f}</td><td>{row["SCORE"]:.1f}</td><td style="color:{"#00FF00" if row["YTD"]>0 else "#FF0000"};">{row["YTD"]:.1f}%</td><td>{row["RAM"]:.2f}</td><td>{row["VOL_CF"]:.2f}</td></tr>'
+
+ledger_html += '</tbody></table></div></div>'
 st.markdown(ledger_html, unsafe_allow_html=True)
 
 # ==========================================
-# 6. ADMINISTRATOR TOOLS: DEEP MARKET SCANNER
-# ==========================================
-with st.expander("⚙️ ADMINISTRATOR TOOLS: DEEP MARKET SCANNER"):
-    st.markdown('<div class="bbg-header" style="margin-top: 10px;">AUTONOMOUS UNIVERSE DISCOVERY</div>', unsafe_allow_html=True)
-    st.write("Execute live data-mining against the Nasdaq FTP directory to locate assets fitting your structural parameters ($300M-$2B AUM, >1M Weekly Vol).")
-    
-    if st.button("INITIATE MARKET SCAN"):
-        scan_container = st.empty()
-        progress_bar = st.progress(0)
-        
-        with st.spinner("STEP 1: Scraping official Nasdaq FTP directory..."):
-            url = "ftp://ftp.nasdaqtrader.com/SymbolDirectory/nasdaqtraded.txt"
-            try:
-                ftp_df = pd.read_csv(url, sep='|')
-                etfs = ftp_df[(ftp_df['ETF'] == 'Y') & (ftp_df['Test Issue'] == 'N')]
-                all_tickers = [t.replace('$', '-').replace('.', '-') for t in etfs['Symbol'].dropna().tolist()]
-                scan_container.success(f"Located {len(all_tickers)} total ETFs in the US market.")
-            except Exception as e:
-                scan_container.error(f"FTP Scrape Failed: {e}")
-                all_tickers = []
-
-        if all_tickers:
-            with st.spinner("STEP 2: Executing fundamental gatekeeper (AUM & Volume)..."):
-                survivors = []
-                test_batch = all_tickers[:100] # Limiting to 100 to prevent browser timeout
-                
-                for i, ticker in enumerate(test_batch):
-                    try:
-                        progress_bar.progress((i + 1) / len(test_batch))
-                        info = yf.Ticker(ticker).info
-                        aum = info.get('totalAssets', 0) or 0
-                        vol = info.get('averageVolume', 0) or 0
-                        weekly_vol = vol * 5
-                        
-                        # Corrected the zero-drop error to strictly enforce $300M to $2B
-                        if (300000000 <= aum <= 2000000000) and (weekly_vol >= 1000000):
-                            survivors.append(ticker)
-                    except:
-                        pass
-                
-                scan_container.success(f"Scan complete. {len(survivors)} ETFs survived the liquidity gauntlet.")
-                
-                if survivors:
-                    st.write(f"**NEW UNIVERSE TARGETS:** {', '.join(survivors)}")
-                    st.info("Copy these targets into your master TICKERS array to permanently track them.")
-
-# ==========================================
-# 7. BOTTOM TICKER TAPE
+# 6. BOTTOM TICKER TAPE
 # ==========================================
 tape_html = '<div class="ticker-tape">'
 for b in BENCHMARKS:
