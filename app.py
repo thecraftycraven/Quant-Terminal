@@ -417,7 +417,7 @@ macro_html += '</div></div>'
 st.markdown(macro_html, unsafe_allow_html=True)
 
 # ── TOP 5 + BLOOMBERG TV ──────────────────────────────────────────────────────
-col_t5, col_tv = st.columns([3.6, 1.6])
+col_t5, col_tv = st.columns([4.5, 2.5])
 
 with col_t5:
     cards = '<div class="bbg-panel"><div class="bbg-panel-hdr">TOP 5 ROTATION TARGETS — SOLOMON STRATEGY</div><div class="bbg-top5">'
