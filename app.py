@@ -147,23 +147,23 @@ def calculate_factors(prices, volumes, current_year):
     
     signals = []
     for idx, row in df.iterrows():
-        # Define absolute alignment across all 6 parameters
+        # 1. Stricter Absolute Alignment (Volume must be 20% above average)
         fits_all_parameters = (
             row['Above_200'] and 
             row['RAM'] > 0 and 
             row['REL_STR'] > 0 and 
             row['ROC_AC'] > 0 and 
             row['50D_SLP'] > 0 and 
-            row['VOL_CF'] >= 1.0
+            row['VOL_CF'] >= 1.2 # Raised from 1.0 to demand real conviction
         )
         
-        # New Strict Signal Logic
+        # 2. The Elite Intersection (Absolute Perfection AND Top 10 Rank)
         if not row['Above_200']: 
             signals.append("STRONG SELL" if row['RNK'] > 15 else "SELL")
-        elif fits_all_parameters:
-            signals.append("STRONG BUY") # Uncompromising absolute threshold
+        elif fits_all_parameters and row['RNK'] <= 10: 
+            signals.append("STRONG BUY") # Must be perfect AND in the top 10
         elif row['RNK'] <= 10:
-            signals.append("BUY") # Good relative rank, but imperfect setup
+            signals.append("BUY") # Top 10 rank, but missing absolute perfection
         elif 10 < row['RNK'] <= 15:
             signals.append("HOLD")
         else: 
