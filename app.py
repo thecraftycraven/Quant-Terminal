@@ -394,3 +394,57 @@ allowfullscreen></iframe>
 components.html(youtube_html, height=255)
 
 st.markdown('</div>', unsafe_allow_html=True)
+
+with col1:
+    v_color = "red" if vix_halt else "#00FF00"
+    st.markdown(f"""
+        <div class="bbg-panel">
+            <div class="bbg-header">SYSTEM ARCHITECTURE</div>
+            <table>
+                <tr><th>Component</th><th class="td-right">Status</th></tr>
+                <tr><td>Macro Regime (VIX)</td><td class="td-right" style="color:{v_color};">{vix_close:.2f}</td></tr>
+                <tr><td>Chop Filter (ADX > 25)</td><td class="td-right" style="color:#00FF00;">ACTIVE</td></tr>
+                <tr><td>Dynamic Exit (2.5x ATR)</td><td class="td-right" style="color:#00FF00;">ACTIVE</td></tr>
+                <tr><td>Vol Confirmation (>1.2x)</td><td class="td-right" style="color:#00FF00;">ACTIVE</td></tr>
+            </table>
+        </div>
+        """, unsafe_allow_html=True)
+        
+    st.markdown("""
+        <div class="bbg-panel">
+            <div class="bbg-header">ELITE ENTRY / EXIT</div>
+            <table>
+                <tr><th>Signal</th><th>Rule</th></tr>
+                <tr><td class="c-strong-buy">STRONG BUY</td><td>Perfect Alignment + ADX>25</td></tr>
+                <tr><td class="c-buy">BUY</td><td>Top 10, imperfect setup</td></tr>
+                <tr><td class="c-hold">HOLD</td><td>Buffer zone (Rank 11-15)</td></tr>
+                <tr><td class="c-sell">SELL</td><td>Drop out of Top 15</td></tr>
+                <tr><td class="c-halt">HALT</td><td>VIX > 30 (Risk-Off)</td></tr>
+                <tr><td class="c-strong-sell">STRONG SELL</td><td>Below 200DMA or Hit ATR Stop</td></tr>
+            </table>
+        </div>
+        """, unsafe_allow_html=True)
+        
+    # PANEL: Regime Radar
+    st.markdown(f"""
+        <div class="bbg-panel">
+            <div class="bbg-header">REGIME ROTATION RADAR</div>
+            <div style="text-align:center; padding: 10px 0;">
+                <span style="font-size:11px; color:#888;">CURRENT CAPITAL FLOW STATE:</span><br>
+                <span style="font-size:16px; font-weight:bold; color:{r_color};">{regime}</span>
+            </div>
+            <div style="font-size:10px; color:#888; text-align:center; margin-top:5px;">Analyzed via Top 5 Asset Covariance</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # NEW PANEL: Live Macro Feed (Bloomberg TV)
+    st.markdown('<div class="bbg-panel" style="padding-bottom:0px;"><div class="bbg-header">LIVE MACRO FEED: BLOOMBERG TV</div>', unsafe_allow_html=True)
+    youtube_html = """
+    <iframe width="100%" height="220" 
+    src="https://www.youtube.com/embed/iEpJwprxDdk?autoplay=1&mute=1" 
+    title="Bloomberg Global Financial News" frameborder="0" 
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+    allowfullscreen></iframe>
+    """
+    components.html(youtube_html, height=225)
+    st.markdown('</div>', unsafe_allow_html=True)
