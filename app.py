@@ -125,6 +125,83 @@ FRED_API_KEY = "93069da065d835f300947c9dd312c50d"
 ALPHA_KEY    = "I7L9I79E7WRJGLFC"
 FMP_KEY      = "JNYpveoF4uOcnTzewvlbRPkyJt1sEn8T"
 NEWSAPI_KEY  = "584f5ee8a6134eb99d95f14d2f8146f8"
+
+# ── SCHWAB API ────────────────────────────────────────────────────────────────
+SCHWAB_CLIENT_ID     = st.secrets.get("SCHWAB_CLIENT_ID", "")      # paste your app key here
+SCHWAB_CLIENT_SECRET = st.secrets.get("SCHWAB_CLIENT_SECRET", "")  # paste your secret here
+SCHWAB_REDIRECT_URI  = "https://127.0.0.1"
+SCHWAB_AUTH_URL      = "https://api.schwabapi.com/v1/oauth/authorize"
+SCHWAB_TOKEN_URL     = "https://api.schwabapi.com/v1/oauth/token"
+SCHWAB_QUOTES_URL    = "https://api.schwabapi.com/marketdata/v1/quotes"
+SCHWAB_CHAINS_URL    = "https://api.schwabapi.com/marketdata/v1/chains"
+SCHWAB_MOVERS_URL    = "https://api.schwabapi.com/marketdata/v1/movers/{index}"
+
+def schwab_auth_link():
+    import urllib.parse
+    params = {
+        "response_type": "code",
+        "client_id": SCHWAB_CLIENT_ID,
+        "redirect_uri": SCHWAB_REDIRECT_URI,
+        "scope": "readonly"
+    }
+    return f"{SCHWAB_AUTH_URL}?{urllib.parse.urlencode(params)}"
+
+def schwab_exchange_code(auth_code):
+    import base64
+    creds = base64.b64encode(f"{SCHWAB_CLIENT_ID}:{SCHWAB_CLIENT_SECRET}".encode()).decode()
+    try:
+        r = requests.post(SCHWAB_TOKEN_URL, headers={
+            "Authorization": f"Basic {creds}",
+            "Content-Type": "application/x-www-form-urlencoded"
+        }, data={
+            "grant_type": "authorization_code",
+            "code": auth_code,
+            "redirect_uri": SCHWAB_REDIRECT_URI
+        }, timeout=10)
+        if r.status_code == 200:
+            return r.json()
+    except:
+        pass
+    return None
+
+def schwab_refresh_token(refresh_tok):
+    import base64
+    creds = base64.b64encode(f"{SCHWAB_CLIENT_ID}:{SCHWAB_CLIENT_SECRET}".encode()).decode()
+    try:
+        r = requests.post(SCHWAB_TOKEN_URL, headers={
+            "Authorization": f"Basic {creds}",
+            "Content-Type": "application/x-www-form-urlencoded"
+        }, data={
+            "grant_type": "refresh_token",
+            "refresh_token": refresh_tok
+        }, timeout=10)
+        if r.status_code == 200:
+            return r.json()
+    except:
+        pass
+    return None
+
+def schwab_get_quotes(access_token, symbols):
+    try:
+        r = requests.get(SCHWAB_QUOTES_URL, headers={
+            "Authorization": f"Bearer {access_token}"
+        }, params={"symbols": ",".join(symbols), "fields": "quote,reference"}, timeout=8)
+        if r.status_code == 200:
+            return r.json()
+    except:
+        pass
+    return {}
+
+def schwab_get_movers(access_token, index="$SPX"):
+    try:
+        r = requests.get(SCHWAB_MOVERS_URL.format(index=index), headers={
+            "Authorization": f"Bearer {access_token}"
+        }, params={"sort": "PERCENT_CHANGE_UP", "frequency": 1}, timeout=8)
+        if r.status_code == 200:
+            return r.json()
+    except:
+        pass
+    return {}
 YIELD_CURVE_IDS = {
     "DGS1MO":"1M","DGS3MO":"3M","DGS6MO":"6M",
     "DGS1":"1Y","DGS2":"2Y","DGS5":"5Y","DGS10":"10Y","DGS30":"30Y"
@@ -449,7 +526,7 @@ with col_tv:
         height=165
     )
     st.markdown('</div></div>', unsafe_allow_html=True)
-tab1,tab2,tab3,tab4,tab5,tab6 = st.tabs(["  CHART  ","  LEDGER  ","  HEATMAP  ","  BACKTEST  ","  NEWS & NOTES  ","  API STATUS  "])
+tab1,tab2,tab3,tab4,tab5,tab6,tab7 = st.tabs(["  CHART  ","  LEDGER  ","  HEATMAP  ","  BACKTEST  ","  NEWS & NOTES  ","  API STATUS  ","  SCHWAB  "])
 with tab1:
     c1,c2=st.columns(2)
     with c1:
@@ -632,19 +709,20 @@ with tab4:
                 vega_data.append({"Month": r["Month"], "value": r["SPY"], "series": "SPY"})
             st.vega_lite_chart({
                 "data": {"values": vega_data},
-                "mark": {"type": "bar", "width": {"band": 0.9}},
+                "mark": {"type": "bar", "width": {"band": 0.85}},
                 "encoding": {
-                    "x": {"field": "Month", "type": "ordinal", "sort": month_order, "axis": {"grid": False, "title": "", "labelFontSize": 11, "labelColor": "#888"}},
-                    "y": {"field": "value", "type": "quantitative", "axis": {"grid": True, "title": "", "labelFontSize": 11, "labelColor": "#888", "format": ".1f"}, "scale": {"zero": True}},
-                    "color": {"field": "series", "type": "nominal", "scale": {"domain": ["Strategy", "SPY"], "range": ["#00FFFF", "#CC0000"]}, "legend": {"orient": "bottom", "title": " ", "labelColor": "#CCC", "labelFontSize": 12}},
+                    "x": {"field": "Month", "type": "ordinal", "sort": month_order, "axis": {"grid": False, "title": "", "labelFontSize": 10, "labelColor": "#888", "labelAngle": -30}},
+                    "y": {"field": "value", "type": "quantitative", "axis": {"grid": True, "title": "%", "labelFontSize": 10, "labelColor": "#888", "format": "+.1f", "titleColor": "#555", "titleFontSize": 10}, "scale": {"zero": True}},
+                    "color": {"field": "series", "type": "nominal", "scale": {"domain": ["Strategy", "SPY"], "range": ["#00FFFF", "#CC0000"]}, "legend": {"orient": "top", "title": None, "labelColor": "#CCC", "labelFontSize": 11, "symbolSize": 80, "padding": 4}},
                     "xOffset": {"field": "series", "type": "nominal"},
                     "tooltip": [
                         {"field": "Month", "type": "nominal"},
                         {"field": "series", "type": "nominal", "title": "Series"},
-                        {"field": "value", "type": "quantitative", "title": "Return %", "format": ".2f"}
+                        {"field": "value", "type": "quantitative", "title": "Return %", "format": "+.2f"}
                     ]
                 },
-                "height": 220
+                "height": 200,
+                "config": {"background": "#0A0A0A", "view": {"stroke": "transparent"}, "axisY": {"gridColor": "#1A1A1A"}}
             }, use_container_width=True)
         st.markdown('</div></div>', unsafe_allow_html=True)
         st.markdown('<div class="bbg-panel"><div class="bbg-panel-hdr">CUMULATIVE RETURNS</div><div class="bbg-panel-body">', unsafe_allow_html=True)
@@ -659,18 +737,31 @@ with tab4:
                 cum_data.append({"Month": r["Month"], "value": r["SPY Cumul"], "series": "SPY"})
             st.vega_lite_chart({
                 "data": {"values": cum_data},
-                "mark": {"type": "line", "strokeWidth": 2.5},
-                "encoding": {
-                    "x": {"field": "Month", "type": "ordinal", "sort": month_order_cum, "axis": {"grid": False, "title": "", "labelFontSize": 11, "labelColor": "#888"}},
-                    "y": {"field": "value", "type": "quantitative", "axis": {"grid": True, "title": "", "labelFontSize": 11, "labelColor": "#888", "format": ".1f"}, "scale": {"zero": False}},
-                    "color": {"field": "series", "type": "nominal", "scale": {"domain": ["Strategy", "SPY"], "range": ["#00FFFF", "#CC0000"]}, "legend": {"orient": "bottom", "title": " ", "labelColor": "#CCC", "labelFontSize": 12}},
-                    "tooltip": [
-                        {"field": "Month", "type": "nominal"},
-                        {"field": "series", "type": "nominal", "title": "Series"},
-                        {"field": "value", "type": "quantitative", "title": "Cumul %", "format": ".2f"}
-                    ]
-                },
-                "height": 160
+                "layer": [
+                    {
+                        "mark": {"type": "area", "opacity": 0.15, "interpolate": "monotone"},
+                        "encoding": {
+                            "x": {"field": "Month", "type": "ordinal", "sort": month_order_cum, "axis": {"grid": False, "title": "", "labelFontSize": 10, "labelColor": "#888", "labelAngle": -30}},
+                            "y": {"field": "value", "type": "quantitative", "axis": {"grid": True, "title": "Cumul %", "labelFontSize": 10, "labelColor": "#888", "format": "+.1f", "titleColor": "#555", "titleFontSize": 10}, "scale": {"zero": False}},
+                            "color": {"field": "series", "type": "nominal", "scale": {"domain": ["Strategy", "SPY"], "range": ["#00FFFF", "#CC0000"]}, "legend": None}
+                        }
+                    },
+                    {
+                        "mark": {"type": "line", "strokeWidth": 2.5, "interpolate": "monotone"},
+                        "encoding": {
+                            "x": {"field": "Month", "type": "ordinal", "sort": month_order_cum},
+                            "y": {"field": "value", "type": "quantitative"},
+                            "color": {"field": "series", "type": "nominal", "scale": {"domain": ["Strategy", "SPY"], "range": ["#00FFFF", "#CC0000"]}, "legend": {"orient": "top", "title": None, "labelColor": "#CCC", "labelFontSize": 11, "symbolSize": 80}},
+                            "tooltip": [
+                                {"field": "Month", "type": "nominal"},
+                                {"field": "series", "type": "nominal", "title": "Series"},
+                                {"field": "value", "type": "quantitative", "title": "Cumul %", "format": "+.2f"}
+                            ]
+                        }
+                    }
+                ],
+                "height": 160,
+                "config": {"background": "#0A0A0A", "view": {"stroke": "transparent"}, "axisY": {"gridColor": "#1A1A1A"}}
             }, use_container_width=True)
         st.markdown('</div></div>', unsafe_allow_html=True)
     with bc3:
@@ -789,6 +880,152 @@ with tab6:
         tbl3+=f'<tr><td class="l">{lbl}</td><td style="color:#FF8000;">{fmt}</td><td style="color:{sc2};font-size:9px;">{"● LIVE" if ok2 else "○ N/A"}</td></tr>'
     tbl3+='</tbody></table></div>'
     st.markdown(tbl3, unsafe_allow_html=True)
+
+# ── TAB 7: SCHWAB ─────────────────────────────────────────────────────────────
+with tab7:
+    # ── Session state init ────────────────────────────────────────────────────
+    if "schwab_access_token"  not in st.session_state: st.session_state.schwab_access_token  = None
+    if "schwab_refresh_token" not in st.session_state: st.session_state.schwab_refresh_token = None
+    if "schwab_token_expiry"  not in st.session_state: st.session_state.schwab_token_expiry  = None
+
+    connected = bool(st.session_state.schwab_access_token)
+
+    s1, s2 = st.columns([1.2, 2.8])
+
+    with s1:
+        # ── CONNECTION PANEL ──────────────────────────────────────────────────
+        st.markdown('<div class="bbg-panel"><div class="bbg-panel-hdr">SCHWAB — MARKET DATA API</div><div class="bbg-panel-body">', unsafe_allow_html=True)
+
+        if not SCHWAB_CLIENT_ID:
+            st.markdown('''<div style="color:#CC0000;font-size:10px;padding:8px 0;">
+                ○ NO API KEYS CONFIGURED<br><br>
+                <span style="color:#555;">Add to Streamlit secrets:<br>
+                SCHWAB_CLIENT_ID = "your_app_key"<br>
+                SCHWAB_CLIENT_SECRET = "your_secret"</span>
+            </div>''', unsafe_allow_html=True)
+        elif connected:
+            expiry_str = st.session_state.schwab_token_expiry.strftime("%H:%M:%S ET") if st.session_state.schwab_token_expiry else "—"
+            st.markdown(f'''<div style="color:#00CC00;font-size:10px;padding:4px 0;">● CONNECTED TO SCHWAB<br>
+                <span style="color:#555;font-size:9px;">Token expires: {expiry_str}</span></div>''', unsafe_allow_html=True)
+            if st.button("Disconnect", key="schwab_disconnect"):
+                st.session_state.schwab_access_token  = None
+                st.session_state.schwab_refresh_token = None
+                st.session_state.schwab_token_expiry  = None
+                st.rerun()
+            if st.session_state.schwab_refresh_token:
+                if st.button("Refresh Token", key="schwab_refresh"):
+                    new_tok = schwab_refresh_token(st.session_state.schwab_refresh_token)
+                    if new_tok:
+                        st.session_state.schwab_access_token  = new_tok.get("access_token")
+                        st.session_state.schwab_refresh_token = new_tok.get("refresh_token", st.session_state.schwab_refresh_token)
+                        st.session_state.schwab_token_expiry  = now_est + datetime.timedelta(seconds=new_tok.get("expires_in", 1800))
+                        st.rerun()
+        else:
+            auth_url = schwab_auth_link()
+            st.markdown(f'''<div style="font-size:10px;color:#888;margin-bottom:8px;">
+                Step 1 — Click to log in to Schwab:<br><br>
+                <a href="{auth_url}" target="_blank" style="color:#FF8000;font-weight:700;letter-spacing:1px;">
+                → OPEN SCHWAB LOGIN</a><br><br>
+                <span style="color:#555;font-size:9px;">After login, Schwab redirects to 127.0.0.1.<br>
+                Copy the <b style="color:#CCC;">code=XXXXX</b> from the URL.</span>
+            </div>''', unsafe_allow_html=True)
+            st.markdown('<div style="color:#FF8000;font-size:9px;letter-spacing:1px;margin-bottom:4px;">Step 2 — Paste authorization code:</div>', unsafe_allow_html=True)
+            auth_code = st.text_input("", placeholder="Paste code from redirect URL here", key="schwab_code", label_visibility="collapsed")
+            if st.button("Connect", key="schwab_connect") and auth_code:
+                token_data = schwab_exchange_code(auth_code.strip())
+                if token_data and "access_token" in token_data:
+                    st.session_state.schwab_access_token  = token_data["access_token"]
+                    st.session_state.schwab_refresh_token = token_data.get("refresh_token")
+                    st.session_state.schwab_token_expiry  = now_est + datetime.timedelta(seconds=token_data.get("expires_in", 1800))
+                    st.rerun()
+                else:
+                    st.markdown('<div style="color:#CC0000;font-size:9px;">Connection failed — check code and try again.</div>', unsafe_allow_html=True)
+
+        st.markdown('</div></div>', unsafe_allow_html=True)
+
+        # ── WHAT YOU GET ──────────────────────────────────────────────────────
+        st.markdown('<div class="bbg-panel" style="margin-top:4px;"><div class="bbg-panel-hdr">MARKET DATA — AVAILABLE</div><div class="bbg-panel-body">', unsafe_allow_html=True)
+        features = [
+            ("Real-Time Quotes",    "Live bid/ask, last price, volume for all 46 ETFs", True),
+            ("Top Movers",          "S&P 500 top % gainers and losers", True),
+            ("Options Chains",      "Full options chain for any ETF", True),
+            ("Price History",       "OHLCV intraday + daily history", True),
+            ("Market Hours",        "Exchange open/close status", True),
+            ("Account Positions",   "Requires Accounts & Trading API", False),
+            ("Place Orders",        "Requires Accounts & Trading API", False),
+        ]
+        for name, desc, avail in features:
+            col_ = "#00CC00" if avail else "#444"
+            dot  = "●" if avail else "○"
+            st.markdown(f'<div style="margin-bottom:5px;"><span style="color:{col_};font-size:10px;">{dot} {name}</span><br><span style="color:#444;font-size:9px;">{desc}</span></div>', unsafe_allow_html=True)
+        st.markdown('</div></div>', unsafe_allow_html=True)
+
+    with s2:
+        if connected:
+            sq1, sq2 = st.columns(2)
+
+            with sq1:
+                # ── LIVE QUOTES FOR TOP 5 ─────────────────────────────────────
+                st.markdown('<div class="bbg-panel"><div class="bbg-panel-hdr">SCHWAB — LIVE QUOTES · TOP 5 + BENCHMARKS</div><div class="bbg-panel-body">', unsafe_allow_html=True)
+                quote_syms = top5_tickers + ["SPY","QQQ","IWM","GLD","USO"]
+                quotes = schwab_get_quotes(st.session_state.schwab_access_token, quote_syms)
+                if quotes:
+                    q_html = '<table class="bbg-tbl"><thead><tr><th class="l">SYMBOL</th><th>LAST</th><th>BID</th><th>ASK</th><th>CHG%</th><th>VOLUME</th></tr></thead><tbody>'
+                    for sym in quote_syms:
+                        q = quotes.get(sym, {}).get("quote", {})
+                        last  = q.get("lastPrice", q.get("mark", 0))
+                        bid   = q.get("bidPrice", 0)
+                        ask   = q.get("askPrice", 0)
+                        chg   = q.get("netPercentChangeInDouble", 0)
+                        vol   = q.get("totalVolume", 0)
+                        chg_c = "#00CC00" if chg >= 0 else "#CC0000"
+                        vol_s = f"{vol/1e6:.1f}M" if vol > 1e6 else f"{vol/1e3:.0f}K"
+                        q_html += f'<tr><td class="l">{sym}</td><td style="color:#FFF;">{last:.2f}</td><td style="color:#888;">{bid:.2f}</td><td style="color:#888;">{ask:.2f}</td><td style="color:{chg_c};">{chg:+.2f}%</td><td style="color:#555;">{vol_s}</td></tr>'
+                    q_html += '</tbody></table>'
+                    st.markdown(q_html, unsafe_allow_html=True)
+                else:
+                    st.markdown('<div style="color:#555;font-size:10px;padding:8px;">Fetching quotes...</div>', unsafe_allow_html=True)
+                st.markdown('</div></div>', unsafe_allow_html=True)
+
+            with sq2:
+                # ── TOP MOVERS ────────────────────────────────────────────────
+                st.markdown('<div class="bbg-panel"><div class="bbg-panel-hdr">SCHWAB — S&P 500 TOP MOVERS</div><div class="bbg-panel-body">', unsafe_allow_html=True)
+                movers = schwab_get_movers(st.session_state.schwab_access_token, "$SPX")
+                if movers:
+                    mv_html = '<table class="bbg-tbl"><thead><tr><th class="l">SYMBOL</th><th class="l">DESC</th><th>LAST</th><th>CHG%</th><th>VOLUME</th></tr></thead><tbody>'
+                    items = movers if isinstance(movers, list) else movers.get("screeners", [])
+                    for m in items[:12]:
+                        sym   = m.get("symbol","")
+                        desc  = m.get("description","")[:20]
+                        last  = m.get("lastPrice", 0)
+                        chg   = m.get("netPercentChange", 0)
+                        vol   = m.get("totalVolume", 0)
+                        chg_c = "#00CC00" if chg >= 0 else "#CC0000"
+                        vol_s = f"{vol/1e6:.1f}M" if vol > 1e6 else f"{vol/1e3:.0f}K"
+                        mv_html += f'<tr><td class="l">{sym}</td><td class="l" style="color:#555;font-size:9px;">{desc}</td><td>{last:.2f}</td><td style="color:{chg_c};">{chg:+.2f}%</td><td style="color:#555;">{vol_s}</td></tr>'
+                    mv_html += '</tbody></table>'
+                    st.markdown(mv_html, unsafe_allow_html=True)
+                else:
+                    st.markdown('<div style="color:#555;font-size:10px;padding:8px;">Fetching movers...</div>', unsafe_allow_html=True)
+                st.markdown('</div></div>', unsafe_allow_html=True)
+
+            # ── SIGNAL REVIEW TABLE ───────────────────────────────────────────
+            st.markdown('<div class="bbg-panel" style="margin-top:4px;"><div class="bbg-panel-hdr">SOLOMON SIGNALS — READY TO REVIEW</div><div class="bbg-panel-body">', unsafe_allow_html=True)
+            st.markdown('<div style="color:#555;font-size:9px;margin-bottom:6px;letter-spacing:1px;">REVIEW SIGNALS BEFORE PLACING ANY ORDERS IN YOUR SCHWAB ACCOUNT</div>', unsafe_allow_html=True)
+            rev_html = '<table class="bbg-tbl"><thead><tr><th class="l">ASSET</th><th class="l">SECTOR</th><th class="l">SIGNAL</th><th>SCORE</th><th>ALLOC %</th><th>PRICE</th><th>STOP</th><th>ACTION</th></tr></thead><tbody>'
+            for tkr, row in top5_df.iterrows():
+                sig_col = "#FF8000" if row["SIGNAL"] == "STRONG BUY" else "#FFCC00"
+                rev_html += f'<tr><td class="l">{tkr}</td><td class="l" style="color:#555;font-size:9px;">{row["SECTOR"]}</td><td class="l" style="color:{sig_col};">{row["SIGNAL"]}</td><td style="color:#FF8000;">{row["SCORE"]:.1f}</td><td style="color:#FF8000;">{row["ALLOC"]:.1f}%</td><td>{row["PRICE"]:.2f}</td><td style="color:#CC0000;">{row["STOP"]:.2f}</td><td style="color:#00CC00;font-size:9px;">→ LOG IN TO SCHWAB</td></tr>'
+            rev_html += '</tbody></table>'
+            st.markdown(rev_html, unsafe_allow_html=True)
+            st.markdown('<div style="color:#444;font-size:9px;margin-top:6px;border-top:1px solid #1A1A1A;padding-top:6px;">Accounts & Trading API required to place orders. Add it in Schwab Developer Portal → your app → Add Another API Product.</div>', unsafe_allow_html=True)
+            st.markdown('</div></div>', unsafe_allow_html=True)
+
+        else:
+            st.markdown('''<div class="bbg-panel"><div class="bbg-panel-body" style="padding:40px;text-align:center;">
+                <div style="color:#FF8000;font-size:14px;font-weight:700;letter-spacing:2px;margin-bottom:12px;">SCHWAB NOT CONNECTED</div>
+                <div style="color:#555;font-size:10px;">Complete OAuth login on the left to access<br>live quotes, top movers, and signal review.</div>
+            </div></div>''', unsafe_allow_html=True)
 tape_syms=["SPY","QQQ","DIA","^VIX","^TNX","GC=F","CL=F"]
 tape='<div class="bbg-tape">'
 for sym in tape_syms:
