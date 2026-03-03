@@ -331,3 +331,51 @@ for b in BENCHMARKS:
     except: pass
 tape_html += '</div>'
 st.markdown(tape_html, unsafe_allow_html=True)
+# ==========================================
+# 7. ADMINISTRATOR TOOLS: DEEP MARKET SCANNER
+# ==========================================
+st.markdown('<div class="bbg-panel"><div class="bbg-header">DEEP MARKET SCANNER (AUTHORIZED PERSONNEL ONLY)</div>', unsafe_allow_html=True)
+
+if st.button("INITIATE AUTONOMOUS MARKET SCAN"):
+    scan_container = st.empty()
+    progress_bar = st.progress(0)
+    
+    with st.spinner("STEP 1: Bypassing commercial databases. Scraping official Nasdaq FTP..."):
+        # 1. Scrape the Nasdaq Directory
+        url = "ftp://ftp.nasdaqtrader.com/SymbolDirectory/nasdaqtraded.txt"
+        try:
+            ftp_df = pd.read_csv(url, sep='|')
+            etfs = ftp_df[(ftp_df['ETF'] == 'Y') & (ftp_df['Test Issue'] == 'N')]
+            all_tickers = [t.replace('$', '-').replace('.', '-') for t in etfs['Symbol'].dropna().tolist()]
+            scan_container.success(f"Located {len(all_tickers)} total ETFs in the US market.")
+        except Exception as e:
+            scan_container.error(f"FTP Scrape Failed: {e}")
+            all_tickers = []
+
+    if all_tickers:
+        with st.spinner("STEP 2: Executing fundamental gatekeeper (AUM & Volume)..."):
+            survivors = []
+            test_batch = all_tickers[:100] # Limiting to 100 for live app stability
+            
+            for i, ticker in enumerate(test_batch):
+                try:
+                    # Update progress bar
+                    progress_bar.progress((i + 1) / len(test_batch))
+                    
+                    # Fundamental Interrogation
+                    info = yf.Ticker(ticker).info
+                    aum = info.get('totalAssets', 0) or 0
+                    vol = info.get('averageVolume', 0) or 0
+                    weekly_vol = vol * 5
+                    
+                    if (300000000 <= aum <= 2000000000) and (weekly_vol >= 1000000):
+                        survivors.append(ticker)
+                except:
+                    pass
+            
+            scan_container.success(f"Fundamental scan complete. {len(survivors)} ETFs survived the AUM/Volume gauntlet.")
+            
+            if survivors:
+                st.write(f"**NEW UNIVERSE TARGETS:** {', '.join(survivors)}")
+                st.info("Copy these targets into your master TICKERS array to permanently track them.")
+st.markdown('</div>', unsafe_allow_html=True)
