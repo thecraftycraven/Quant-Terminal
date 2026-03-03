@@ -34,7 +34,7 @@ section[data-testid="stSidebar"] { display: none !important; }
 .bbg-status-c { color:#FF8000; font-size:10px; letter-spacing:2px; font-weight:600; }
 .bbg-status-r { color:#AAAAAA; font-size:10px; text-align:right; }
 
-.bbg-macro-row { display:grid; grid-template-columns:repeat(13,1fr); border-bottom:1px solid #333; background:#050505; }
+.bbg-macro-row { display:grid; grid-template-columns:repeat(13,1fr); border-bottom:1px solid #333; background:#050505; margin-top:35px; }
 .bbg-macro-cell { padding:5px 6px; border-right:1px solid #1A1A1A; text-align:center; }
 .bbg-macro-cell:last-child { border-right:none; }
 .bbg-macro-lbl { color:#888; font-size:7px; letter-spacing:1px; text-transform:uppercase; margin-bottom:2px; }
@@ -417,7 +417,7 @@ macro_html += '</div></div>'
 st.markdown(macro_html, unsafe_allow_html=True)
 
 # ── TOP 5 + BLOOMBERG TV ──────────────────────────────────────────────────────
-col_t5, col_tv = st.columns([4.5, 1.5])
+col_t5, col_tv = st.columns([3.5, 1.5])
 
 with col_t5:
     cards = '<div class="bbg-panel"><div class="bbg-panel-hdr">TOP 5 ROTATION TARGETS — SOLOMON STRATEGY</div><div class="bbg-top5">'
@@ -442,17 +442,12 @@ with col_t5:
     st.markdown(cards, unsafe_allow_html=True)
 
 with col_tv:
-    # Adjust the '20px' below to move it down more or less
-    st.markdown('<div style="margin-top: 15px;">', unsafe_allow_html=True) 
-    
     st.markdown('<div class="bbg-panel"><div class="bbg-panel-hdr">LIVE — BLOOMBERG TV</div>', unsafe_allow_html=True)
     components.html(
-        '<iframe width="100%" height="155" src="https://www.youtube.com/embed/iEpJwprxDdk?autoplay=1&mute=1" frameborder="0" allowfullscreen style="display:block;"></iframe>',
-        height=155
+        '<iframe width="100%" height="162" src="https://www.youtube.com/embed/iEpJwprxDdk?autoplay=1&mute=1" frameborder="0" allowfullscreen style="display:block;"></iframe>',
+        height=167
     )
     st.markdown('</div>', unsafe_allow_html=True)
-    
-    st.markdown('</div>', unsafe_allow_html=True) # Closes the margin div
 
 # ── TABS ──────────────────────────────────────────────────────────────────────
 tab1,tab2,tab3,tab4,tab5,tab6 = st.tabs(["  CHART  ","  LEDGER  ","  HEATMAP  ","  BACKTEST  ","  NEWS & NOTES  ","  API STATUS  "])
