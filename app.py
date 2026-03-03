@@ -687,7 +687,7 @@ with tab4:
             st.markdown('<div style="color:#555;font-size:9px;">No upcoming events or FMP calendar loading...</div></div></div>', unsafe_allow_html=True)
 with tab5:
     n1,n2=st.columns([2.2,1.8])
-    st.markdown('<style>[data-testid="stHorizontalBlock"]{align-items:stretch;} [data-testid="stTextArea"]{height:100%;} [data-testid="stTextArea"] textarea{height:100% !important; min-height:500px;}</style>', unsafe_allow_html=True)
+    st.markdown('<style>[data-testid="stHorizontalBlock"]{align-items:stretch;} [data-testid="stTextArea"]{height:100%;} [data-testid="stTextArea"] textarea{height:100% !important; min-height:550px;}</style>', unsafe_allow_html=True)
     with n1:
         st.markdown('<div class="bbg-panel"><div class="bbg-panel-hdr">FINANCIAL NEWS — LIVE BUSINESS HEADLINES</div>', unsafe_allow_html=True)
         if newsapi_articles:
