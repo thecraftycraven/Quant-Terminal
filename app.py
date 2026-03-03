@@ -48,7 +48,7 @@ section[data-testid="stSidebar"] { display: none !important; }
 
 .bbg-panel { border:1px solid #222; background:#0A0A0A; padding:0; margin-bottom:4px; }
 .bbg-panel-hdr { background:#111; color:#FF8000; font-size:10px; font-weight:700; letter-spacing:2px; padding:4px 8px; border-bottom:1px solid #333; text-transform:uppercase; }
-.bbg-panel-body { padding:6px 8px; }
+.bbg-panel-body { padding:4px 6px; }
 
 .bbg-top5 { display:grid; grid-template-columns:repeat(5,1fr); }
 .bbg-top5-wrap { margin-top: 35px; }
