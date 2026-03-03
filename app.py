@@ -691,7 +691,7 @@ with tab5:
     with n1:
         st.markdown('<div class="bbg-panel"><div class="bbg-panel-hdr">FINANCIAL NEWS — LIVE BUSINESS HEADLINES</div>', unsafe_allow_html=True)
         if newsapi_articles:
-            news_html='<div class="bbg-scroll"><table class="bbg-tbl"><thead><tr><th class="l">HEADLINE</th><th class="l">SOURCE</th><th class="l">TIME</th></tr></thead><tbody>'
+            news_html='<div class="bbg-panel" style="margin-top:20px;"><table class="bbg-tbl"><thead><tr><th class="l">HEADLINE</th><th class="l">SOURCE</th><th class="l">TIME</th></tr></thead><tbody>'
             for item in newsapi_articles:
                 title  = (item.get("title","") or "")[:90]
                 source = (item.get("source",{}).get("name","") or "")
