@@ -72,19 +72,12 @@ st.markdown(f"""
 # ==========================================
 BENCHMARKS = ["SPY", "QQQ", "^VIX", "DIA"] 
 TICKERS = [
-    # Energy & Materials
     "OIH", "XLE", "XLB", "ITB", "PKG", "XME", "WOOD",
-    # Industrials & Discretionary
     "XLI", "ROBO", "IYT", "CARZ", "XLY", "PEJ", "XRT",
-    # Staples & Healthcare
     "XLP", "PBJ", "EZU", "IHI", "XBI",
-    # Financials & Technology
     "KBE", "IAI", "KIE", "IGV", "SKYY", "SMH",
-    # Communications & Utilities
     "IYZ", "XLC", "XLU", "FCG", "IDU", "PHO", "ICLN",
-    # Real Estate & Global Overlay
     "VNQ", "REET", "EFA", "VWO", "INDY", "KWEB", 
-    # Macro & Safe Harbors
     "GLD", "PDBC", "IBIT", "BIL", "TLT"
 ]
 ALL_SYMBOLS = TICKERS + BENCHMARKS
@@ -182,6 +175,7 @@ def calculate_factors(closes, highs, lows, volumes, current_year):
         elif row['50D_SLP'] <= 0: reason = "Neg 50DMA"
         
         fits_all = (reason == "")
+        rnk = row['RNK']
         
         if vix_halt:
             signals.append("HALT")
@@ -189,18 +183,22 @@ def calculate_factors(closes, highs, lows, volumes, current_year):
         elif not row['Above_200'] or row['PRICE'] < row['STOP_PRC']: 
             signals.append("STRONG SELL")
             reasons.append(reason if reason else "Hit ATR Stop")
-        elif fits_all and row['RNK'] <= 10:
+        elif fits_all and rnk <= 5:
             signals.append("STRONG BUY")
-            reasons.append("PASSED")
-        elif row['RNK'] <= 10:
+            reasons.append("PASSED (Top 5)")
+        elif rnk <= 5:
             signals.append("BUY")
             reasons.append(reason)
-        elif 10 < row['RNK'] <= 15:
+        elif fits_all and 5 < rnk <= 10:
             signals.append("HOLD")
-            reasons.append(reason)
+            reasons.append("PASSED (Rank Buffer)")
         else: 
             signals.append("SELL")
-            reasons.append(reason)
+            # Explicitly force the explanation for falling outside the Top 10 zone
+            if rnk > 10:
+                reasons.append(f"{reason} [Rank #{rnk}]" if reason else f"Out of target zone [Rank #{rnk}]")
+            else:
+                reasons.append(reason)
             
     df['SIGNAL'] = signals
     df['REASON'] = reasons
@@ -214,16 +212,15 @@ with st.spinner('SYNCING QUANTITATIVE ENGINE...'):
 c_ytd = c[c.index.year == now_est.year]
 if not c_ytd.empty:
     spy_ytd = (c_ytd['SPY'] / c_ytd['SPY'].iloc[0] - 1) * 100
-    strong_buys = df[df['SIGNAL'] == 'STRONG BUY'].index.tolist()
-    if not strong_buys: 
-        strong_buys = df.head(3).index.tolist() 
-    strat_prices = c_ytd[strong_buys].mean(axis=1)
+    # Line chart tracks the elite Top 5
+    elite_targets = df[df['RNK'] <= 5].index.tolist()
+    strat_prices = c_ytd[elite_targets].mean(axis=1)
     strat_ytd = (strat_prices / strat_prices.iloc[0] - 1) * 100
-    chart_data = pd.DataFrame({"Strategy (Current Targets)": strat_ytd, "S&P 500 (SPY)": spy_ytd}).dropna()
+    chart_data = pd.DataFrame({"Strategy (Top 5)": strat_ytd, "S&P 500 (SPY)": spy_ytd}).dropna()
 else:
     chart_data = pd.DataFrame()
 
-# Updated Regime Logic (Reflecting the new universe)
+# Regime Logic
 top_5 = df.head(5).index.tolist()
 safe_harbor_etfs = ["BIL", "TLT", "GLD", "XLU", "XLP", "EZU"]
 inflation_etfs = ["PDBC", "XLE", "XME", "OIH"]
@@ -259,10 +256,10 @@ with col1:
             <div class="bbg-header">ELITE ENTRY / EXIT</div>
             <table>
                 <tr><th>Signal</th><th>Rule</th></tr>
-                <tr><td class="c-strong-buy">STRONG BUY</td><td>Perfect Alignment + ADX>25</td></tr>
-                <tr><td class="c-buy">BUY</td><td>Top 10, imperfect setup</td></tr>
-                <tr><td class="c-hold">HOLD</td><td>Buffer zone (Rank 11-15)</td></tr>
-                <tr><td class="c-sell">SELL</td><td>Drop out of Top 15</td></tr>
+                <tr><td class="c-strong-buy">STRONG BUY</td><td>Perfect Alignment (Top 5)</td></tr>
+                <tr><td class="c-buy">BUY</td><td>Top 5, imperfect setup</td></tr>
+                <tr><td class="c-hold">HOLD</td><td>Perfect Alignment (Rank 6-10)</td></tr>
+                <tr><td class="c-sell">SELL</td><td>Failed rule or Rank > 10</td></tr>
                 <tr><td class="c-halt">HALT</td><td>VIX > 30 (Risk-Off)</td></tr>
                 <tr><td class="c-strong-sell">STRONG SELL</td><td>Below 200DMA or Hit ATR Stop</td></tr>
             </table>
