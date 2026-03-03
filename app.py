@@ -8,269 +8,273 @@ import streamlit.components.v1 as components
 import requests
 
 # ==========================================
-# 1. PAGE CONFIGURATION & CSS
+# 1. PAGE CONFIG
 # ==========================================
 st.set_page_config(page_title="QUANT TERMINAL", layout="wide", initial_sidebar_state="collapsed")
 
 est_zone = ZoneInfo('America/New_York')
-now_est = datetime.datetime.now(est_zone)
-time_str = now_est.strftime("%I:%M %p ET")
-date_str = now_est.strftime("%b %d, %Y").upper()
-is_weekend = now_est.weekday() >= 5
-is_open_hours = datetime.time(9, 30) <= now_est.time() <= datetime.time(16, 0)
-market_status = "CLOSED" if is_weekend or not is_open_hours else "OPEN"
-status_color = "#00FF41" if market_status == "OPEN" else "#FF3131"
+now_est  = datetime.datetime.now(est_zone)
+time_str = now_est.strftime("%H:%M:%S ET")
+date_str = now_est.strftime("%d %b %Y").upper()
+is_weekend   = now_est.weekday() >= 5
+is_open      = datetime.time(9,30) <= now_est.time() <= datetime.time(16,0)
+market_status = "OPEN" if (not is_weekend and is_open) else "CLOSED"
+status_color  = "#FF8000" if market_status == "OPEN" else "#CC0000"
 
+# ==========================================
+# 2. CSS — BLOOMBERG PALETTE
+# Bloomberg: black bg, orange accent, white/grey text, Courier/monospace
+# ==========================================
 st.markdown(f"""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Source+Code+Pro:wght@300;400;500;600;700&display=swap');
 
-* {{ font-family: 'IBM Plex Mono', monospace !important; }}
-html, body, .stApp {{ background-color: #020408 !important; color: #C8D8E8; }}
-.stApp {{ padding-bottom: 36px; }}
-
-/* HIDE STREAMLIT CHROME */
-#MainMenu, footer, header, .stDeployButton {{ visibility: hidden; }}
+*, *::before, *::after {{
+    font-family: 'Source Code Pro', 'Courier New', monospace !important;
+    box-sizing: border-box;
+}}
+html, body, [class*="stApp"] {{
+    background-color: #000000 !important;
+    color: #FFFFFF;
+    margin: 0; padding: 0;
+}}
+.stApp {{ padding-bottom: 32px !important; }}
 .block-container {{ padding: 0 !important; max-width: 100% !important; }}
-section[data-testid="stSidebar"] {{ display: none; }}
+#MainMenu, footer, header, .stDeployButton, [data-testid="stToolbar"] {{ visibility: hidden !important; display: none !important; }}
+section[data-testid="stSidebar"] {{ display: none !important; }}
+[data-testid="stDecoration"] {{ display: none !important; }}
 
-/* STATUS BAR */
-.status-bar {{
+/* ── STATUS BAR ── */
+.bbg-status {{
     display: flex; justify-content: space-between; align-items: center;
-    background: #020408; border-bottom: 1px solid #0D3B1E;
-    padding: 5px 16px; position: sticky; top: 0; z-index: 1000;
+    background: #000000; border-bottom: 2px solid #FF8000;
+    padding: 4px 12px; position: sticky; top: 0; z-index: 9999;
+    height: 28px;
 }}
-.s-left {{ color: {status_color}; font-size: 11px; font-weight: 700; letter-spacing: 2px; }}
-.s-center {{ color: #4A8F6A; font-size: 10px; letter-spacing: 1px; }}
-.s-right {{ color: #4A8F6A; font-size: 10px; text-align: right; }}
+.bbg-status-l {{ color: {status_color}; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; }}
+.bbg-status-c {{ color: #FF8000; font-size: 10px; letter-spacing: 2px; font-weight: 600; }}
+.bbg-status-r {{ color: #AAAAAA; font-size: 10px; text-align: right; }}
 
-/* PANELS */
-.panel {{
-    border: 1px solid #0D2818; background: #040C0A;
-    padding: 8px 10px; margin-bottom: 6px; border-radius: 2px;
+/* ── PANELS ── */
+.bbg-panel {{
+    border: 1px solid #333333;
+    background: #0A0A0A;
+    padding: 0;
+    margin-bottom: 4px;
 }}
-.panel-hdr {{
-    color: #00FF41; font-size: 9px; font-weight: 700; letter-spacing: 2.5px;
-    text-transform: uppercase; border-bottom: 1px solid #0D2818;
-    padding-bottom: 5px; margin-bottom: 7px;
+.bbg-panel-hdr {{
+    background: #1A1A1A;
+    color: #FF8000;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    padding: 4px 8px;
+    border-bottom: 1px solid #333333;
+    text-transform: uppercase;
 }}
+.bbg-panel-body {{ padding: 6px 8px; }}
 
-/* TABLES */
-.qt {{ width: 100%; border-collapse: collapse; font-size: 10px; }}
-.qt th {{ color: #3A6B4A; font-size: 9px; padding: 4px 6px; border-bottom: 1px solid #0D2818;
-          text-align: right; letter-spacing: 1px; font-weight: 500; }}
-.qt th:first-child {{ text-align: left; }}
-.qt td {{ padding: 4px 6px; border-bottom: 1px solid #080F0A; text-align: right; color: #A8C4B0; }}
-.qt td:first-child {{ text-align: left; color: #E0F0E8; font-weight: 500; }}
-.qt tr:hover td {{ background: #060F08; }}
+/* ── MACRO ROW ── */
+.bbg-macro-row {{
+    display: grid;
+    grid-template-columns: repeat(11, 1fr);
+    gap: 0;
+    border-bottom: 1px solid #333333;
+}}
+.bbg-macro-cell {{
+    padding: 5px 8px;
+    border-right: 1px solid #222222;
+    text-align: center;
+}}
+.bbg-macro-cell:last-child {{ border-right: none; }}
+.bbg-macro-lbl {{ color: #888888; font-size: 8px; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 2px; }}
+.bbg-macro-val {{ color: #FFFFFF; font-size: 13px; font-weight: 700; line-height: 1; }}
+.bbg-macro-sub {{ color: #666666; font-size: 8px; margin-top: 1px; }}
 
-/* LEDGER */
-.ledger-wrap {{ max-height: 340px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #0D3B1E #020408; }}
-.lt {{ width: 100%; border-collapse: collapse; font-size: 10px; }}
-.lt th {{
-    position: sticky; top: 0; background: #040C0A; color: #00FF41;
-    font-size: 9px; padding: 5px 6px; border-bottom: 1px solid #00FF41;
+/* ── TOP 5 GRID ── */
+.bbg-top5 {{
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0;
+    border-top: 1px solid #333333;
+}}
+.bbg-top5-card {{
+    padding: 8px 10px;
+    border-right: 1px solid #2A2A2A;
+    border-top: 3px solid #333333;
+    background: #050505;
+}}
+.bbg-top5-card:last-child {{ border-right: none; }}
+.bbg-top5-card.strong {{ border-top-color: #FF8000; }}
+.bbg-top5-card.buy    {{ border-top-color: #FFCC00; }}
+.bbg-top5-tkr  {{ color: #FF8000; font-size: 18px; font-weight: 700; line-height: 1; }}
+.bbg-top5-sec  {{ color: #666666; font-size: 8px; letter-spacing: 1px; margin: 3px 0; text-transform: uppercase; }}
+.bbg-top5-price {{ color: #FFFFFF; font-size: 12px; font-weight: 600; }}
+.bbg-top5-ytd-pos {{ color: #00CC00; font-size: 11px; }}
+.bbg-top5-ytd-neg {{ color: #CC0000; font-size: 11px; }}
+.bbg-top5-sig  {{ font-size: 9px; font-weight: 700; margin: 4px 0 2px; letter-spacing: 1px; }}
+.bbg-top5-alloc {{ color: #FF8000; font-size: 13px; font-weight: 700; }}
+.bbg-top5-bar-bg {{ background: #1A1A1A; height: 3px; margin-top: 4px; }}
+.bbg-top5-bar-fill {{ height: 3px; }}
+.bbg-top5-reason {{ color: #555555; font-size: 8px; margin-top: 3px; }}
+
+/* ── YIELD CURVE ── */
+.bbg-yc {{
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    height: 70px;
+    padding: 4px 8px 0;
+}}
+.bbg-yc-col {{ flex: 1; display: flex; flex-direction: column; align-items: center; }}
+.bbg-yc-bar {{ background: #FF8000; border-radius: 1px 1px 0 0; width: 100%; min-height: 3px; }}
+.bbg-yc-val {{ color: #FF8000; font-size: 7px; font-weight: 700; margin-bottom: 2px; }}
+.bbg-yc-lbl {{ color: #555555; font-size: 7px; margin-top: 2px; }}
+.bbg-yc-spread {{ text-align: center; font-size: 9px; padding: 4px 8px 6px; border-top: 1px solid #1A1A1A; margin-top: 4px; }}
+
+/* ── TABLES ── */
+.bbg-tbl {{ width: 100%; border-collapse: collapse; font-size: 10px; }}
+.bbg-tbl th {{
+    background: #111111; color: #FF8000; font-size: 9px; font-weight: 600;
+    padding: 5px 6px; border-bottom: 1px solid #FF8000;
     text-align: right; letter-spacing: 1px; white-space: nowrap;
+    position: sticky; top: 0; z-index: 10;
 }}
-.lt th:first-child, .lt th:nth-child(2), .lt th:nth-child(3) {{ text-align: left; }}
-.lt td {{ padding: 4px 6px; border-bottom: 1px solid #060F08; text-align: right; font-size: 10px; white-space: nowrap; }}
-.lt td:first-child {{ text-align: left; color: #00CC33; font-weight: 700; }}
-.lt td:nth-child(2) {{ text-align: left; color: #5A8A6A; font-size: 9px; }}
-.lt td:nth-child(3) {{ text-align: left; }}
-.lt tr:hover td {{ background: #060F08; }}
+.bbg-tbl th.l {{ text-align: left; }}
+.bbg-tbl td {{ padding: 4px 6px; border-bottom: 1px solid #111111; text-align: right; color: #CCCCCC; white-space: nowrap; font-size: 10px; }}
+.bbg-tbl td.l {{ text-align: left; color: #FF8000; font-weight: 700; }}
+.bbg-tbl td.sec {{ text-align: left; color: #666666; font-size: 9px; }}
+.bbg-tbl tr:hover td {{ background: #111111; }}
 
-/* SIGNALS */
-.sig-sb {{ color: #00FF41; font-weight: 700; }}
-.sig-b  {{ color: #66CC66; font-weight: 600; }}
-.sig-h  {{ color: #FFCC00; font-weight: 600; }}
-.sig-s  {{ color: #FF4444; font-weight: 600; }}
+/* ── SCROLLABLE CONTAINER ── */
+.bbg-scroll {{ max-height: 360px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #FF8000 #111111; }}
+
+/* ── SIGNALS ── */
+.sig-sb {{ color: #FF8000; }}
+.sig-b  {{ color: #FFCC00; }}
+.sig-h  {{ color: #AAAAAA; }}
+.sig-s  {{ color: #CC3333; }}
 .sig-ss {{ color: #FF0000; font-weight: 700; }}
-.sig-ht {{ color: #FF00FF; font-weight: 700; }}
+.sig-ht {{ color: #FF00FF; }}
 
-/* HEATMAP */
-.hm-grid {{ display: grid; grid-template-columns: repeat(10, 1fr); gap: 2px; }}
-.hm-cell {{
-    text-align: center; padding: 5px 2px; font-size: 9px; font-weight: 700;
-    border-radius: 1px; line-height: 1.4;
+/* ── HEATMAP ── */
+.bbg-hm {{ display: grid; grid-template-columns: repeat(10, 1fr); gap: 1px; padding: 6px; }}
+.bbg-hm-cell {{ text-align: center; padding: 6px 2px; font-size: 9px; font-weight: 700; line-height: 1.4; }}
+
+/* ── TABS ── */
+.stTabs [data-baseweb="tab-list"] {{
+    background: #000000 !important;
+    border-bottom: 1px solid #333333 !important;
+    gap: 0 !important;
+    padding: 0 !important;
 }}
-
-/* MACRO ROW */
-.macro-row {{ display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }}
-.macro-card {{
-    flex: 1; min-width: 80px; background: #040C0A; border: 1px solid #0D2818;
-    padding: 5px 8px; border-radius: 2px; text-align: center;
+.stTabs [data-baseweb="tab"] {{
+    background: #000000 !important;
+    color: #666666 !important;
+    font-size: 10px !important;
+    letter-spacing: 1.5px !important;
+    padding: 6px 18px !important;
+    border-radius: 0 !important;
+    border: none !important;
+    font-family: 'Source Code Pro', monospace !important;
 }}
-.macro-lbl {{ color: #3A6B4A; font-size: 8px; letter-spacing: 1px; margin-bottom: 2px; }}
-.macro-val {{ color: #00FF41; font-size: 12px; font-weight: 700; }}
-.macro-sub {{ color: #5A8A6A; font-size: 9px; }}
-
-/* ALLOCATION BARS */
-.alloc-bar-bg {{ background: #0D2818; height: 4px; border-radius: 2px; margin-top: 3px; }}
-.alloc-bar-fill {{ height: 4px; border-radius: 2px; background: #00FF41; }}
-
-/* TOP 5 CARDS */
-.top5-grid {{ display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-bottom: 6px; }}
-.top5-card {{
-    background: #040C0A; border: 1px solid #0D2818; padding: 8px 6px;
-    border-radius: 2px; text-align: center;
+.stTabs [aria-selected="true"] {{
+    background: #111111 !important;
+    color: #FF8000 !important;
+    border-bottom: 2px solid #FF8000 !important;
 }}
-.top5-card.strong {{ border-color: #00FF41; }}
-.top5-card.buy {{ border-color: #66CC66; }}
-.top5-tkr {{ font-size: 14px; font-weight: 700; color: #00FF41; }}
-.top5-sec {{ font-size: 8px; color: #3A6B4A; letter-spacing: 1px; margin: 2px 0; }}
-.top5-score {{ font-size: 11px; color: #C8D8E8; }}
-.top5-alloc {{ font-size: 10px; font-weight: 700; margin-top: 4px; }}
+.stTabs [data-baseweb="tab-panel"] {{ padding: 0 !important; }}
 
-/* TICKER TAPE */
-.tape {{
-    position: fixed; bottom: 0; left: 0; width: 100%; background: #020408;
-    border-top: 1px solid #0D3B1E; padding: 5px 16px; font-size: 10px;
-    display: flex; gap: 24px; z-index: 999; overflow: hidden;
+/* ── TICKER TAPE ── */
+.bbg-tape {{
+    position: fixed; bottom: 0; left: 0; width: 100%;
+    background: #000000; border-top: 1px solid #FF8000;
+    padding: 4px 12px; font-size: 10px;
+    display: flex; gap: 20px; z-index: 9998; overflow: hidden;
 }}
-.tape-item {{ white-space: nowrap; }}
-.tape-sym {{ color: #4A8F6A; font-weight: 600; }}
-.tape-prc {{ color: #C8D8E8; }}
-.tape-up {{ color: #00FF41; }}
-.tape-dn {{ color: #FF4444; }}
+.tape-sym {{ color: #FF8000; font-weight: 700; margin-right: 4px; }}
+.tape-prc {{ color: #FFFFFF; }}
+.tape-up  {{ color: #00CC00; }}
+.tape-dn  {{ color: #CC0000; }}
 
-/* FRED CURVE */
-.yield-curve {{ display: flex; align-items: flex-end; gap: 3px; height: 60px; padding-top: 8px; }}
-.yc-bar-wrap {{ flex: 1; display: flex; flex-direction: column; align-items: center; }}
-.yc-bar {{ background: linear-gradient(to top, #00FF41, #005520); border-radius: 1px 1px 0 0; width: 100%; }}
-.yc-lbl {{ color: #3A6B4A; font-size: 7px; margin-top: 2px; }}
-.yc-val {{ color: #00FF41; font-size: 8px; font-weight: 700; }}
-
-/* TABS */
-.stTabs [data-baseweb="tab-list"] {{ background: #020408; border-bottom: 1px solid #0D2818; gap: 0; }}
-.stTabs [data-baseweb="tab"] {{ background: #020408; color: #3A6B4A; font-size: 10px; letter-spacing: 1px; padding: 6px 16px; border-radius: 0; }}
-.stTabs [aria-selected="true"] {{ background: #040C0A !important; color: #00FF41 !important; border-bottom: 2px solid #00FF41; }}
-
-div[data-testid="stMetric"] {{ display: none; }}
+/* ── COLUMNS SPACING ── */
+[data-testid="stHorizontalBlock"] {{ gap: 4px !important; padding: 0 4px !important; }}
+[data-testid="stVerticalBlock"] {{ gap: 0px !important; }}
+div[data-testid="column"] {{ padding: 0 2px !important; }}
 </style>
 
-<div class="status-bar">
-    <div class="s-left">◉ MKT {market_status}</div>
-    <div class="s-center">QUANT ROTATION TERMINAL v2.0 — FABER MODEL + FRED MACRO OVERLAY</div>
-    <div class="s-right">{time_str} &nbsp;|&nbsp; {date_str}</div>
+<div class="bbg-status">
+    <div class="bbg-status-l">■ MKT {market_status}</div>
+    <div class="bbg-status-c">QUANT ROTATION TERMINAL  ·  FABER MODEL + FRED MACRO OVERLAY</div>
+    <div class="bbg-status-r">{time_str}&nbsp;&nbsp;{date_str}</div>
 </div>
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 2. UNIVERSE
+# 3. UNIVERSE
 # ==========================================
 TICKER_SECTORS = {
     "OIH":"Energy","XLE":"Energy","XLB":"Materials","XME":"Materials","WOOD":"Materials",
-    "XLI":"Industrials","IYT":"Industrials","CARZ":"Cons Disc","XLY":"Cons Disc","PEJ":"Cons Disc",
-    "XRT":"Cons Disc","XLP":"Cons Staples","PBJ":"Cons Staples","IHI":"Health Care","XBI":"Health Care",
-    "KBE":"Financials","IAI":"Financials","KIE":"Financials","IGV":"Info Tech","SMH":"Info Tech",
-    "IYZ":"Comm Svcs","XLC":"Comm Svcs","XLU":"Utilities","FCG":"Utilities","IDU":"Utilities",
+    "XLI":"Industrials","IYT":"Industrials","CARZ":"Cons Disc","XLY":"Cons Disc",
+    "PEJ":"Cons Disc","XRT":"Cons Disc","XLP":"Cons Staples","PBJ":"Cons Staples",
+    "IHI":"Health Care","XBI":"Health Care","KBE":"Financials","IAI":"Financials",
+    "KIE":"Financials","IGV":"Info Tech","SMH":"Info Tech","IYZ":"Comm Svcs",
+    "XLC":"Comm Svcs","XLU":"Utilities","FCG":"Utilities","IDU":"Utilities",
     "PHO":"Utilities","ICLN":"Utilities","VNQ":"Real Estate","REET":"Real Estate",
     "EFA":"Global","VWO":"Global","INDY":"Global","KWEB":"Global",
     "DBA":"Uncorrelated","PDBC":"Uncorrelated","UUP":"Uncorrelated","VIXY":"Uncorrelated",
     "SLV":"Uncorrelated","TIP":"Uncorrelated","DBB":"Uncorrelated","CWB":"Uncorrelated",
     "IAU":"Macro","FBTC":"Macro","BIL":"Safe Harbor","IEF":"Safe Harbor","TLT":"Safe Harbor"
 }
-TICKERS = list(TICKER_SECTORS.keys())
-BENCHMARKS = ["SPY", "QQQ", "DIA", "^VIX", "^TNX", "^TYX", "GC=F", "CL=F"]
+TICKERS    = list(TICKER_SECTORS.keys())
+BENCHMARKS = ["SPY","QQQ","DIA","^VIX","^TNX","^TYX","GC=F","CL=F"]
 
 # ==========================================
-# 3. FRED API
+# 4. FRED
 # ==========================================
-FRED_API_KEY = "YOUR_FRED_API_KEY"  # ← Replace with your key from https://fred.stlouisfed.org/docs/api/api_key.html
+FRED_API_KEY = "YOUR_FRED_API_KEY"  # → free key at fred.stlouisfed.org
 
-FRED_SERIES = {
-    "DGS1MO":  "1M",
-    "DGS3MO":  "3M",
-    "DGS6MO":  "6M",
-    "DGS1":    "1Y",
-    "DGS2":    "2Y",
-    "DGS5":    "5Y",
-    "DGS10":   "10Y",
-    "DGS30":   "30Y",
-    "T10YIE":  "10Y BEI",    # 10Y Breakeven Inflation
-    "BAMLH0A0HYM2": "HY Spread",  # High Yield OAS
-    "VIXCLS":  "VIX",
-    "DCOILWTICO": "WTI Oil",
-    "DEXUSEU": "EUR/USD",
-    "DEXJPUS": "USD/JPY",
-    "UMCSENT": "Cons Sentiment",
-}
-
-@st.cache_data(ttl=3600)
-def fetch_fred(series_id):
-    """Fetch a single FRED series. Returns latest value or None."""
-    try:
-        url = f"https://api.stlouisfed.org/fred/series/observations"
-        params = {
-            "series_id": series_id,
-            "api_key": FRED_API_KEY,
-            "file_type": "json",
-            "sort_order": "desc",
-            "limit": 5,
-            "observation_start": (datetime.date.today() - datetime.timedelta(days=30)).isoformat()
-        }
-        r = requests.get(url, params=params, timeout=5)
-        if r.status_code == 200:
-            obs = [o for o in r.json().get("observations", []) if o["value"] != "."]
-            if obs:
-                return float(obs[0]["value"])
-    except:
-        pass
-    return None
-
-@st.cache_data(ttl=3600)
-def fetch_fred_series(series_id, periods=252):
-    """Fetch historical FRED series as a pandas Series."""
-    try:
-        url = f"https://api.stlouisfed.org/fred/series/observations"
-        params = {
-            "series_id": series_id,
-            "api_key": FRED_API_KEY,
-            "file_type": "json",
-            "sort_order": "desc",
-            "limit": periods,
-        }
-        r = requests.get(url, params=params, timeout=5)
-        if r.status_code == 200:
-            obs = [o for o in r.json().get("observations", []) if o["value"] != "."]
-            if obs:
-                s = pd.Series(
-                    {pd.to_datetime(o["date"]): float(o["value"]) for o in obs}
-                ).sort_index()
-                return s
-    except:
-        pass
-    return pd.Series(dtype=float)
-
-def fetch_all_fred():
-    """Fetch all FRED macro data points."""
-    data = {}
-    for sid, label in FRED_SERIES.items():
-        data[label] = fetch_fred(sid)
-    return data
-
-# Treasury curve structure for yield curve
-YIELD_CURVE_SERIES = {
+YIELD_CURVE_IDS = {
     "DGS1MO":"1M","DGS3MO":"3M","DGS6MO":"6M",
     "DGS1":"1Y","DGS2":"2Y","DGS5":"5Y","DGS10":"10Y","DGS30":"30Y"
 }
+FRED_MACRO_IDS = {
+    "DGS2":"2Y","DGS10":"10Y","DGS30":"30Y",
+    "T10YIE":"10Y BEI","BAMLH0A0HYM2":"HY Sprd",
+    "DEXUSEU":"EUR/USD","UMCSENT":"Cons Sent",
+}
+
+@st.cache_data(ttl=3600)
+def fred_latest(series_id):
+    if FRED_API_KEY == "YOUR_FRED_API_KEY":
+        return None
+    try:
+        r = requests.get(
+            "https://api.stlouisfed.org/fred/series/observations",
+            params={"series_id":series_id,"api_key":FRED_API_KEY,"file_type":"json",
+                    "sort_order":"desc","limit":5},
+            timeout=5
+        )
+        if r.status_code == 200:
+            obs = [o for o in r.json().get("observations",[]) if o["value"] != "."]
+            return float(obs[0]["value"]) if obs else None
+    except:
+        return None
 
 @st.cache_data(ttl=3600)
 def fetch_yield_curve():
-    curve = {}
-    for sid, label in YIELD_CURVE_SERIES.items():
-        val = fetch_fred(sid)
-        if val: curve[label] = val
-    return curve
+    return {lbl: fred_latest(sid) for sid, lbl in YIELD_CURVE_IDS.items()}
+
+@st.cache_data(ttl=3600)
+def fetch_fred_macro():
+    return {lbl: fred_latest(sid) for sid, lbl in FRED_MACRO_IDS.items()}
 
 # ==========================================
-# 4. MARKET DATA ENGINE
+# 5. MARKET DATA
 # ==========================================
 @st.cache_data(ttl=3600)
 def fetch_market_data():
-    all_tickers = TICKERS + BENCHMARKS
-    data = yf.download(all_tickers, period="2y", progress=False, auto_adjust=True)
-    return data
+    return yf.download(TICKERS + BENCHMARKS, period="2y", progress=False, auto_adjust=True)
 
 def calculate_factors(data, target_date):
     closes = data['Close'].loc[:target_date]
@@ -280,10 +284,10 @@ def calculate_factors(data, target_date):
     if len(closes) < 200:
         return pd.DataFrame(), False, 0.0
 
-    spy_p    = closes["SPY"].dropna()
+    spy_p     = closes["SPY"].dropna()
     vix_close = data['Close']["^VIX"].loc[:target_date].dropna().iloc[-1]
     vix_halt  = vix_close > 30
-    tnx       = data['Close']["^TNX"].loc[:target_date].dropna().iloc[-1] if "^TNX" in data['Close'].columns else None
+    tnx_val   = data['Close']["^TNX"].loc[:target_date].dropna().iloc[-1] if "^TNX" in data['Close'].columns else None
 
     results = []
     for t in TICKERS:
@@ -294,360 +298,315 @@ def calculate_factors(data, target_date):
             v = vols[t].dropna()
             if len(p) < 200: continue
 
-            # Core momentum factors
-            ytd_base = p[p.index.year == target_date.year]
-            ytd = ((p.iloc[-1] / ytd_base.iloc[0]) - 1) * 100 if not ytd_base.empty else 0
-            ret_1m = p.pct_change(21).iloc[-1]
-            ret_3m = p.pct_change(63).iloc[-1]
-            ret_6m = p.pct_change(126).iloc[-1]
+            ytd_px  = p[p.index.year == target_date.year]
+            ytd     = ((p.iloc[-1]/ytd_px.iloc[0])-1)*100 if not ytd_px.empty else 0
+
+            ret_1m  = p.pct_change(21).iloc[-1]
+            ret_3m  = p.pct_change(63).iloc[-1]
+            ret_6m  = p.pct_change(126).iloc[-1]
             ret_12m = p.pct_change(252).iloc[-1]
-            vol_1m = p.pct_change().tail(21).std() * np.sqrt(252)
-            ram    = ret_1m / vol_1m if vol_1m != 0 else 0
+            vol_1m  = p.pct_change().tail(21).std() * np.sqrt(252)
+            ram     = ret_1m / vol_1m if vol_1m != 0 else 0
             rel_str = ret_3m - spy_p.pct_change(63).iloc[-1]
 
-            sma_50   = p.rolling(50).mean()
-            sma_200  = p.rolling(200).mean()
-            sma_50_slp = (sma_50.iloc[-1] - sma_50.iloc[-21]) / sma_50.iloc[-21]
-            above_200  = p.iloc[-1] > sma_200.iloc[-1]
-            above_50   = p.iloc[-1] > sma_50.iloc[-1]
+            sma50   = p.rolling(50).mean()
+            sma200  = p.rolling(200).mean()
+            slp50   = (sma50.iloc[-1]-sma50.iloc[-21])/sma50.iloc[-21]
+            above200= p.iloc[-1] > sma200.iloc[-1]
 
-            v90 = v.rolling(90).mean().iloc[-1]
-            vol_cf = (v.rolling(20).mean().iloc[-1] / v90) if v90 != 0 else 1
+            v90    = v.rolling(90).mean().iloc[-1]
+            vol_cf = (v.rolling(20).mean().iloc[-1]/v90) if v90 != 0 else 1
 
-            tr = pd.concat([h-l, np.abs(h-p.shift()), np.abs(l-p.shift())], axis=1).max(axis=1)
-            atr = tr.rolling(14).mean().iloc[-1]
-            stop = p.tail(20).max() - (2.5 * atr)
-            stop_dist = (p.iloc[-1] - stop) / p.iloc[-1]
-            alloc_base = (0.01 / stop_dist) * 100 if stop_dist > 0 else 0
+            tr   = pd.concat([h-l, np.abs(h-p.shift()), np.abs(l-p.shift())], axis=1).max(axis=1)
+            atr  = tr.rolling(14).mean().iloc[-1]
+            stop = p.tail(20).max() - (2.5*atr)
+            sd   = (p.iloc[-1]-stop)/p.iloc[-1]
+            alloc_base = min((0.01/sd)*100, 25) if sd > 0 else 0
 
-            up = h - h.shift(1); dw = l.shift(1) - l
+            up   = h-h.shift(1); dw = l.shift(1)-l
             tr14 = tr.rolling(14).sum()
-            pd_di = 100*(pd.Series(np.where((up>dw)&(up>0),up,0),index=p.index).rolling(14).sum()/tr14)
-            md_di = 100*(pd.Series(np.where((dw>up)&(dw>0),dw,0),index=p.index).rolling(14).sum()/tr14)
-            adx   = (100*np.abs(pd_di-md_di)/(pd_di+md_di)).rolling(14).mean().iloc[-1]
+            pdi  = 100*(pd.Series(np.where((up>dw)&(up>0),up,0),index=p.index).rolling(14).sum()/tr14)
+            mdi  = 100*(pd.Series(np.where((dw>up)&(dw>0),dw,0),index=p.index).rolling(14).sum()/tr14)
+            adx  = (100*np.abs(pdi-mdi)/(pdi+mdi)).rolling(14).mean().iloc[-1]
 
-            roc_20 = p.pct_change(20).iloc[-1]
-            roc_60 = p.pct_change(60).iloc[-1]
-            roc_ac = roc_20 - (roc_60 / 3)
+            roc_ac = p.pct_change(20).iloc[-1] - (p.pct_change(60).iloc[-1]/3)
 
-            # Treasury rate adjustment — penalise low-yield assets when rates are high
             rate_adj = 0
-            if tnx and tnx > 4.5:
-                sector = TICKER_SECTORS.get(t, "")
-                if sector in ["Safe Harbor", "Utilities", "Real Estate"]:
-                    rate_adj = -0.3  # penalise bond proxies in high-rate regime
+            if tnx_val and tnx_val > 4.5:
+                if TICKER_SECTORS.get(t,"") in ["Safe Harbor","Utilities","Real Estate"]:
+                    rate_adj = -0.3
 
             results.append({
-                'TKR': t, 'SECTOR': TICKER_SECTORS[t],
-                'PRICE': p.iloc[-1], 'YTD': ytd,
-                'RET_1M': ret_1m*100, 'RET_3M': ret_3m*100,
-                'RET_6M': ret_6m*100, 'RET_12M': ret_12m*100,
-                'RAM': ram, 'REL_STR': rel_str, '50D_SLP': sma_50_slp,
-                'VOL_CF': vol_cf, 'ADX': adx, 'STOP': stop,
-                'ROC_AC': roc_ac, 'ATR': atr, 'ALLOC_BASE': min(alloc_base, 25),
-                'Above_200': above_200, 'Above_50': above_50,
-                'RATE_ADJ': rate_adj,
+                'TKR':t,'SECTOR':TICKER_SECTORS[t],
+                'PRICE':p.iloc[-1],'YTD':ytd,
+                'RET_1M':ret_1m*100,'RET_3M':ret_3m*100,
+                'RET_6M':ret_6m*100,'RET_12M':ret_12m*100,
+                'RAM':ram,'REL_STR':rel_str,'50D_SLP':slp50,
+                'VOL_CF':vol_cf,'ADX':adx,'STOP':stop,'ROC_AC':roc_ac,
+                'ALLOC_BASE':alloc_base,'Above_200':above200,'RATE_ADJ':rate_adj,
             })
-        except:
-            continue
+        except: continue
+
+    if not results:
+        return pd.DataFrame(), vix_halt, vix_close
 
     df = pd.DataFrame(results).set_index('TKR')
-    f  = ['RAM', 'REL_STR', '50D_SLP', 'VOL_CF', 'ROC_AC']
-    z  = (df[f] - df[f].mean()) / df[f].std()
-    df['SCORE'] = (
-        z['RAM']    * 0.25 +
-        z['REL_STR']* 0.20 +
-        z['50D_SLP']* 0.20 +
-        z['VOL_CF'] * 0.20 +
-        z['ROC_AC'] * 0.15
-    ) * 100 + df['RATE_ADJ'] * 10
+    f  = ['RAM','REL_STR','50D_SLP','VOL_CF','ROC_AC']
+    z  = (df[f]-df[f].mean())/df[f].std()
+    df['SCORE'] = (z['RAM']*.25+z['REL_STR']*.20+z['50D_SLP']*.20+z['VOL_CF']*.20+z['ROC_AC']*.15)*100 + df['RATE_ADJ']*10
+    df = df.sort_values('SCORE',ascending=False)
+    df['RNK'] = range(1,len(df)+1)
 
-    df = df.sort_values('SCORE', ascending=False)
-    df['RNK'] = range(1, len(df)+1)
-
-    # ── SIGNAL LOGIC ──────────────────────────────────────────────────────────
-    # Criteria checklist — each adds/removes from STRONG BUY
-    signals, reasons, allocs = [], [], []
+    sigs, ress, allocs = [], [], []
     for idx, row in df.iterrows():
         fails = []
-        if not row['Above_200']:   fails.append("Below 200MA")
-        if row['ADX'] <= 25:       fails.append(f"ADX {row['ADX']:.0f}")
-        if row['VOL_CF'] < 1.2:    fails.append(f"Vol {row['VOL_CF']:.2f}x")
-        if row['RAM'] <= 0:        fails.append("Neg RAM")
-        if row['REL_STR'] <= 0:    fails.append("Lags SPY")
-        if row['ROC_AC'] <= 0:     fails.append("Decel ROC")
-        if row['50D_SLP'] <= 0:    fails.append("Neg 50D")
-
-        rnk = row['RNK']
-        n_fail = len(fails)
+        if not row['Above_200']:  fails.append("Below 200MA")
+        if row['ADX'] <= 25:      fails.append(f"ADX {row['ADX']:.0f}")
+        if row['VOL_CF'] < 1.2:   fails.append(f"Vol {row['VOL_CF']:.2f}x")
+        if row['RAM'] <= 0:       fails.append("Neg RAM")
+        if row['REL_STR'] <= 0:   fails.append("Lags SPY")
+        if row['ROC_AC'] <= 0:    fails.append("Decel ROC")
+        if row['50D_SLP'] <= 0:   fails.append("Neg 50D")
+        rnk = row['RNK']; n = len(fails)
 
         if vix_halt:
-            sig = "HALT"; reason = "VIX>30"; alloc = 0
+            sig,res,alloc = "HALT","VIX>30",0
         elif not row['Above_200'] or row['PRICE'] < row['STOP']:
-            sig = "STRONG SELL"; reason = fails[0] if fails else "ATR Stop"; alloc = 0
-        elif rnk <= 5 and n_fail == 0:
-            sig = "STRONG BUY"; reason = "ALL CLEAR"; alloc = min(row['ALLOC_BASE'], 20)
-        elif rnk <= 5 and n_fail <= 2:
-            sig = "BUY"; reason = ", ".join(fails); alloc = min(row['ALLOC_BASE'] * 0.6, 12)
-        elif rnk <= 5 and n_fail > 2:
-            sig = "BUY"; reason = ", ".join(fails[:2]); alloc = min(row['ALLOC_BASE'] * 0.3, 6)
-        elif rnk <= 10 and n_fail == 0:
-            sig = "HOLD"; reason = "Buffer zone"; alloc = 0
-        elif rnk <= 10:
-            sig = "HOLD"; reason = ", ".join(fails[:1]); alloc = 0
+            sig,res,alloc = "STRONG SELL",fails[0] if fails else "ATR Stop",0
+        elif rnk<=5 and n==0:
+            sig,res,alloc = "STRONG BUY","ALL CLEAR",min(row['ALLOC_BASE'],20)
+        elif rnk<=5 and n<=2:
+            sig,res,alloc = "BUY",", ".join(fails),min(row['ALLOC_BASE']*0.6,12)
+        elif rnk<=5 and n>2:
+            sig,res,alloc = "BUY",", ".join(fails[:2]),min(row['ALLOC_BASE']*0.3,6)
+        elif rnk<=10 and n==0:
+            sig,res,alloc = "HOLD","Buffer",0
+        elif rnk<=10:
+            sig,res,alloc = "HOLD",", ".join(fails[:1]),0
         else:
-            sig = "SELL"; reason = ", ".join(fails[:2]) if fails else f"Rank #{rnk}"; alloc = 0
+            sig,res,alloc = "SELL",", ".join(fails[:2]) if fails else f"Rank #{rnk}",0
 
-        signals.append(sig); reasons.append(reason); allocs.append(alloc)
+        sigs.append(sig); ress.append(res); allocs.append(alloc)
 
-    df['SIGNAL']  = signals
-    df['REASON']  = reasons
-    df['ALLOC']   = allocs
+    df['SIGNAL']=sigs; df['REASON']=ress; df['ALLOC']=allocs
     return df, vix_halt, vix_close
 
 @st.cache_data(ttl=3600)
 def run_backtest(data):
-    closes = data['Close']
+    closes  = data['Close']
     monthly = closes.resample('ME').last()
     months  = monthly.index[-13:-1]
     log = []
     for i in range(len(months)-1):
         s_raw, e_raw = months[i], months[i+1]
-        s_idx = closes.index.get_indexer([s_raw], method='pad')[0]
-        e_idx = closes.index.get_indexer([e_raw], method='pad')[0]
-        s, e  = closes.index[s_idx], closes.index[e_idx]
+        si = closes.index.get_indexer([s_raw],method='pad')[0]
+        ei = closes.index.get_indexer([e_raw],method='pad')[0]
+        s, e = closes.index[si], closes.index[ei]
         snap, _, _ = calculate_factors(data, s)
         if snap.empty: continue
         buys = snap[snap['SIGNAL'].isin(['STRONG BUY','BUY'])].head(5).index.tolist()
-        spy_ret = ((closes.loc[e,'SPY'] / closes.loc[s,'SPY']) - 1) * 100
-        strat_ret = ((closes.loc[e,buys].mean() / closes.loc[s,buys].mean()) - 1)*100 if buys else 0
-        log.append({
-            "Month": s.strftime('%b %y'),
-            "Targets": ", ".join(buys) if buys else "CASH",
-            "Strategy": strat_ret,
-            "SPY": spy_ret,
-            "Alpha": strat_ret - spy_ret
-        })
+        spy_r  = ((closes.loc[e,'SPY']/closes.loc[s,'SPY'])-1)*100
+        strat_r= ((closes.loc[e,buys].mean()/closes.loc[s,buys].mean())-1)*100 if buys else 0
+        log.append({"Month":s.strftime('%b %y'),"Targets":", ".join(buys) if buys else "CASH",
+                    "Strategy":strat_r,"SPY":spy_r,"Alpha":strat_r-spy_r})
     return pd.DataFrame(log)
 
 # ==========================================
-# 5. DATA FETCH & COMPUTE
+# 6. FETCH ALL DATA
 # ==========================================
-with st.spinner(''):
-    raw_data  = fetch_market_data()
-    df, v_halt, v_close = calculate_factors(raw_data, raw_data['Close'].index[-1])
-    bt_df     = run_backtest(raw_data)
-    fred_data = fetch_all_fred()
-    yc_data   = fetch_yield_curve()
+with st.spinner("LOADING MARKET DATA..."):
+    raw      = fetch_market_data()
+    df, v_halt, v_close = calculate_factors(raw, raw['Close'].index[-1])
+    bt_df    = run_backtest(raw)
+    yc       = fetch_yield_curve()
+    fred_mac = fetch_fred_macro()
 
-closes = raw_data['Close']
-
-# ── TOP 5 ANALYSIS ────────────────────────────────────────────────────────────
-top5_df = df[df['RNK'] <= 5]
+closes = raw['Close']
+top5_df      = df[df['RNK'] <= 5]
 top5_tickers = top5_df.index.tolist()
 
-# ── REGIME ────────────────────────────────────────────────────────────────────
-safe_etfs  = ["BIL","TLT","IEF","IAU","GLD","XLU","XLP"]
-infla_etfs = ["PDBC","XLE","XME","OIH","DBA","SLV","DBB"]
-safe_cnt   = sum(t in safe_etfs for t in top5_tickers)
-inf_cnt    = sum(t in infla_etfs for t in top5_tickers)
-if safe_cnt >= 2:   regime, rc = "RISK-OFF", "#FFCC00"
-elif inf_cnt >= 2:  regime, rc = "INFLATIONARY", "#FF6600"
-else:               regime, rc = "RISK-ON", "#00FF41"
+safe_e  = ["BIL","TLT","IEF","IAU","XLU","XLP"]
+inf_e   = ["PDBC","XLE","XME","OIH","DBA","SLV","DBB"]
+sc      = sum(t in safe_e for t in top5_tickers)
+ic      = sum(t in inf_e  for t in top5_tickers)
+if sc>=2:  regime,rc = "RISK-OFF","#FFCC00"
+elif ic>=2: regime,rc = "INFLATIONARY","#FF8000"
+else:       regime,rc = "RISK-ON","#00CC00"
 
-# ── YIELD SPREAD (2s10s) ─────────────────────────────────────────────────────
-y2  = fred_data.get("2Y")
-y10 = fred_data.get("10Y")
-spread_2s10s = (y10 - y2) if (y2 and y10) else None
-curve_status = "INVERTED" if spread_2s10s and spread_2s10s < 0 else "NORMAL"
-curve_color  = "#FF4444" if curve_status == "INVERTED" else "#00FF41"
+y2  = fred_mac.get("2Y")
+y10 = fred_mac.get("10Y")
+spread = (y10-y2) if (y2 and y10) else None
+curve_lbl = "INVERTED" if spread and spread<0 else "NORMAL"
+curve_col = "#CC0000" if curve_lbl=="INVERTED" else "#00CC00"
 
 # ==========================================
-# 6. LAYOUT
+# 7. MACRO BAR
 # ==========================================
+tnx_val = closes["^TNX"].dropna().iloc[-1] if "^TNX" in closes.columns else None
+tyx_val = closes["^TYX"].dropna().iloc[-1] if "^TYX" in closes.columns else None
+gc_val  = closes["GC=F"].dropna().iloc[-1]  if "GC=F"  in closes.columns else None
+cl_val  = closes["CL=F"].dropna().iloc[-1]  if "CL=F"  in closes.columns else None
+hy_val  = fred_mac.get("HY Sprd")
+bei_val = fred_mac.get("10Y BEI")
+eurusd  = fred_mac.get("EUR/USD")
+sent    = fred_mac.get("Cons Sent")
+vix_col = "#CC0000" if v_close>30 else "#FF8000" if v_close>20 else "#00CC00"
 
-# ── ROW 1: MACRO CARDS ───────────────────────────────────────────────────────
-macro_html = '<div class="macro-row">'
+def mc(label, val, sub="", color="#FFFFFF", fmt="{:.2f}"):
+    v = fmt.format(val) if val is not None else "N/A"
+    return f"""
+    <div class="bbg-macro-cell">
+        <div class="bbg-macro-lbl">{label}</div>
+        <div class="bbg-macro-val" style="color:{color};">{v}</div>
+        <div class="bbg-macro-sub">{sub}</div>
+    </div>"""
 
-def macro_card(label, val, sub="", color="#00FF41"):
-    fmt = f"{val:.2f}" if val is not None else "N/A"
-    return f'<div class="macro-card"><div class="macro-lbl">{label}</div><div class="macro-val" style="color:{color};">{fmt}</div><div class="macro-sub">{sub}</div></div>'
-
-# VIX
-vix_col = "#FF4444" if v_close > 30 else "#FFCC00" if v_close > 20 else "#00FF41"
-macro_html += macro_card("VIX", v_close, "Fear Index", vix_col)
-
-# 10Y Treasury
-tnx_val = closes["^TNX"].dropna().iloc[-1] if "^TNX" in closes else None
-macro_html += macro_card("10Y YIELD", tnx_val, "Treasury", "#00FF41")
-
-# 30Y Treasury
-tyx_val = closes["^TYX"].dropna().iloc[-1] if "^TYX" in closes else None
-macro_html += macro_card("30Y YIELD", tyx_val, "Treasury", "#00FF41")
-
-# 2s10s Spread
-if spread_2s10s is not None:
-    macro_html += macro_card("2s10s", spread_2s10s, curve_status, curve_color)
-
-# HY Spread
-hy = fred_data.get("HY Spread")
-hy_col = "#FF4444" if hy and hy > 500 else "#FFCC00" if hy and hy > 350 else "#00FF41"
-macro_html += macro_card("HY OAS", hy, "bps", hy_col)
-
-# Breakeven inflation
-bei = fred_data.get("10Y BEI")
-macro_html += macro_card("10Y BEI", bei, "Breakeven Inf", "#FF6600")
-
-# Gold
-gc_val = closes["GC=F"].dropna().iloc[-1] if "GC=F" in closes else None
-macro_html += macro_card("GOLD", gc_val, "$/oz", "#FFCC00")
-
-# Oil
-cl_val = closes["CL=F"].dropna().iloc[-1] if "CL=F" in closes else None
-macro_html += macro_card("WTI OIL", cl_val, "$/bbl", "#FF6600")
-
-# EUR/USD
-eurusd = fred_data.get("EUR/USD")
-macro_html += macro_card("EUR/USD", eurusd, "FX", "#00FF41")
-
-# Consumer sentiment
-sent = fred_data.get("Cons Sentiment")
-sent_col = "#00FF41" if sent and sent > 80 else "#FFCC00" if sent and sent > 60 else "#FF4444"
-macro_html += macro_card("CONS SENT", sent, "UMich", sent_col)
-
-# Regime
-macro_html += f'<div class="macro-card"><div class="macro-lbl">REGIME</div><div class="macro-val" style="font-size:9px; color:{rc};">{regime}</div><div class="macro-sub">Capital Flow</div></div>'
-
+macro_html = '<div class="bbg-macro-row">'
+macro_html += mc("VIX", v_close, "Fear Index", vix_col)
+macro_html += mc("10Y YIELD", tnx_val, "Treasury", "#FF8000")
+macro_html += mc("30Y YIELD", tyx_val, "Treasury", "#FF8000")
+macro_html += mc("2s10s", spread, curve_lbl, curve_col, fmt="{:+.2f}%") if spread else mc("2s10s","N/A","Spread","#666666",fmt="{}")
+macro_html += mc("HY OAS", hy_val, "bps", "#CC0000" if hy_val and hy_val>500 else "#FF8000" if hy_val and hy_val>350 else "#00CC00")
+macro_html += mc("10Y BEI", bei_val, "Breakeven Inf", "#FF8000")
+macro_html += mc("GOLD", gc_val, "$/oz", "#FFCC00", fmt="{:.0f}")
+macro_html += mc("WTI OIL", cl_val, "$/bbl", "#FF8000", fmt="{:.2f}")
+macro_html += mc("EUR/USD", eurusd, "FX", "#FFFFFF")
+macro_html += mc("CONS SENT", sent, "UMich", "#00CC00" if sent and sent>80 else "#FF8000" if sent and sent>60 else "#CC0000")
+macro_html += f"""
+    <div class="bbg-macro-cell">
+        <div class="bbg-macro-lbl">REGIME</div>
+        <div class="bbg-macro-val" style="color:{rc}; font-size:10px;">{regime}</div>
+        <div class="bbg-macro-sub">Capital Flow</div>
+    </div>"""
 macro_html += '</div>'
 st.markdown(macro_html, unsafe_allow_html=True)
 
-# ── ROW 2: TOP 5 CARDS + YIELD CURVE ─────────────────────────────────────────
-r2c1, r2c2 = st.columns([3.5, 1.5])
+# ==========================================
+# 8. TOP 5 + YIELD CURVE ROW
+# ==========================================
+col_t5, col_yc = st.columns([3.6, 1.4])
 
-with r2c1:
-    st.markdown('<div class="panel"><div class="panel-hdr">TOP 5 ROTATION TARGETS</div>', unsafe_allow_html=True)
-    cards_html = '<div class="top5-grid">'
+with col_t5:
+    cards = '<div class="bbg-panel"><div class="bbg-panel-hdr">TOP 5 ROTATION TARGETS</div><div class="bbg-top5">'
     for tkr, row in top5_df.iterrows():
-        is_strong = row['SIGNAL'] == 'STRONG BUY'
-        card_class = "top5-card strong" if is_strong else "top5-card buy"
-        alloc_w = min(row['ALLOC'] * 5, 100)
-        alloc_col = "#00FF41" if is_strong else "#66CC66"
-        ytd_col = "#00FF41" if row['YTD'] > 0 else "#FF4444"
-        sig_label = "◉ STRONG BUY" if is_strong else "◎ BUY"
-        sig_col   = "#00FF41" if is_strong else "#66CC66"
-        cards_html += f"""
-        <div class="{card_class}">
-            <div class="top5-tkr">{tkr}</div>
-            <div class="top5-sec">{row['SECTOR']}</div>
-            <div class="top5-score">Score: {row['SCORE']:.1f}</div>
-            <div style="color:{ytd_col}; font-size:10px;">YTD {row['YTD']:+.1f}%</div>
-            <div class="top5-alloc" style="color:{sig_col};">{sig_label}</div>
-            <div style="color:{alloc_col}; font-size:11px; font-weight:700;">ALLOC {row['ALLOC']:.1f}%</div>
-            <div class="alloc-bar-bg"><div class="alloc-bar-fill" style="width:{alloc_w}%; background:{alloc_col};"></div></div>
-            <div style="color:#3A6B4A; font-size:8px; margin-top:3px;">{row['REASON']}</div>
-        </div>
-        """
-    cards_html += '</div></div>'
-    st.markdown(cards_html, unsafe_allow_html=True)
+        strong = row['SIGNAL'] == 'STRONG BUY'
+        cclass = "bbg-top5-card strong" if strong else "bbg-top5-card buy"
+        sig_col= "#FF8000" if strong else "#FFCC00"
+        sig_lbl= "◉ STRONG BUY" if strong else "◎ BUY"
+        ytd_cl = "bbg-top5-ytd-pos" if row['YTD']>0 else "bbg-top5-ytd-neg"
+        aw     = min(row['ALLOC']*5, 100)
+        cards += f"""
+        <div class="{cclass}">
+            <div class="bbg-top5-tkr">{tkr}</div>
+            <div class="bbg-top5-sec">{row['SECTOR']}</div>
+            <div class="bbg-top5-price">${row['PRICE']:.2f}</div>
+            <div class="{ytd_cl}">YTD {row['YTD']:+.1f}%</div>
+            <div class="bbg-top5-sig" style="color:{sig_col};">{sig_lbl}</div>
+            <div class="bbg-top5-alloc">ALLOC {row['ALLOC']:.1f}%</div>
+            <div class="bbg-top5-bar-bg"><div class="bbg-top5-bar-fill" style="width:{aw}%; background:{sig_col};"></div></div>
+            <div class="bbg-top5-reason">Score {row['SCORE']:.1f} &nbsp;|&nbsp; ADX {row['ADX']:.0f} &nbsp;|&nbsp; {row['REASON']}</div>
+        </div>"""
+    cards += '</div></div>'
+    st.markdown(cards, unsafe_allow_html=True)
 
-with r2c2:
-    # Yield Curve
-    yc_html = '<div class="panel"><div class="panel-hdr">TREASURY YIELD CURVE</div>'
-    if yc_data:
-        labels = ["1M","3M","6M","1Y","2Y","5Y","10Y","30Y"]
-        vals   = [yc_data.get(l) for l in labels]
-        valid  = [(l,v) for l,v in zip(labels,vals) if v is not None]
-        if valid:
-            max_v = max(v for _,v in valid)
-            yc_html += '<div class="yield-curve">'
-            for lbl, val in valid:
-                bar_h = max(4, int((val / max_v) * 52)) if max_v > 0 else 4
-                yc_html += f'<div class="yc-bar-wrap"><div class="yc-val">{val:.1f}</div><div class="yc-bar" style="height:{bar_h}px;"></div><div class="yc-lbl">{lbl}</div></div>'
-            yc_html += '</div>'
-            if spread_2s10s is not None:
-                yc_html += f'<div style="text-align:center; margin-top:6px; font-size:9px; color:{curve_color};">2s10s SPREAD: {spread_2s10s:+.2f}% &nbsp;|&nbsp; {curve_status}</div>'
+with col_yc:
+    yc_html = '<div class="bbg-panel"><div class="bbg-panel-hdr">TREASURY YIELD CURVE</div>'
+    labels  = ["1M","3M","6M","1Y","2Y","5Y","10Y","30Y"]
+    vals    = [yc.get(l) for l in labels]
+    valid   = [(l,v) for l,v in zip(labels,vals) if v is not None]
+    if valid:
+        mx = max(v for _,v in valid)
+        yc_html += '<div class="bbg-yc">'
+        for lbl,val in valid:
+            bh = max(4, int((val/mx)*58)) if mx>0 else 4
+            yc_html += f'<div class="bbg-yc-col"><div class="bbg-yc-val">{val:.1f}</div><div class="bbg-yc-bar" style="height:{bh}px;"></div><div class="bbg-yc-lbl">{lbl}</div></div>'
+        yc_html += '</div>'
+        if spread is not None:
+            yc_html += f'<div class="bbg-yc-spread" style="color:{curve_col};">2s10s {spread:+.2f}% &nbsp;·&nbsp; {curve_lbl}</div>'
     else:
-        yc_html += '<div style="color:#3A6B4A; font-size:10px; padding:10px;">Add FRED API key to enable yield curve</div>'
+        yc_html += '<div style="padding:12px; color:#555555; font-size:9px;">Add FRED API key to enable live yield curve</div>'
     yc_html += '</div>'
     st.markdown(yc_html, unsafe_allow_html=True)
 
-# ── ROW 3: TABS ──────────────────────────────────────────────────────────────
+# ==========================================
+# 9. TABS
+# ==========================================
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
-    "  📊 CHART  ",
-    "  📋 LEDGER  ",
-    "  🔥 HEATMAP  ",
-    "  ⏱ BACKTEST  ",
-    "  🌐 MACRO API  "
+    "  CHART  ","  LEDGER  ","  HEATMAP  ","  BACKTEST  ","  API STATUS  "
 ])
 
-# ── TAB 1: TOP 5 CHART ───────────────────────────────────────────────────────
+# ── CHART ────────────────────────────────────────────────────────────────────
 with tab1:
-    st.markdown('<div class="panel"><div class="panel-hdr">TOP 5 YTD PERFORMANCE vs SPY</div>', unsafe_allow_html=True)
-    ytd_start = closes[closes.index.year == now_est.year]
-    if not ytd_start.empty and top5_tickers:
-        chart_rows = {}
-        spy_base = closes['SPY'][closes.index >= ytd_start.index[0]].dropna()
-        chart_rows['SPY'] = ((spy_base / spy_base.iloc[0]) - 1) * 100
+    c1, c2 = st.columns(2)
+    with c1:
+        st.markdown('<div class="bbg-panel"><div class="bbg-panel-hdr">YTD — TOP 5 vs SPY</div><div class="bbg-panel-body">', unsafe_allow_html=True)
+        ytd_start = closes[closes.index.year == now_est.year]
+        if not ytd_start.empty and top5_tickers:
+            rows = {}
+            spy_s = closes['SPY'][closes.index >= ytd_start.index[0]].dropna()
+            rows['SPY'] = ((spy_s/spy_s.iloc[0])-1)*100
+            for t in top5_tickers:
+                if t in closes.columns:
+                    s = closes[t][closes.index >= ytd_start.index[0]].dropna()
+                    if not s.empty: rows[t] = ((s/s.iloc[0])-1)*100
+            cd = pd.DataFrame(rows).dropna()
+            if not cd.empty:
+                st.line_chart(cd, height=260, use_container_width=True)
+        st.markdown('</div></div>', unsafe_allow_html=True)
 
-        for t in top5_tickers:
-            if t in closes.columns:
-                s = closes[t][closes.index >= ytd_start.index[0]].dropna()
-                if not s.empty:
-                    chart_rows[t] = ((s / s.iloc[0]) - 1) * 100
+    with c2:
+        st.markdown('<div class="bbg-panel"><div class="bbg-panel-hdr">6-MONTH ROLLING — TOP 5 vs SPY</div><div class="bbg-panel-body">', unsafe_allow_html=True)
+        six_mo = closes.index[-1] - pd.DateOffset(months=6)
+        if top5_tickers:
+            rows2 = {}
+            for t in top5_tickers + ['SPY']:
+                if t in closes.columns:
+                    s = closes[t][closes.index >= six_mo].dropna()
+                    if not s.empty: rows2[t] = ((s/s.iloc[0])-1)*100
+            rd = pd.DataFrame(rows2).dropna()
+            if not rd.empty:
+                st.line_chart(rd, height=260, use_container_width=True)
+        st.markdown('</div></div>', unsafe_allow_html=True)
 
-        chart_df = pd.DataFrame(chart_rows).dropna()
-        if not chart_df.empty:
-            st.line_chart(chart_df, height=280, use_container_width=True)
+    # Bloomberg TV
+    st.markdown('<div class="bbg-panel"><div class="bbg-panel-hdr">LIVE — BLOOMBERG TV</div>', unsafe_allow_html=True)
+    components.html('<iframe width="100%" height="200" src="https://www.youtube.com/embed/iEpJwprxDdk?autoplay=1&mute=1" frameborder="0" allowfullscreen></iframe>', height=205)
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # 6-month rolling window chart
-    st.markdown('<div class="panel"><div class="panel-hdr">6-MONTH ROLLING WINDOW</div>', unsafe_allow_html=True)
-    six_mo_ago = closes.index[-1] - pd.DateOffset(months=6)
-    if top5_tickers:
-        roll_rows = {}
-        for t in top5_tickers + ['SPY']:
-            if t in closes.columns:
-                s = closes[t][closes.index >= six_mo_ago].dropna()
-                if not s.empty:
-                    roll_rows[t] = ((s / s.iloc[0]) - 1) * 100
-        roll_df = pd.DataFrame(roll_rows).dropna()
-        if not roll_df.empty:
-            st.line_chart(roll_df, height=220, use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-
-# ── TAB 2: FULL LEDGER ───────────────────────────────────────────────────────
+# ── LEDGER ───────────────────────────────────────────────────────────────────
 with tab2:
-    def sig_class(s):
-        if 'STRONG BUY' in s: return 'sig-sb'
-        if 'BUY' in s: return 'sig-b'
-        if 'HOLD' in s: return 'sig-h'
-        if 'HALT' in s: return 'sig-ht'
+    def sc_cls(s):
+        if 'STRONG BUY' in s:  return 'sig-sb'
+        if 'BUY' in s:         return 'sig-b'
+        if 'HOLD' in s:        return 'sig-h'
+        if 'HALT' in s:        return 'sig-ht'
         if 'STRONG SELL' in s: return 'sig-ss'
         return 'sig-s'
 
-    ledger = '<div class="panel"><div class="panel-hdr">QUANTITATIVE FACTOR LEDGER — ALL 46 ASSETS</div>'
-    ledger += '<div class="ledger-wrap"><table class="lt"><thead><tr>'
-    heads = ['RNK','TKR','SECTOR','SIGNAL','REASON','ALLOC','PRICE','STOP','ADX','SCORE','YTD','1M','3M','6M','12M','RAM','VOL_CF']
-    for h in heads:
-        ledger += f'<th>{h}</th>'
-    ledger += '</tr></thead><tbody>'
+    hdrs = ['RNK','TKR','SECTOR','SIGNAL','REASON','ALLOC','PRICE','STOP','ADX','SCORE','YTD','1M%','3M%','6M%','12M%','RAM','VOL_CF']
+    tbl  = '<div class="bbg-panel"><div class="bbg-panel-hdr">QUANTITATIVE FACTOR LEDGER — ALL 46 ASSETS</div>'
+    tbl += '<div class="bbg-scroll"><table class="bbg-tbl"><thead><tr>'
+    for h in hdrs:
+        align = 'l' if h in ['TKR','SECTOR','SIGNAL','REASON'] else ''
+        tbl += f'<th class="{align}">{h}</th>'
+    tbl += '</tr></thead><tbody>'
 
     for tkr, row in df.iterrows():
-        sc = sig_class(row['SIGNAL'])
-        ytd_col = "#00FF41" if row['YTD'] > 0 else "#FF4444"
-        alloc_str = f"{row['ALLOC']:.1f}%" if row['ALLOC'] > 0 else "—"
-        ledger += f"""<tr>
+        c   = sc_cls(row['SIGNAL'])
+        yc_ = "#00CC00" if row['YTD']>0 else "#CC0000"
+        al  = f"{row['ALLOC']:.1f}%" if row['ALLOC']>0 else "—"
+        tbl += f"""<tr>
             <td>{row['RNK']}</td>
-            <td>{tkr}</td>
-            <td>{row['SECTOR']}</td>
-            <td class="{sc}">{row['SIGNAL']}</td>
-            <td style="color:#5A8A6A; font-size:9px;">{row['REASON']}</td>
-            <td style="color:#FF6600;">{alloc_str}</td>
+            <td class="l">{tkr}</td>
+            <td class="sec">{row['SECTOR']}</td>
+            <td class="l {c}">{row['SIGNAL']}</td>
+            <td class="l" style="color:#555555; font-size:9px;">{row['REASON']}</td>
+            <td style="color:#FF8000;">{al}</td>
             <td>{row['PRICE']:.2f}</td>
-            <td>{row['STOP']:.2f}</td>
+            <td style="color:#CC0000;">{row['STOP']:.2f}</td>
             <td>{row['ADX']:.1f}</td>
-            <td style="color:#00FF41;">{row['SCORE']:.1f}</td>
-            <td style="color:{ytd_col};">{row['YTD']:.1f}%</td>
+            <td style="color:#FF8000;">{row['SCORE']:.1f}</td>
+            <td style="color:{yc_};">{row['YTD']:.1f}%</td>
             <td>{row['RET_1M']:.1f}%</td>
             <td>{row['RET_3M']:.1f}%</td>
             <td>{row['RET_6M']:.1f}%</td>
@@ -655,137 +614,131 @@ with tab2:
             <td>{row['RAM']:.2f}</td>
             <td>{row['VOL_CF']:.2f}</td>
         </tr>"""
+    tbl += '</tbody></table></div></div>'
+    st.markdown(tbl, unsafe_allow_html=True)
 
-    ledger += '</tbody></table></div></div>'
-    st.markdown(ledger, unsafe_allow_html=True)
-
-# ── TAB 3: HEATMAP ───────────────────────────────────────────────────────────
+# ── HEATMAP ──────────────────────────────────────────────────────────────────
 with tab3:
-    st.markdown('<div class="panel"><div class="panel-hdr">YTD PERFORMANCE HEATMAP</div><div class="hm-grid">', unsafe_allow_html=True)
-    hm_html = ""
-    for tkr, row in df.sort_values('YTD', ascending=False).iterrows():
-        v   = row['YTD']
-        sig = row['SIGNAL']
-        if v > 20:    bg, fg = "#005520", "#00FF41"
-        elif v > 10:  bg, fg = "#003D18", "#00CC33"
-        elif v > 0:   bg, fg = "#001A0A", "#009922"
-        elif v > -10: bg, fg = "#1A0000", "#CC3333"
-        else:         bg, fg = "#330000", "#FF4444"
-        border = "border: 1px solid #00FF41;" if 'BUY' in sig else ""
-        hm_html += f'<div class="hm-cell" style="background:{bg}; color:{fg}; {border}">{tkr}<br>{v:+.1f}%</div>'
-    st.markdown(hm_html + '</div></div>', unsafe_allow_html=True)
+    h1, h2 = st.columns(2)
+    with h1:
+        st.markdown('<div class="bbg-panel"><div class="bbg-panel-hdr">YTD PERFORMANCE</div><div class="bbg-hm">', unsafe_allow_html=True)
+        hm = ""
+        for tkr, row in df.sort_values('YTD',ascending=False).iterrows():
+            v = row['YTD']
+            if v>20:    bg,fg="#004400","#00FF00"
+            elif v>10:  bg,fg="#003300","#00CC00"
+            elif v>0:   bg,fg="#001A00","#009900"
+            elif v>-10: bg,fg="#1A0000","#CC3333"
+            else:       bg,fg="#330000","#FF4444"
+            bdr = "border:1px solid #FF8000;" if 'BUY' in row['SIGNAL'] else ""
+            hm += f'<div class="bbg-hm-cell" style="background:{bg};color:{fg};{bdr}">{tkr}<br>{v:+.1f}%</div>'
+        st.markdown(hm + '</div></div>', unsafe_allow_html=True)
 
-    # Score heatmap
-    st.markdown('<div class="panel"><div class="panel-hdr">MOMENTUM SCORE HEATMAP</div><div class="hm-grid">', unsafe_allow_html=True)
-    score_html = ""
-    max_score = df['SCORE'].max(); min_score = df['SCORE'].min()
-    for tkr, row in df.sort_values('SCORE', ascending=False).iterrows():
-        s = row['SCORE']
-        norm = (s - min_score) / (max_score - min_score) if max_score != min_score else 0.5
-        g = int(norm * 200)
-        bg = f"rgb(0,{g+30},0)" if norm > 0.5 else f"rgb({int((1-norm)*150)},30,0)"
-        fg = "#00FF41" if norm > 0.5 else "#FF6644"
-        score_html += f'<div class="hm-cell" style="background:{bg}; color:{fg};">{tkr}<br>{s:.0f}</div>'
-    st.markdown(score_html + '</div></div>', unsafe_allow_html=True)
+    with h2:
+        st.markdown('<div class="bbg-panel"><div class="bbg-panel-hdr">MOMENTUM SCORE</div><div class="bbg-hm">', unsafe_allow_html=True)
+        hm2 = ""
+        mx_ = df['SCORE'].max(); mn_ = df['SCORE'].min()
+        for tkr, row in df.sort_values('SCORE',ascending=False).iterrows():
+            s = row['SCORE']
+            n = (s-mn_)/(mx_-mn_) if mx_!=mn_ else 0.5
+            bg = f"rgb(0,{int(n*160)+20},0)" if n>0.5 else f"rgb({int((1-n)*130)},20,0)"
+            fg = "#FF8000" if n>0.7 else "#FFCC00" if n>0.4 else "#CC3333"
+            hm2 += f'<div class="bbg-hm-cell" style="background:{bg};color:{fg};">{tkr}<br>{s:.0f}</div>'
+        st.markdown(hm2 + '</div></div>', unsafe_allow_html=True)
 
-# ── TAB 4: BACKTEST ──────────────────────────────────────────────────────────
+# ── BACKTEST ─────────────────────────────────────────────────────────────────
 with tab4:
-    bc1, bc2, bc3 = st.columns([1.5, 1.5, 1])
+    bc1, bc2, bc3 = st.columns([1.4, 1.6, 1.0])
     with bc1:
-        st.markdown('<div class="panel"><div class="panel-hdr">12-MONTH MONTH-BY-MONTH</div>', unsafe_allow_html=True)
-        if not bt_df.empty:
-            bt_table = '<div class="ledger-wrap" style="max-height:280px;"><table class="lt"><thead><tr><th>MONTH</th><th>TARGETS</th><th>STRAT</th><th>SPY</th><th>ALPHA</th></tr></thead><tbody>'
-            for _, r in bt_df.iterrows():
-                sc = "#00FF41" if r['Strategy'] > 0 else "#FF4444"
-                ac = "#00FF41" if r['Alpha'] > 0 else "#FF4444"
-                bt_table += f'<tr><td>{r["Month"]}</td><td style="color:#00CCFF; font-size:9px;">{r["Targets"]}</td><td style="color:{sc};">{r["Strategy"]:.1f}%</td><td style="color:#888;">{r["SPY"]:.1f}%</td><td style="color:{ac}; font-weight:700;">{r["Alpha"]:+.1f}%</td></tr>'
-            bt_table += '</tbody></table></div></div>'
-            st.markdown(bt_table, unsafe_allow_html=True)
+        tbl2 = '<div class="bbg-panel"><div class="bbg-panel-hdr">MONTH-BY-MONTH</div>'
+        tbl2 += '<div class="bbg-scroll" style="max-height:300px;"><table class="bbg-tbl"><thead><tr>'
+        tbl2 += '<th class="l">MONTH</th><th class="l">TARGETS</th><th>STRAT</th><th>SPY</th><th>ALPHA</th>'
+        tbl2 += '</tr></thead><tbody>'
+        for _, r in bt_df.iterrows():
+            sc_ = "#00CC00" if r['Strategy']>0 else "#CC0000"
+            ac_ = "#00CC00" if r['Alpha']>0    else "#CC0000"
+            tbl2 += f'<tr><td class="l">{r["Month"]}</td><td class="l" style="color:#888888;font-size:9px;">{r["Targets"]}</td><td style="color:{sc_};">{r["Strategy"]:.1f}%</td><td style="color:#666666;">{r["SPY"]:.1f}%</td><td style="color:{ac_};font-weight:700;">{r["Alpha"]:+.1f}%</td></tr>'
+        tbl2 += '</tbody></table></div></div>'
+        st.markdown(tbl2, unsafe_allow_html=True)
 
     with bc2:
-        st.markdown('<div class="panel"><div class="panel-hdr">STRATEGY vs SPY RETURNS</div>', unsafe_allow_html=True)
+        st.markdown('<div class="bbg-panel"><div class="bbg-panel-hdr">STRATEGY vs SPY</div><div class="bbg-panel-body">', unsafe_allow_html=True)
         if not bt_df.empty:
-            chart_bt = bt_df.set_index('Month')[['Strategy','SPY']]
-            st.bar_chart(chart_bt, height=280, use_container_width=True, color=["#00FF41","#FF4444"])
-        st.markdown('</div>', unsafe_allow_html=True)
+            st.bar_chart(bt_df.set_index('Month')[['Strategy','SPY']], height=280, use_container_width=True, color=["#FF8000","#444444"])
+        st.markdown('</div></div>', unsafe_allow_html=True)
 
     with bc3:
-        st.markdown('<div class="panel"><div class="panel-hdr">SUMMARY STATS</div>', unsafe_allow_html=True)
+        st.markdown('<div class="bbg-panel"><div class="bbg-panel-hdr">SUMMARY</div><div class="bbg-panel-body">', unsafe_allow_html=True)
         if not bt_df.empty:
-            total_strat = bt_df['Strategy'].sum()
-            total_spy   = bt_df['SPY'].sum()
-            total_alpha = bt_df['Alpha'].sum()
-            win_rate    = (bt_df['Strategy'] > bt_df['SPY']).mean() * 100
-            pos_months  = (bt_df['Strategy'] > 0).sum()
-            stats_html  = f"""<table class="qt">
-                <tr><td>Total Return</td><td style="color:#00FF41;">{total_strat:.1f}%</td></tr>
-                <tr><td>SPY Return</td><td style="color:#FF4444;">{total_spy:.1f}%</td></tr>
-                <tr><td>Total Alpha</td><td style="color:#00FF41;">{total_alpha:+.1f}%</td></tr>
-                <tr><td>Win Rate</td><td style="color:#00FF41;">{win_rate:.0f}%</td></tr>
-                <tr><td>Pos Months</td><td style="color:#00FF41;">{pos_months}/{len(bt_df)}</td></tr>
-                <tr><td>Avg Alpha</td><td style="color:#00FF41;">{total_alpha/len(bt_df):+.1f}%</td></tr>
-            </table>"""
-            st.markdown(stats_html, unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+            ts  = bt_df['Strategy'].sum()
+            tsp = bt_df['SPY'].sum()
+            ta  = bt_df['Alpha'].sum()
+            wr  = (bt_df['Strategy']>bt_df['SPY']).mean()*100
+            pm  = (bt_df['Strategy']>0).sum()
+            st.markdown(f"""<table class="bbg-tbl">
+                <tr><td class="l">Strat Return</td><td style="color:#FF8000;">{ts:.1f}%</td></tr>
+                <tr><td class="l">SPY Return</td><td style="color:#666666;">{tsp:.1f}%</td></tr>
+                <tr><td class="l">Total Alpha</td><td style="color:#00CC00;">{ta:+.1f}%</td></tr>
+                <tr><td class="l">Win Rate</td><td style="color:#FF8000;">{wr:.0f}%</td></tr>
+                <tr><td class="l">Positive Months</td><td>{pm}/{len(bt_df)}</td></tr>
+                <tr><td class="l">Avg Monthly Alpha</td><td style="color:#00CC00;">{ta/len(bt_df):+.1f}%</td></tr>
+            </table>""", unsafe_allow_html=True)
+        st.markdown('</div></div>', unsafe_allow_html=True)
 
-# ── TAB 5: MACRO API STATUS ──────────────────────────────────────────────────
+# ── API STATUS ───────────────────────────────────────────────────────────────
 with tab5:
-    st.markdown('<div class="panel"><div class="panel-hdr">MACRO DATA API CONNECTIONS</div>', unsafe_allow_html=True)
-
-    fred_connected = FRED_API_KEY != "YOUR_FRED_API_KEY" and any(v is not None for v in fred_data.values())
-
-    api_table = '<table class="qt"><thead><tr><th>API</th><th>DATA</th><th>STATUS</th><th>HOW TO CONNECT</th></tr></thead><tbody>'
-
+    fred_ok = FRED_API_KEY != "YOUR_FRED_API_KEY" and any(v is not None for v in fred_mac.values())
     apis = [
-        ("FRED (St. Louis Fed)", "Treasury yields, inflation, spreads, FX, sentiment",
-         fred_connected, "Get free key at fred.stlouisfed.org → replace FRED_API_KEY in code"),
-        ("Yahoo Finance (yfinance)", "Price, volume, OHLC for all 46 ETFs + benchmarks",
-         True, "Active — no key needed"),
-        ("Alpha Vantage", "Fundamental data: P/E, EPS, revenue, earnings dates",
-         False, "Get free key at alphavantage.co → add fetch_alpha_vantage() function"),
-        ("Quandl / Nasdaq Data Link", "COT reports, futures positioning, economic data",
-         False, "Get key at data.nasdaq.com → pip install nasdaq-data-link"),
-        ("SEC EDGAR", "ETF holdings, 13F filings, institutional flow data",
-         False, "Free API at efts.sec.gov — no key needed, add fetch_edgar() function"),
-        ("CME / CFTC", "Commitment of Traders — futures positioning by asset class",
-         False, "Free at cftc.gov/MarketReports → parse weekly COT CSV"),
-        ("OpenBB / Financial Modeling Prep", "Macro calendar, earnings, dividends, analyst ratings",
-         False, "Get key at financialmodelingprep.com → add fetch_fmp() function"),
-        ("BLS (Bureau of Labor Stats)", "CPI, PPI, unemployment, jobs data",
-         False, "Free API at api.bls.gov → register for key"),
+        ("FRED — St. Louis Fed",      "Treasury yields, inflation breakeven, HY spread, FX, sentiment", fred_ok,
+         "Free key → fred.stlouisfed.org — replace FRED_API_KEY in code"),
+        ("Yahoo Finance (yfinance)",   "All 46 ETF prices, OHLCV, benchmarks, futures",                 True,
+         "Active — no key required"),
+        ("Alpha Vantage",              "Fundamentals: P/E, EPS, revenue, earnings calendar",             False,
+         "Free key → alphavantage.co — add fetch_alpha_vantage()"),
+        ("Nasdaq Data Link / Quandl",  "COT reports, futures positioning, alternative datasets",         False,
+         "Free key → data.nasdaq.com — pip install nasdaq-data-link"),
+        ("SEC EDGAR",                  "ETF holdings, 13F filings, institutional ownership flow",        False,
+         "Free → efts.sec.gov — no key needed"),
+        ("CFTC — Commitment of Traders","Futures positioning by asset class, large spec vs commercial",  False,
+         "Free weekly CSV → cftc.gov/MarketReports"),
+        ("Financial Modeling Prep",    "Macro calendar, dividends, analyst ratings, sector P/E",         False,
+         "Free tier → financialmodelingprep.com"),
+        ("BLS — Bureau of Labor Stats","CPI, PPI, unemployment, non-farm payrolls",                     False,
+         "Free key → api.bls.gov"),
     ]
+    tbl3  = '<div class="bbg-panel"><div class="bbg-panel-hdr">API CONNECTION STATUS</div>'
+    tbl3 += '<table class="bbg-tbl"><thead><tr><th class="l">API SOURCE</th><th class="l">DATA PROVIDED</th><th>STATUS</th><th class="l">HOW TO CONNECT</th></tr></thead><tbody>'
+    for name,desc,ok,how in apis:
+        sc_  = "#00CC00" if ok else "#CC0000"
+        stxt = "● CONNECTED" if ok else "○ DISCONNECTED"
+        tbl3 += f'<tr><td class="l" style="color:#FF8000;">{name}</td><td class="l" style="color:#666666;font-size:9px;">{desc}</td><td style="color:{sc_};font-size:9px;">{stxt}</td><td class="l" style="color:#555555;font-size:9px;">{how}</td></tr>'
+    tbl3 += '</tbody></table>'
 
-    for name, data_desc, connected, how_to in apis:
-        status_col = "#00FF41" if connected else "#FF4444"
-        status_txt = "● CONNECTED" if connected else "○ NOT CONNECTED"
-        api_table += f'<tr><td style="color:#00CC33; font-weight:700;">{name}</td><td style="color:#5A8A6A; font-size:9px;">{data_desc}</td><td style="color:{status_col}; font-size:9px;">{status_txt}</td><td style="color:#3A6B4A; font-size:9px;">{how_to}</td></tr>'
+    # FRED live values
+    tbl3 += '<div class="bbg-panel-hdr" style="margin-top:8px;border-top:1px solid #333;">FRED LIVE DATA</div>'
+    tbl3 += '<table class="bbg-tbl"><thead><tr><th class="l">SERIES</th><th>VALUE</th><th>STATUS</th></tr></thead><tbody>'
+    for lbl,val in fred_mac.items():
+        ok2  = val is not None
+        sc2  = "#00CC00" if ok2 else "#555555"
+        stx2 = "● LIVE" if ok2 else "○ NEEDS KEY"
+        fmt  = f"{val:.3f}" if ok2 else "—"
+        tbl3 += f'<tr><td class="l">{lbl}</td><td style="color:#FF8000;">{fmt}</td><td style="color:{sc2};font-size:9px;">{stx2}</td></tr>'
+    tbl3 += '</tbody></table></div>'
+    st.markdown(tbl3, unsafe_allow_html=True)
 
-    api_table += '</tbody></table>'
-    st.markdown(api_table, unsafe_allow_html=True)
-
-    # FRED live data display
-    st.markdown('<div style="margin-top:8px;"><div class="panel-hdr" style="margin-top:10px;">FRED LIVE DATA FEED</div>', unsafe_allow_html=True)
-    fred_table = '<table class="qt"><thead><tr><th>SERIES</th><th>VALUE</th><th>STATUS</th></tr></thead><tbody>'
-    for label, val in fred_data.items():
-        status = "● LIVE" if val is not None else "○ NEEDS API KEY"
-        sc = "#00FF41" if val is not None else "#FF4444"
-        fmt = f"{val:.3f}" if val is not None else "—"
-        fred_table += f'<tr><td>{label}</td><td style="color:#00FF41;">{fmt}</td><td style="color:{sc}; font-size:9px;">{status}</td></tr>'
-    fred_table += '</tbody></table></div>'
-    st.markdown(fred_table + '</div>', unsafe_allow_html=True)
-
-# ── TICKER TAPE ───────────────────────────────────────────────────────────────
-tape_syms = ["SPY", "QQQ", "DIA", "^VIX", "^TNX", "GC=F", "CL=F"]
-tape_html = '<div class="tape">'
+# ==========================================
+# 10. TICKER TAPE
+# ==========================================
+tape_syms = ["SPY","QQQ","DIA","^VIX","^TNX","GC=F","CL=F"]
+tape = '<div class="bbg-tape">'
 for sym in tape_syms:
     try:
-        col = closes[sym].dropna()
-        cur, prv = col.iloc[-1], col.iloc[-2]
-        pct = ((cur - prv) / prv) * 100
-        pc  = "tape-up" if pct >= 0 else "tape-dn"
+        col_ = closes[sym].dropna()
+        cur,prv = col_.iloc[-1], col_.iloc[-2]
+        pct = ((cur-prv)/prv)*100
+        pc  = "tape-up" if pct>=0 else "tape-dn"
         lbl = sym.replace("^","").replace("=F","")
-        tape_html += f'<span class="tape-item"><span class="tape-sym">{lbl}</span> <span class="tape-prc">{cur:.2f}</span> <span class="{pc}">{pct:+.2f}%</span></span>'
-    except:
-        pass
-tape_html += '</div>'
-st.markdown(tape_html, unsafe_allow_html=True)
+        tape += f'<span><span class="tape-sym">{lbl}</span> <span class="tape-prc">{cur:.2f}</span> <span class="{pc}">{pct:+.2f}%</span></span>'
+    except: pass
+tape += '</div>'
+st.markdown(tape, unsafe_allow_html=True)
