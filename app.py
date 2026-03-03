@@ -421,7 +421,7 @@ macro_html += '</div></div>'
 st.markdown(macro_html, unsafe_allow_html=True)
 
 # ── TOP 5 + BLOOMBERG TV ──────────────────────────────────────────────────────
-col_t5, col_tv = st.columns([3.8, 1.2])
+col_t5, col_tv = st.columns([3.5, 1.5])
 
 with col_t5:
     cards = '<div class="bbg-top5-wrap"><div class="bbg-panel"><div class="bbg-panel-hdr">TOP 5 ROTATION TARGETS — SOLOMON STRATEGY</div><div class="bbg-top5">'
@@ -448,8 +448,8 @@ with col_t5:
 with col_tv:
     st.markdown('<div class="bbg-tv-wrap"><div class="bbg-panel"><div class="bbg-panel-hdr">LIVE — BLOOMBERG TV</div>', unsafe_allow_html=True)
     components.html(
-        '<iframe width="100%" height="160" src="https://www.youtube.com/embed/iEpJwprxDdk?autoplay=1&mute=1" frameborder="0" allowfullscreen style="display:block;"></iframe>',
-        height=165
+        '<iframe width="100%" height="165" src="https://www.youtube.com/embed/iEpJwprxDdk?autoplay=1&mute=1" frameborder="0" allowfullscreen style="display:block;"></iframe>',
+        height=170
     )
     st.markdown('</div></div>', unsafe_allow_html=True)
 
