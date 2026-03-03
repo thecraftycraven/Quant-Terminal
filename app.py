@@ -373,8 +373,11 @@ sent   =fred_mac.get("Cons Sent")
 vix_col="#CC0000" if v_close>30 else "#FF8000" if v_close>20 else "#00CC00"
 
 def mc(label, val, sub="", color="#FFFFFF", fmt="{:.2f}"):
-    v = fmt.format(val) if val is not None else "N/A"
-    return f'''<div class="bbg-macro-cell"><div class="bbg-macro-lbl">{label}</div><div class="bbg-macro-val" style="color:{color};">{v}</div><div class="bbg-macro-sub">{sub}</div></div>'''
+    try:
+        v = fmt.format(val) if (val is not None and not isinstance(val, str)) else (val if isinstance(val, str) else "N/A")
+    except Exception:
+        v = "N/A"
+    return f'<div class="bbg-macro-cell"><div class="bbg-macro-lbl">{label}</div><div class="bbg-macro-val" style="color:{color};">{v}</div><div class="bbg-macro-sub">{sub}</div></div>'
 
 # ── MACRO BAR — labelled assets ───────────────────────────────────────────────
 macro_html = '<div class="bbg-macro-row">'
@@ -387,7 +390,8 @@ macro_html += mc("GOLD FUTURES", gc_val, "$/oz  Comex GC=F", "#FFCC00", fmt="{:.
 macro_html += mc("WTI CRUDE OIL", cl_val, "$/bbl  Nymex CL=F", "#FF8000", fmt="{:.2f}")
 macro_html += mc("EUR/USD FX", eurusd, "Euro vs Dollar", "#FFFFFF")
 macro_html += mc("UMICH SENT", sent, "Consumer Sentiment", "#00CC00" if sent and sent>80 else "#FF8000" if sent and sent>60 else "#CC0000")
-macro_html += mc("BLS CPI", cpi_val, f"All Urban {cpi_per or ""} {cpi_yr or ""}", "#FF8000")
+cpi_sub = f"All Urban {cpi_per or chr(32)} {cpi_yr or chr(32)}"
+macro_html += mc("BLS CPI", cpi_val, cpi_sub, "#FF8000")
 
 if spread is not None:
     macro_html += f'''<div class="bbg-macro-cell"><div class="bbg-macro-lbl">2s10s SPREAD</div><div class="bbg-macro-val" style="color:{cs_col};">{spread:+.2f}%</div><div class="bbg-macro-sub">Yield Curve {cs_lbl}</div></div>'''
