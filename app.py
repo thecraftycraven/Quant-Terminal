@@ -368,7 +368,7 @@ if st.button("INITIATE AUTONOMOUS MARKET SCAN"):
                     vol = info.get('averageVolume', 0) or 0
                     weekly_vol = vol * 5
                     
-                    if (300000000 <= aum <= 2000000000) and (weekly_vol >= 1000000):
+                    if (3000000 <= aum <= 20000000) and (weekly_vol >= 100000):
                         survivors.append(ticker)
                 except:
                     pass
