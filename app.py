@@ -383,5 +383,5 @@ import streamlit.components.v1 as components
 
 # Injects a 24/7 Live Financial Broadcast (e.g., Bloomberg TV live feed)
 st.markdown('<div class="bbg-panel"><div class="bbg-header">LIVE GLOBAL SQUAWK</div>', unsafe_allow_html=True)
-components.iframe("https://www.youtube.com/embed/live_stream?channel=UCp0hYYBW6IMayGgR-WeoCvQ&autoplay=1&mute=1", height=250)
+components.iframe("https://www.youtube.com/watch?v=iEpJwprxDdk", height=250)
 st.markdown('</div>', unsafe_allow_html=True)
