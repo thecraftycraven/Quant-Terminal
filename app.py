@@ -103,7 +103,7 @@ st.markdown(CSS, unsafe_allow_html=True)
 STATUS_HTML = f"""<div class="bbg-status">
     <div class="bbg-status-l" style="color:{status_color};">■ MKT {market_status}</div>
     <div class="bbg-status-c">NEW YORK LATINO FINANCIAL TERMINAL &nbsp;·&nbsp; SOLOMON STRATEGY</div>
-    <div class="bbg-status-r">{time_str}&nbsp;&nbsp;{date_str}</div>
+    <div class="bbg-status-r"><span style="color:{data_src_col};margin-right:12px;">{data_source}</span>{time_str}&nbsp;&nbsp;{date_str}</div>
 </div>"""
 st.markdown(STATUS_HTML, unsafe_allow_html=True)
 TICKER_SECTORS = {
@@ -437,6 +437,45 @@ with st.spinner(""):
     newsapi_articles = fetch_newsapi()
     global_idx = fetch_global_indices()
 closes = raw["Close"]
+
+# ── SCHWAB LIVE PRICES (overrides Yahoo when connected) ───────────────────────
+schwab_live = {}
+schwab_connected = bool(st.session_state.get("schwab_access_token"))
+if schwab_connected and is_open and not is_weekend:
+    # Fetch ETFs + major indices Schwab supports
+    schwab_syms = TICKERS + ["SPY","QQQ","IWM","DIA","GLD","USO"]
+    raw_quotes = schwab_get_quotes(st.session_state.schwab_access_token, schwab_syms)
+    for sym, data in raw_quotes.items():
+        q = data.get("quote", {})
+        last = q.get("lastPrice", q.get("mark"))
+        chg  = q.get("netPercentChangeInDouble", None)
+        if last:
+            schwab_live[sym] = {"price": last, "chg_pct": chg}
+    # Auto-refresh every 60s during market hours
+    if "last_schwab_refresh" not in st.session_state:
+        st.session_state.last_schwab_refresh = now_est
+    elapsed = (now_est - st.session_state.last_schwab_refresh).seconds
+    if elapsed >= 60:
+        st.session_state.last_schwab_refresh = now_est
+        st.rerun()
+
+def live_price(tkr, fallback):
+    """Return Schwab live price if available, else Yahoo fallback"""
+    if tkr in schwab_live:
+        return schwab_live[tkr]["price"]
+    return fallback
+
+def live_chg(tkr, fallback_price, prev_price):
+    """Return Schwab % change if available, else calculate from Yahoo"""
+    if tkr in schwab_live and schwab_live[tkr]["chg_pct"] is not None:
+        return schwab_live[tkr]["chg_pct"]
+    if prev_price and prev_price != 0:
+        return ((fallback_price - prev_price) / prev_price) * 100
+    return 0.0
+
+data_source = "● SCHWAB LIVE" if schwab_live else "○ YAHOO FINANCE"
+data_src_col = "#00FFFF" if schwab_live else "#555"
+last_refresh_str = now_est.strftime("%H:%M:%S ET")
 top5_df = df[df["RNK"]<=5]
 top5_tickers = top5_df.index.tolist()
 safe_e=["BIL","TLT","IEF","IAU","XLU","XLP"]
@@ -499,19 +538,33 @@ macro_html += '</div></div>'
 st.markdown(macro_html, unsafe_allow_html=True)
 col_t5, col_tv = st.columns([3.8, 1.2])
 with col_t5:
-    cards = '<div class="bbg-top5-wrap"><div class="bbg-panel"><div class="bbg-panel-hdr">TOP 5 ROTATION TARGETS — SOLOMON STRATEGY</div><div class="bbg-top5">'
+    t5_src = f'<span style="color:{data_src_col};font-size:8px;margin-left:8px;">{data_source}</span>'
+    cards = f'<div class="bbg-top5-wrap"><div class="bbg-panel"><div class="bbg-panel-hdr">TOP 5 ROTATION TARGETS — SOLOMON STRATEGY {t5_src}</div><div class="bbg-top5">'
     for tkr,row in top5_df.iterrows():
         strong  = row["SIGNAL"]=="STRONG BUY"
         cclass  = "bbg-t5c strong" if strong else "bbg-t5c buy"
         sig_col = "#FF8000" if strong else "#FFCC00"
         sig_lbl = "◉ STRONG BUY" if strong else "◎ BUY"
-        ytd_cls = "ytd-pos" if row["YTD"]>0 else "ytd-neg"
+        # Live price + YTD
+        live_px = live_price(tkr, row["PRICE"])
+        if tkr in schwab_live:
+            ytd_px = closes[tkr][closes[tkr].index.year==now_est.year].dropna()
+            live_ytd = ((live_px / ytd_px.iloc[0]) - 1) * 100 if not ytd_px.empty else row["YTD"]
+            live_chg_pct = schwab_live[tkr].get("chg_pct") or 0
+            px_col = "#00FFFF"
+        else:
+            live_ytd = row["YTD"]
+            live_chg_pct = 0
+            px_col = "#FFFFFF"
+        ytd_cls = "ytd-pos" if live_ytd>0 else "ytd-neg"
         aw      = min(row["ALLOC"]*5, 100)
+        chg_col = "#00CC00" if live_chg_pct >= 0 else "#CC0000"
+        chg_str = f'<span style="color:{chg_col};font-size:10px;">{live_chg_pct:+.2f}%</span>' if tkr in schwab_live else ""
         cards  += f'''<div class="{cclass}">
             <div class="bbg-t5-tkr">{tkr}</div>
             <div class="bbg-t5-sec">{row["SECTOR"]}</div>
-            <div class="bbg-t5-price">${row["PRICE"]:.2f}</div>
-            <div class="{ytd_cls}">YTD {row["YTD"]:+.1f}%</div>
+            <div class="bbg-t5-price" style="color:{px_col};">${live_px:.2f} {chg_str}</div>
+            <div class="{ytd_cls}">YTD {live_ytd:+.1f}%</div>
             <div class="bbg-t5-sig" style="color:{sig_col};">{sig_lbl}</div>
             <div class="bbg-t5-alloc">ALLOC {row["ALLOC"]:.1f}%</div>
             <div class="bar-bg"><div class="bar-fill" style="width:{aw}%;background:{sig_col};"></div></div>
@@ -588,13 +641,32 @@ with tab1:
         st.markdown(pie_html, unsafe_allow_html=True)
         st.markdown('</div></div>', unsafe_allow_html=True)
     with b2:
-        st.markdown('<div class="bbg-panel"><div class="bbg-panel-hdr">YTD — GLOBAL INDICES</div><div class="bbg-panel-body">', unsafe_allow_html=True)
+        # Schwab uses ETF proxies for major indices
+        INDEX_SCHWAB_MAP = {
+            "SPY":"S&P 500","QQQ":"NASDAQ 100","IWM":"Russell 2K","DIA":"Dow Jones","GLD":"Gold ETF","USO":"Oil ETF"
+        }
         INDEX_LABELS={
             "^GSPC":"S&P 500","^DJI":"Dow Jones","^IXIC":"NASDAQ Comp","^NDX":"NASDAQ 100",
             "^RUT":"Russell 2K","^VIX":"VIX","^GDAXI":"DAX","^FTSE":"FTSE 100",
             "^FCHI":"CAC 40","^N225":"Nikkei 225","^HSI":"Hang Seng",
             "000001.SS":"Shanghai","^GSPTSE":"TSX Composite"
         }
+        gi_src = f'<span style="color:{data_src_col};font-size:8px;margin-left:8px;">{data_source}</span>'
+        st.markdown(f'<div class="bbg-panel"><div class="bbg-panel-hdr">GLOBAL INDICES — YTD CHART + LIVE {gi_src}</div><div class="bbg-panel-body">', unsafe_allow_html=True)
+
+        # Live intraday table from Schwab when connected
+        if schwab_live:
+            live_tbl = '<table class="bbg-tbl" style="margin-bottom:8px;"><thead><tr><th class="l">ETF PROXY</th><th class="l">INDEX</th><th>LAST</th><th>CHG%</th></tr></thead><tbody>'
+            for sym, lbl in INDEX_SCHWAB_MAP.items():
+                if sym in schwab_live:
+                    px  = schwab_live[sym]["price"]
+                    chg = schwab_live[sym].get("chg_pct") or 0
+                    cc  = "#00CC00" if chg >= 0 else "#CC0000"
+                    live_tbl += f'<tr><td class="l" style="color:#00FFFF;">{sym}</td><td class="l" style="color:#888;">{lbl}</td><td style="color:#FFF;">{px:.2f}</td><td style="color:{cc};">{chg:+.2f}%</td></tr>'
+            live_tbl += '</tbody></table>'
+            st.markdown(live_tbl, unsafe_allow_html=True)
+
+        # YTD line chart from Yahoo (historical)
         if not global_idx.empty:
             idx_rows={}
             for col in global_idx.columns:
@@ -605,7 +677,7 @@ with tab1:
                     idx_rows[lbl]=((s_ytd/s_ytd.iloc[0])-1)*100
             if idx_rows:
                 idx_df=pd.DataFrame(idx_rows).dropna(how="all")
-                st.line_chart(idx_df,height=260,use_container_width=True)
+                st.line_chart(idx_df,height=200,use_container_width=True)
         else:
             st.markdown('<div style="color:#555;font-size:10px;padding:20px;">Loading global indices...</div>', unsafe_allow_html=True)
         st.markdown('</div></div>', unsafe_allow_html=True)
@@ -617,8 +689,9 @@ with tab2:
         if "HALT"       in s: return "sig-ht"
         if "STRONG SELL"in s: return "sig-ss"
         return "sig-s"
-    hdrs=["RNK","TKR","SECTOR","SIGNAL","REASON","ALLOC","PRICE","STOP","ADX","SCORE","YTD","1M%","3M%","6M%","9M%","RAM","VOL_CF"]
-    tbl='<div class="bbg-panel"><div class="bbg-panel-hdr">SOLOMON STRATEGY — QUANTITATIVE LEDGER — ALL 46 ASSETS</div>'
+    src_badge = f'<span style="color:{data_src_col};font-size:9px;margin-left:8px;">{data_source} · {last_refresh_str}</span>'
+    hdrs=["RNK","TKR","SECTOR","SIGNAL","REASON","ALLOC","PRICE","CHG%","STOP","ADX","SCORE","YTD","1M%","3M%","6M%","9M%","RAM","VOL_CF"]
+    tbl=f'<div class="bbg-panel"><div class="bbg-panel-hdr">SOLOMON STRATEGY — QUANTITATIVE LEDGER — ALL 46 ASSETS {src_badge}</div>'
     tbl+='<div class="bbg-scroll"><table class="bbg-tbl"><thead><tr>'
     for h in hdrs:
         al="l" if h in ["TKR","SECTOR","SIGNAL","REASON"] else ""
@@ -628,12 +701,19 @@ with tab2:
         c_=sc_cls(row["SIGNAL"])
         yc_=("#00CC00" if row["YTD"]>0 else "#CC0000")
         al_=f'{row["ALLOC"]:.1f}%' if row["ALLOC"]>0 else "—"
+        live_px  = live_price(tkr, row["PRICE"])
+        prev_px  = closes[tkr].dropna().iloc[-2] if tkr in closes.columns and len(closes[tkr].dropna())>1 else None
+        chg_pct  = live_chg(tkr, live_px, prev_px)
+        chg_col  = "#00CC00" if chg_pct >= 0 else "#CC0000"
+        px_col   = "#00FFFF" if tkr in schwab_live else "#CCC"
         tbl+=f'''<tr>
             <td>{row["RNK"]}</td><td class="l">{tkr}</td><td class="sec">{row["SECTOR"]}</td>
             <td class="l {c_}">{row["SIGNAL"]}</td>
             <td class="l" style="color:#444;font-size:9px;">{row["REASON"]}</td>
             <td style="color:#FF8000;">{al_}</td>
-            <td>{row["PRICE"]:.2f}</td><td style="color:#CC0000;">{row["STOP"]:.2f}</td>
+            <td style="color:{px_col};">{live_px:.2f}</td>
+            <td style="color:{chg_col};">{chg_pct:+.2f}%</td>
+            <td style="color:#CC0000;">{row["STOP"]:.2f}</td>
             <td>{row["ADX"]:.1f}</td><td style="color:#FF8000;">{row["SCORE"]:.1f}</td>
             <td style="color:{yc_};">{row["YTD"]:.1f}%</td>
             <td>{row["RET_1M"]:.1f}%</td><td>{row["RET_3M"]:.1f}%</td>
@@ -645,17 +725,25 @@ with tab2:
 with tab3:
     h1,h2=st.columns(2)
     with h1:
-        st.markdown('<div class="bbg-panel"><div class="bbg-panel-hdr">YTD PERFORMANCE</div><div class="bbg-hm">', unsafe_allow_html=True)
+        src_badge3 = f'<span style="color:{data_src_col};font-size:9px;margin-left:8px;">{data_source}</span>'
+        st.markdown(f'<div class="bbg-panel"><div class="bbg-panel-hdr">YTD PERFORMANCE {src_badge3}</div><div class="bbg-hm">', unsafe_allow_html=True)
         hm=""
         for tkr,row in df.sort_values("YTD",ascending=False).iterrows():
-            v=row["YTD"]
+            live_px = live_price(tkr, row["PRICE"])
+            # Recalc YTD using live price if Schwab connected
+            if tkr in schwab_live:
+                ytd_px = closes[tkr][closes[tkr].index.year==now_est.year].dropna()
+                v = ((live_px / ytd_px.iloc[0]) - 1) * 100 if not ytd_px.empty else row["YTD"]
+            else:
+                v = row["YTD"]
             if v>20:    bg,fg="#004400","#00FF00"
             elif v>10:  bg,fg="#003300","#00CC00"
             elif v>0:   bg,fg="#001A00","#009900"
             elif v>-10: bg,fg="#1A0000","#CC3333"
             else:       bg,fg="#2A0000","#FF4444"
             bdr="border:1px solid #FF8000;" if "BUY" in row["SIGNAL"] else "border:1px solid #1A1A1A;"
-            hm+=f'<div class="bbg-hm-cell" style="background:{bg};color:{fg};{bdr}"><span>{tkr}</span><span>{v:+.1f}%</span></div>'
+            live_dot = '<span style="color:#00FFFF;font-size:7px;">●</span>' if tkr in schwab_live else ""
+            hm+=f'<div class="bbg-hm-cell" style="background:{bg};color:{fg};{bdr}"><span>{tkr}{live_dot}</span><span>{v:+.1f}%</span></div>'
         st.markdown(hm+'</div></div>', unsafe_allow_html=True)
     with h2:
         st.markdown('<div class="bbg-panel"><div class="bbg-panel-hdr">MOMENTUM SCORE</div><div class="bbg-hm">', unsafe_allow_html=True)
