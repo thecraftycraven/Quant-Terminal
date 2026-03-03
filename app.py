@@ -626,7 +626,7 @@ with tab4:
             bt_sorted = bt_df.copy()
             bt_sorted.index = range(len(bt_sorted))
             month_order = bt_sorted["Month"].tolist()
-            chart_data = bt_sorted.set_index("Month")[["Strategy","SPY"]]
+            vega_data = []
             st.bar_chart(chart_data, height=220, use_container_width=True, color=["#FF8000","#444444"])
         st.markdown('</div></div>', unsafe_allow_html=True)
         st.markdown('<div class="bbg-panel"><div class="bbg-panel-hdr">CUMULATIVE RETURNS</div><div class="bbg-panel-body">', unsafe_allow_html=True)
