@@ -6,7 +6,9 @@ import datetime
 from zoneinfo import ZoneInfo
 import streamlit.components.v1 as components
 
-# 1. Page Configuration
+# ==========================================
+# 1. PAGE CONFIGURATION & CSS
+# ==========================================
 st.set_page_config(page_title="Quant Terminal", layout="wide", initial_sidebar_state="collapsed")
 
 est_zone = ZoneInfo('America/New_York')
@@ -28,10 +30,13 @@ st.markdown(f"""
     .status-right {{ color: #FF6600; text-align: right; font-weight: bold; font-size: 14px; }}
     .bbg-panel {{ border: 1px solid #333; background-color: #0A0A0A; padding: 12px; margin-bottom: 15px; border-radius: 4px; box-shadow: 0 4px 10px rgba(0,0,0,0.8); }}
     .bbg-header {{ color: #FF6600; font-weight: 900; font-size: 13px; text-transform: uppercase; border-bottom: 1px solid #333; padding-bottom: 6px; margin-bottom: 10px; letter-spacing: 1px; }}
+    .ledger-container {{ max-height: 400px; overflow-y: auto; border: 1px solid #333; background: #000; margin-bottom: 40px; }}
     .ledger-table {{ width: 100%; border-collapse: collapse; font-size: 11px; }}
     .ledger-table th {{ position: sticky; top: 0; background-color: #111; color: #FF6600; z-index: 10; border-bottom: 2px solid #FF6600; padding: 8px; text-align: left; }}
-    .ledger-table td {{ padding: 8px; border-bottom: 1px solid #222; text-align: left; font-family: monospace; }}
+    .ledger-table td {{ padding: 8px; border-bottom: 1px solid #222; text-align: left; font-family: monospace; font-size: 12px; }}
     .ledger-table tr:hover {{ background-color: #1A1A1A; }}
+    .heatmap-grid {{ display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px; }}
+    .heat-cell {{ text-align: center; padding: 8px 0px; font-size: 10px; font-weight: 900; color: #000; }}
     #MainMenu, footer, header {{visibility: hidden;}}
     </style>
     <div class="status-bar">
@@ -40,7 +45,9 @@ st.markdown(f"""
     </div>
     """, unsafe_allow_html=True)
 
-# 2. Complete 46-Asset Sector Map
+# ==========================================
+# 2. DEFINITIVE 46-ASSET SECTOR MAP
+# ==========================================
 TICKER_SECTORS = {
     "OIH": "Energy", "XLE": "Energy", "XLB": "Materials", "XME": "Materials", "WOOD": "Materials",
     "XLI": "Industrials", "IYT": "Industrials", "CARZ": "Cons Disc", "XLY": "Cons Disc", "PEJ": "Cons Disc",
@@ -53,64 +60,121 @@ TICKER_SECTORS = {
     "DBB": "Uncorrelated", "CWB": "Uncorrelated", "IAU": "Macro", "FBTC": "Macro", "BIL": "Safe Harbor",
     "IEF": "Safe Harbor", "TLT": "Safe Harbor"
 }
-
 TICKERS = list(TICKER_SECTORS.keys())
 BENCHMARKS = ["SPY", "QQQ", "^VIX", "DIA"] 
 ALL_SYMBOLS = TICKERS + BENCHMARKS
 
+# ==========================================
+# 3. CORE DATA ENGINE
+# ==========================================
 @st.cache_data(ttl=3600)
 def fetch_data():
     return yf.download(ALL_SYMBOLS, period="2y", progress=False)
 
-def calculate_snapshot(data, target_date):
-    closes = data['Close'].loc[:target_date]
+def calculate_snapshot(raw_data, target_date):
+    closes = raw_data['Close'].loc[:target_date]
+    highs = raw_data['High'].loc[:target_date]
+    lows = raw_data['Low'].loc[:target_date]
+    volumes = raw_data['Volume'].loc[:target_date]
+    
     if len(closes) < 200: return pd.DataFrame(), False, 0.0
     
     spy_p = closes["SPY"].dropna()
-    vix_close = data['Close']["^VIX"].loc[:target_date].iloc[-1]
+    vix_close = closes["^VIX"].dropna().iloc[-1]
     vix_halt = vix_close > 30 
     
     results = []
     for t in TICKERS:
         try:
-            p = closes[t].dropna()
+            p, h, l, v = closes[t].dropna(), highs[t].dropna(), lows[t].dropna(), volumes[t].dropna()
             if len(p) < 200: continue
-            # Math: RAM, ROC, ADX, ATR, Vol_CF...
-            results.append({'TKR': t, 'SECTOR': TICKER_SECTORS[t], 'PRICE': p.iloc[-1], 'RNK': 0})
+            
+            # --- FACTOR MATH ---
+            ret_1m = p.pct_change(21).iloc[-1]
+            vol_1m = p.pct_change().tail(21).std() * np.sqrt(252)
+            ram = ret_1m / vol_1m if vol_1m != 0 else 0
+            rel_str = p.pct_change(63).iloc[-1] - spy_p.pct_change(63).iloc[-1]
+            sma_50 = p.rolling(50).mean()
+            sma_50_slp = (sma_50.iloc[-1] - sma_50.iloc[-21]) / sma_50.iloc[-21]
+            vol_cf = (v.rolling(20).mean().iloc[-1] / v.rolling(90).mean().iloc[-1])
+            adx = 30.0 # Proxy for this build
+            peak = p.tail(20).max()
+            atr = (h-l).rolling(14).mean().iloc[-1]
+            stop = peak - (2.5 * atr)
+            
+            results.append({
+                'TKR': t, 'SECTOR': TICKER_SECTORS[t], 'PRICE': p.iloc[-1], 
+                'RAM': ram, 'REL_STR': rel_str, '50D_SLP': sma_50_slp, 'VOL_CF': vol_cf,
+                'ADX': adx, 'STOP': stop, 'Above_200': p.iloc[-1] > p.rolling(200).mean().iloc[-1]
+            })
         except: continue
             
     df = pd.DataFrame(results).set_index('TKR')
-    # Rank & Signal logic here
+    f = ['RAM', 'REL_STR', '50D_SLP', 'VOL_CF']
+    z = (df[f] - df[f].mean()) / df[f].std()
+    df['SCORE'] = (z['RAM']*.3 + z['REL_STR']*.3 + z['50D_SLP']*.2 + z['VOL_CF']*.2) * 100
+    df = df.sort_values('SCORE', ascending=False)
+    df['RNK'] = range(1, len(df) + 1)
+    
+    signals, reasons = [], []
+    for _, row in df.iterrows():
+        # --- HARDENED SIGNAL LOGIC (Prevents KeyError) ---
+        reason = ""
+        if not row['Above_200']: reason = "Below 200DMA"
+        elif row['ADX'] <= 25: reason = "Choppy"
+        
+        if vix_halt: signals.append("HALT"); reasons.append("VIX > 30")
+        elif reason == "" and row['RNK'] <= 5: signals.append("STRONG BUY"); reasons.append("PASSED")
+        elif row['RNK'] <= 10: signals.append("HOLD"); reasons.append("Buffer")
+        else: signals.append("SELL"); reasons.append(reason if reason else "Out of Rank")
+            
+    df['SIGNAL'] = signals; df['REASON'] = reasons
     return df, vix_halt, vix_close
 
-# --- DATA EXECUTION ---
-raw_data = fetch_data()
-df, vix_halt, vix_close = calculate_snapshot(raw_data, raw_data.index[-1])
+# --- EXECUTION ---
+with st.spinner('INITIATING ENGINE...'):
+    data = fetch_data()
+    df, vix_halt, vix_close = calculate_snapshot(data, data.index[-1])
 
-# --- UI RENDERING ---
+# --- UI LAYOUT ---
 col1, col2 = st.columns([1.2, 1.8])
 
 with col1:
     v_color = "red" if vix_halt else "#00FF00"
-    st.markdown(f'<div class="bbg-panel"><div class="bbg-header">SYSTEM STATUS</div>'
-                f'<table><tr><td>VIX REGIME</td><td style="color:{v_color};">{vix_close:.2f}</td></tr></table></div>', unsafe_allow_html=True)
-    # Regime Rotation Radar here
+    st.markdown(f'<div class="bbg-panel"><div class="bbg-header">ARCHITECTURE</div>'
+                f'<table><tr><td>VIX REGIME</td><td style="text-align:right; color:{v_color};">{vix_close:.2f}</td></tr></table></div>', unsafe_allow_html=True)
+    
+    # Regime Rotation Radar
+    top_5 = df.head(5).index.tolist()
+    r_text, r_col = ("EQUITY RISK-ON", "#00FF00") if not any(x in top_5 for x in ["BIL", "TLT"]) else ("RISK-OFF", "#FF0000")
+    st.markdown(f'<div class="bbg-panel"><div class="bbg-header">REGIME RADAR</div>'
+                f'<div style="text-align:center; font-weight:bold; color:{r_col};">{r_text}</div></div>', unsafe_allow_html=True)
 
 with col2:
     sub1, sub2 = st.columns(2)
     with sub1:
         st.markdown('<div class="bbg-panel"><div class="bbg-header">STRATEGY VS SPY</div>', unsafe_allow_html=True)
-        # Line Chart
+        spy_c = (data['Close']['SPY'] / data['Close']['SPY'].iloc[0] - 1) * 100
+        st.line_chart(spy_c.tail(60), height=205)
+        st.markdown('</div>', unsafe_allow_html=True)
     with sub2:
         st.markdown('<div class="bbg-panel"><div class="bbg-header">BLOOMBERG TV</div>', unsafe_allow_html=True)
         components.html('<iframe width="100%" height="205" src="https://www.youtube.com/embed/iEpJwprxDdk?autoplay=1&mute=1" frameborder="0" allowfullscreen></iframe>', height=210)
+        st.markdown('</div>', unsafe_allow_html=True)
 
-# Ledger Rendering
+    # Heatmap
+    st.markdown('<div class="bbg-panel"><div class="bbg-header">PERFORMANCE HEATMAP</div><div class="heatmap-grid">', unsafe_allow_html=True)
+    for t, row in df.head(16).iterrows():
+        st.markdown(f'<div class="heat-cell" style="background-color:#00FF00;">{t}</div>', unsafe_allow_html=True)
+    st.markdown('</div></div>', unsafe_allow_html=True)
+
+# --- THE LEDGER ---
 st.markdown('<div class="bbg-panel"><div class="bbg-header">QUANTITATIVE LEDGER</div>', unsafe_allow_html=True)
-ledger_html = '<div class="ledger-container"><table class="ledger-table"><thead><tr><th>RNK</th><th>TKR</th><th>SECTOR</th><th>SIGNAL</th><th>PRICE</th></tr></thead><tbody>'
+ledger_html = '<div class="ledger-container"><table class="ledger-table"><thead><tr><th>RNK</th><th>TKR</th><th>SECTOR</th><th>SIGNAL</th><th>REASON</th><th>PRICE</th></tr></thead><tbody>'
 for t, row in df.iterrows():
-    ledger_html += f'<tr><td>{row["RNK"]}</td><td>{t}</td><td>{row["SECTOR"]}</td><td>{row["SIGNAL"]}</td><td>{row["PRICE"]:.2f}</td></tr>'
-st.markdown(ledger_html + '</tbody></table></div>', unsafe_allow_html=True)
+    s_col = '#00FF00' if 'BUY' in row['SIGNAL'] else '#FF0000'
+    ledger_html += f'<tr><td>{row["RNK"]}</td><td style="color:#FF6600; font-weight:bold;">{t}</td><td>{row["SECTOR"]}</td><td style="color:{s_col}; font-weight:bold;">{row["SIGNAL"]}</td><td>{row["REASON"]}</td><td>{row["PRICE"]:.2f}</td></tr>'
+st.markdown(ledger_html + '</tbody></table></div></div>', unsafe_allow_html=True)
 # ==========================================
 # 3. CORE DATA ENGINE
 # ==========================================
