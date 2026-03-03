@@ -55,7 +55,7 @@ st.markdown(f"""
     </div>
     """, unsafe_allow_html=True)
 
-# 2. Universe Definition
+# 2. Universe Definition (INVERSE ETFs ADDED: SH, PSQ, DOG, TBF)
 BENCHMARKS = ["SPY", "QQQ", "^VIX", "DIA"] 
 TICKERS = [
     "AMLP", "BDRY", "BJK", "COAL", "COPX", "CRAK", "CRUZ", "EATZ", "FINX", "FIW", 
@@ -64,14 +64,14 @@ TICKERS = [
     "JETS", "KBWB", "KRE", "MOO", "NERD", "OIH", "ONLN", "PAVE", "PBJ", "PEJ", 
     "PHO", "PICK", "REET", "REM", "REZ", "RTH", "RTM", "RWR", "SIL", "SKYY", "SLX", 
     "SOCL", "SOXX", "VEGI", "VIS", "VNQ", "WOOD", "XBI", "XLC", "XLI", "XLK", 
-    "XLP", "XLU", "XLV", "XLY", "XME", "XOP", "XRT", "XSD", "XTN", "XT"
+    "XLP", "XLU", "XLV", "XLY", "XME", "XOP", "XRT", "XSD", "XTN", "XT",
+    "SH", "PSQ", "DOG", "TBF" # Bear Market Mandate Inverse Exposure
 ]
 ALL_SYMBOLS = TICKERS + BENCHMARKS
 
 # 3. Data Engine
 @st.cache_data(ttl=3600)
 def fetch_data():
-    # We now need High and Low data for ATR and ADX
     data = yf.download(ALL_SYMBOLS, period="1y", progress=False)
     return data['Close'], data['High'], data['Low'], data['Volume']
 
@@ -79,9 +79,9 @@ def calculate_factors(closes, highs, lows, volumes, current_year):
     results = []
     spy_p = closes["SPY"].dropna()
     
-    # 1. Macro Kill Switch Check
+    # Macro Kill Switch Check
     vix_close = closes["^VIX"].dropna().iloc[-1]
-    vix_halt = vix_close > 30 # Trigger risk-off if VIX spikes
+    vix_halt = vix_close > 30 
     
     for ticker in TICKERS:
         try:
@@ -91,7 +91,6 @@ def calculate_factors(closes, highs, lows, volumes, current_year):
             v = volumes[ticker].dropna()
             if len(p) < 200: continue
             
-            # Basic Returns
             p_year = p[p.index.year == current_year]
             ytd_ret = ((p.iloc[-1] - p_year.iloc[0]) / p_year.iloc[0]) * 100 if len(p_year) > 0 else 0
             ret_1m = p.pct_change(21).iloc[-1]
@@ -108,7 +107,7 @@ def calculate_factors(closes, highs, lows, volumes, current_year):
             vol_90 = v.rolling(90).mean().iloc[-1]
             vol_conf = (v.rolling(20).mean().iloc[-1] / vol_90) if vol_90 != 0 else 1
             
-            # Advanced Risk: ATR & Trailing Stop
+            # ATR & Trailing Stop
             high_low = h - l
             high_close = np.abs(h - p.shift())
             low_close = np.abs(l - p.shift())
@@ -118,7 +117,12 @@ def calculate_factors(closes, highs, lows, volumes, current_year):
             peak_20d = p.tail(20).max()
             trailing_stop = peak_20d - (2.5 * atr)
             
-            # Advanced Risk: ADX (Trend Strength Proxy via Pandas)
+            # VOLATILITY TARGETING (1% Account Risk Model)
+            stop_dist_pct = (p.iloc[-1] - trailing_stop) / p.iloc[-1]
+            alloc_pct = (0.01 / stop_dist_pct) * 100 if stop_dist_pct > 0 else 0
+            alloc_pct = min(alloc_pct, 25.0) # Cap max single position weight at 25%
+            
+            # ADX Calculation
             up_move = h - h.shift(1)
             down_move = l.shift(1) - l
             plus_dm = np.where((up_move > down_move) & (up_move > 0), up_move, 0)
@@ -133,12 +137,13 @@ def calculate_factors(closes, highs, lows, volumes, current_year):
                 'TKR': ticker, 'PRICE': p.iloc[-1], 'YTD': ytd_ret, 'RAM': ram, 
                 'ROC_AC': roc_accel, 'REL_STR': rel_strength, '50D_SLP': sma_50_slope, 
                 'VOL_CF': vol_conf, 'ADX': adx, 'STOP_PRC': trailing_stop, 
+                'ALLOC_%': alloc_pct, # Added Allocation Parameter
                 'Above_200': p.iloc[-1] > p.rolling(200).mean().iloc[-1]
             })
         except: continue
             
     df = pd.DataFrame(results).set_index('TKR')
-    f = ['RAM', 'ROC_AC', 'REL_STR', '50D_SLP', 'VOL_CF'] # Excluded ADX from Z-score, it's a hard filter
+    f = ['RAM', 'ROC_AC', 'REL_STR', '50D_SLP', 'VOL_CF'] 
     z = (df[f] - df[f].mean()) / df[f].std()
     
     df['SCORE'] = (z['RAM']*.25 + z['REL_STR']*.20 + z['ROC_AC']*.20 + z['50D_SLP']*.20 + z['VOL_CF']*.15) * 100
@@ -146,48 +151,75 @@ def calculate_factors(closes, highs, lows, volumes, current_year):
     df['RNK'] = range(1, len(df) + 1)
     
     signals = []
+    fail_reasons = []
+    
     for idx, row in df.iterrows():
-        # Elite Absolute Alignment: Requires Trend (ADX > 25)
-        fits_all_parameters = (
-            row['Above_200'] and row['RAM'] > 0 and row['REL_STR'] > 0 and 
-            row['ROC_AC'] > 0 and row['50D_SLP'] > 0 and row['VOL_CF'] >= 1.2 and
-            row['ADX'] > 25
-        )
+        reason = ""
+        if not row['Above_200']: reason = "Below 200DMA"
+        elif row['ADX'] <= 25: reason = f"Choppy (ADX:{row['ADX']:.1f})"
+        elif row['VOL_CF'] < 1.2: reason = f"Low Vol ({row['VOL_CF']:.2f}x)"
+        elif row['RAM'] <= 0: reason = "Neg Momentum"
+        elif row['REL_STR'] <= 0: reason = "Lagging SPY"
+        elif row['ROC_AC'] <= 0: reason = "Decelerating"
+        elif row['50D_SLP'] <= 0: reason = "50DMA Dropping"
+        
+        fits_all = (reason == "")
         
         if vix_halt:
-            signals.append("HALT (VIX)") # Macro Kill Switch
+            signals.append("HALT (VIX)")
+            fail_reasons.append("MACRO RISK-OFF")
         elif not row['Above_200'] or row['PRICE'] < row['STOP_PRC']: 
             signals.append("STRONG SELL" if row['RNK'] > 15 else "SELL")
-        elif fits_all_parameters and row['RNK'] <= 10:
+            fail_reasons.append(reason if reason else "Hit ATR Stop")
+        elif fits_all and row['RNK'] <= 10:
             signals.append("STRONG BUY")
+            fail_reasons.append("PASSED")
         elif row['RNK'] <= 10:
             signals.append("BUY")
+            fail_reasons.append(reason)
         elif 10 < row['RNK'] <= 15:
             signals.append("HOLD")
+            fail_reasons.append(reason)
         else: 
             signals.append("SELL")
+            fail_reasons.append(reason)
             
     df['SIGNAL'] = signals
-    return df, vix_halt, vix_close
+    df['FAIL_REASON'] = fail_reasons
+    
+    # Covariance Matrix Calculation for Top 5 Assets
+    top_5_tickers = df.head(5).index.tolist()
+    returns_3m = closes.pct_change().tail(63)
+    if len(top_5_tickers) > 1:
+        corr_matrix = returns_3m[top_5_tickers].corr()
+        mask = np.triu(np.ones_like(corr_matrix, dtype=bool), k=1)
+        avg_corr = corr_matrix.where(mask).mean().mean()
+        if pd.isna(avg_corr): avg_corr = 0
+    else:
+        avg_corr = 0
+        
+    return df, vix_halt, vix_close, avg_corr
 
 with st.spinner('SYNCING ELITE DATA...'):
     c, h, l, v = fetch_data()
-    df, vix_halt, vix_close = calculate_factors(c, h, l, v, now_est.year)
+    df, vix_halt, vix_close, avg_corr = calculate_factors(c, h, l, v, now_est.year)
 
 # 4. Interface Layout: Top Panels
 col1, col2 = st.columns([1.2, 1.8]) 
 
 with col1:
-    vix_display = f"<span style='color:red;'>HALT TRIGGERED (VIX: {vix_close:.2f})</span>" if vix_halt else f"<span style='color:#00FF00;'>SAFE (VIX: {vix_close:.2f})</span>"
+    vix_display = f"<span style='color:red;'>HALT TRIGGERED ({vix_close:.2f})</span>" if vix_halt else f"<span style='color:#00FF00;'>SAFE ({vix_close:.2f})</span>"
+    corr_display = f"<span style='color:red;'>{avg_corr:.2f} (OVERLAP RISK)</span>" if avg_corr > 0.75 else f"<span style='color:#00FF00;'>{avg_corr:.2f} (DIVERSIFIED)</span>"
+    
     st.markdown(f"""
         <div class="bbg-panel">
             <div class="bbg-header">SYSTEM ARCHITECTURE</div>
             <table>
                 <tr><th>Component</th><th class="td-right">Status</th></tr>
                 <tr><td>Macro Regime (VIX < 30)</td><td class="td-right">{vix_display}</td></tr>
-                <tr><td>Chop Filter (ADX > 25)</td><td class="td-right">ACTIVE</td></tr>
-                <tr><td>Dynamic Exit (2.5x ATR)</td><td class="td-right">ACTIVE</td></tr>
-                <tr><td>Vol Confirmation (>1.2x)</td><td class="td-right">ACTIVE</td></tr>
+                <tr><td>Inverse Universe (Bear Exposure)</td><td class="td-right" style="color:#00FF00;">ACTIVE (4 ASSETS)</td></tr>
+                <tr><td>Top 5 Correlation (Covariance)</td><td class="td-right">{corr_display}</td></tr>
+                <tr><td>Vol Sizing (1% Account Risk)</td><td class="td-right" style="color:#00FF00;">ACTIVE</td></tr>
             </table>
         </div>
         """, unsafe_allow_html=True)
@@ -214,7 +246,7 @@ with col2:
             <div class="bbg-header" style="color:#00FFFF !important;">TARGET ACQUISITION: {top_asset}</div>
             <div style="display:flex; justify-content:space-between; margin-bottom: 5px;">
                 <span style="font-size:24px; font-weight:bold; color:#00FF00;">${df.loc[top_asset, 'PRICE']:.2f}</span>
-                <span style="font-size:12px; color:#aaa;">ATR Stop: ${df.loc[top_asset, 'STOP_PRC']:.2f} | Score: {df.loc[top_asset, 'SCORE']:.1f}</span>
+                <span style="font-size:12px; color:#aaa;">Target Size: {df.loc[top_asset, 'ALLOC_%']:.1f}% | Score: {df.loc[top_asset, 'SCORE']:.1f}</span>
             </div>
         </div>
     """, unsafe_allow_html=True)
@@ -236,7 +268,7 @@ with col2:
 # 5. Interface Layout: Bottom Panel
 st.markdown('<div class="bbg-panel"><div class="bbg-header">QUANTITATIVE FACTOR LEDGER</div>', unsafe_allow_html=True)
 
-display_df = df[['RNK', 'SIGNAL', 'PRICE', 'STOP_PRC', 'ADX', 'SCORE', 'YTD', 'RAM', 'ROC_AC', 'REL_STR', '50D_SLP', 'VOL_CF']].copy()
+display_df = df[['RNK', 'SIGNAL', 'FAIL_REASON', 'ALLOC_%', 'PRICE', 'STOP_PRC', 'ADX', 'SCORE', 'YTD', 'RAM', 'ROC_AC', 'REL_STR', '50D_SLP', 'VOL_CF']].copy()
 
 def style_signals(val):
     if 'STRONG BUY' in val: color = '#00FF00'
