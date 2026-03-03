@@ -4,8 +4,11 @@ import pandas as pd
 import numpy as np
 import datetime
 from zoneinfo import ZoneInfo
+import streamlit.components.v1 as components
 
-# 1. Page Configuration
+# ==========================================
+# 1. PAGE CONFIGURATION & CSS
+# ==========================================
 st.set_page_config(page_title="Quant Terminal", layout="wide", initial_sidebar_state="collapsed")
 
 est_zone = ZoneInfo('America/New_York')
@@ -18,7 +21,6 @@ is_open_hours = datetime.time(9, 30) <= now_est.time() <= datetime.time(16, 0)
 market_status = "MARKET CLOSED" if is_weekend or not is_open_hours else "MARKET OPEN"
 status_color = "#00FF00" if market_status == "MARKET OPEN" else "#FF0000"
 
-# CSS Override: Sleek Black & Orange Terminal + Custom Table
 st.markdown(f"""
     <style>
     .stApp {{ background-color: #050505; }}
@@ -47,8 +49,7 @@ st.markdown(f"""
     .heatmap-grid {{ display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px; }}
     .heat-cell {{ text-align: center; padding: 8px 0px; font-size: 10px; font-weight: 900; color: #000; }}
     
-    /* Sleek Custom Ledger Table */
-    .ledger-container {{ max-height: 400px; overflow-y: auto; border: 1px solid #333; background: #000; }}
+    .ledger-container {{ max-height: 400px; overflow-y: auto; border: 1px solid #333; background: #000; margin-bottom: 40px; }}
     .ledger-table {{ width: 100%; border-collapse: collapse; font-size: 11px; }}
     .ledger-table th {{ position: sticky; top: 0; background-color: #111; color: #FF6600; z-index: 10; border-bottom: 2px solid #FF6600; padding: 8px; text-align: right; }}
     .ledger-table th:first-child {{ text-align: left; }}
@@ -66,7 +67,9 @@ st.markdown(f"""
     </div>
     """, unsafe_allow_html=True)
 
-# 2. Universe Definition
+# ==========================================
+# 2. UNIVERSE DEFINITION
+# ==========================================
 BENCHMARKS = ["SPY", "QQQ", "^VIX", "DIA"] 
 TICKERS = [
     "AMLP", "BDRY", "BJK", "COAL", "COPX", "CRAK", "CRUZ", "EATZ", "FINX", "FIW", 
@@ -80,7 +83,9 @@ TICKERS = [
 ]
 ALL_SYMBOLS = TICKERS + BENCHMARKS
 
-# 3. Data Engine
+# ==========================================
+# 3. DATA ENGINE
+# ==========================================
 @st.cache_data(ttl=3600)
 def fetch_data():
     data = yf.download(ALL_SYMBOLS, period="1y", progress=False)
@@ -207,10 +212,13 @@ if inv_count >= 2: regime, r_color = "BEAR MARKET (INVERSE LEADERSHIP)", "#FF000
 elif def_count >= 2: regime, r_color = "RISK-OFF (DEFENSIVE LEADERSHIP)", "#FBBF24"
 else: regime, r_color = "RISK-ON (EQUITY EXPANSION)", "#00FF00"
 
-# 4. Interface Layout
+# ==========================================
+# 4. INTERFACE LAYOUT
+# ==========================================
 col1, col2 = st.columns([1.2, 1.8]) 
 
 with col1:
+    # 4A. System Architecture
     v_color = "red" if vix_halt else "#00FF00"
     st.markdown(f"""
         <div class="bbg-panel">
@@ -225,6 +233,7 @@ with col1:
         </div>
         """, unsafe_allow_html=True)
         
+    # 4B. Rules Logic
     st.markdown("""
         <div class="bbg-panel">
             <div class="bbg-header">ELITE ENTRY / EXIT</div>
@@ -240,7 +249,7 @@ with col1:
         </div>
         """, unsafe_allow_html=True)
         
-    # NEW PANEL: Regime Radar
+    # 4C. Regime Radar
     st.markdown(f"""
         <div class="bbg-panel">
             <div class="bbg-header">REGIME ROTATION RADAR</div>
@@ -252,7 +261,20 @@ with col1:
         </div>
         """, unsafe_allow_html=True)
 
+    # 4D. Bloomberg Livestream
+    st.markdown('<div class="bbg-panel" style="padding-bottom:0px;"><div class="bbg-header">LIVE MACRO FEED: BLOOMBERG TV</div>', unsafe_allow_html=True)
+    youtube_html = """
+    <iframe width="100%" height="220" 
+    src="https://www.youtube.com/embed/iEpJwprxDdk?autoplay=1&mute=1" 
+    title="Bloomberg Global Financial News" frameborder="0" 
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+    allowfullscreen></iframe>
+    """
+    components.html(youtube_html, height=225)
+    st.markdown('</div>', unsafe_allow_html=True)
+
 with col2:
+    # 4E. Target Acquisition & Line Chart
     top_asset = df.index[0] if not df.empty else "SPY"
     st.markdown(f"""
         <div class="bbg-panel" style="padding-bottom: 0px;">
@@ -267,6 +289,7 @@ with col2:
     chart_data = c[top_asset].dropna().tail(63)
     st.line_chart(chart_data, height=140, use_container_width=True)
 
+    # 4F. Heatmap
     st.markdown('<div class="bbg-panel"><div class="bbg-header">ETF YTD PERFORMANCE HEATMAP</div>', unsafe_allow_html=True)
     heat_df = df.sort_values(by='YTD', ascending=False)
     heatmap_html = '<div class="heatmap-grid">'
@@ -278,7 +301,9 @@ with col2:
     heatmap_html += '</div></div>'
     st.markdown(heatmap_html, unsafe_allow_html=True)
 
-# 5. Interface Layout: Custom HTML Ledger
+# ==========================================
+# 5. CUSTOM HTML LEDGER
+# ==========================================
 st.markdown('<div class="bbg-panel"><div class="bbg-header">QUANTITATIVE FACTOR LEDGER</div>', unsafe_allow_html=True)
 
 ledger_html = """
@@ -319,7 +344,56 @@ for tkr, row in df.iterrows():
 ledger_html += "</tbody></table></div></div>"
 st.markdown(ledger_html, unsafe_allow_html=True)
 
-# 6. Bottom Ticker Tape
+# ==========================================
+# 6. ADMINISTRATOR TOOLS: DEEP MARKET SCANNER
+# ==========================================
+with st.expander("⚙️ ADMINISTRATOR TOOLS: DEEP MARKET SCANNER"):
+    st.markdown('<div class="bbg-header" style="margin-top: 10px;">AUTONOMOUS UNIVERSE DISCOVERY</div>', unsafe_allow_html=True)
+    st.write("Execute live data-mining against the Nasdaq FTP directory to locate assets fitting your structural parameters ($300M-$2B AUM, >1M Weekly Vol).")
+    
+    if st.button("INITIATE MARKET SCAN"):
+        scan_container = st.empty()
+        progress_bar = st.progress(0)
+        
+        with st.spinner("STEP 1: Scraping official Nasdaq FTP directory..."):
+            url = "ftp://ftp.nasdaqtrader.com/SymbolDirectory/nasdaqtraded.txt"
+            try:
+                ftp_df = pd.read_csv(url, sep='|')
+                etfs = ftp_df[(ftp_df['ETF'] == 'Y') & (ftp_df['Test Issue'] == 'N')]
+                all_tickers = [t.replace('$', '-').replace('.', '-') for t in etfs['Symbol'].dropna().tolist()]
+                scan_container.success(f"Located {len(all_tickers)} total ETFs in the US market.")
+            except Exception as e:
+                scan_container.error(f"FTP Scrape Failed: {e}")
+                all_tickers = []
+
+        if all_tickers:
+            with st.spinner("STEP 2: Executing fundamental gatekeeper (AUM & Volume)..."):
+                survivors = []
+                test_batch = all_tickers[:100] # Limiting to 100 to prevent browser timeout
+                
+                for i, ticker in enumerate(test_batch):
+                    try:
+                        progress_bar.progress((i + 1) / len(test_batch))
+                        info = yf.Ticker(ticker).info
+                        aum = info.get('totalAssets', 0) or 0
+                        vol = info.get('averageVolume', 0) or 0
+                        weekly_vol = vol * 5
+                        
+                        # Corrected the zero-drop error to strictly enforce $300M to $2B
+                        if (300000000 <= aum <= 2000000000) and (weekly_vol >= 1000000):
+                            survivors.append(ticker)
+                    except:
+                        pass
+                
+                scan_container.success(f"Scan complete. {len(survivors)} ETFs survived the liquidity gauntlet.")
+                
+                if survivors:
+                    st.write(f"**NEW UNIVERSE TARGETS:** {', '.join(survivors)}")
+                    st.info("Copy these targets into your master TICKERS array to permanently track them.")
+
+# ==========================================
+# 7. BOTTOM TICKER TAPE
+# ==========================================
 tape_html = '<div class="ticker-tape">'
 for b in BENCHMARKS:
     try:
@@ -331,106 +405,3 @@ for b in BENCHMARKS:
     except: pass
 tape_html += '</div>'
 st.markdown(tape_html, unsafe_allow_html=True)
-# ==========================================
-# 7. ADMINISTRATOR TOOLS: DEEP MARKET SCANNER
-# ==========================================
-st.markdown('<div class="bbg-panel"><div class="bbg-header">DEEP MARKET SCANNER (AUTHORIZED PERSONNEL ONLY)</div>', unsafe_allow_html=True)
-
-if st.button("INITIATE AUTONOMOUS MARKET SCAN"):
-    scan_container = st.empty()
-    progress_bar = st.progress(0)
-    
-    with st.spinner("STEP 1: Bypassing commercial databases. Scraping official Nasdaq FTP..."):
-        # 1. Scrape the Nasdaq Directory
-        url = "ftp://ftp.nasdaqtrader.com/SymbolDirectory/nasdaqtraded.txt"
-        try:
-            ftp_df = pd.read_csv(url, sep='|')
-            etfs = ftp_df[(ftp_df['ETF'] == 'Y') & (ftp_df['Test Issue'] == 'N')]
-            all_tickers = [t.replace('$', '-').replace('.', '-') for t in etfs['Symbol'].dropna().tolist()]
-            scan_container.success(f"Located {len(all_tickers)} total ETFs in the US market.")
-        except Exception as e:
-            scan_container.error(f"FTP Scrape Failed: {e}")
-            all_tickers = []
-
-    if all_tickers:
-        with st.spinner("STEP 2: Executing fundamental gatekeeper (AUM & Volume)..."):
-            survivors = []
-            test_batch = all_tickers[:100] # Limiting to 100 for live app stability
-            
-            for i, ticker in enumerate(test_batch):
-                try:
-                    # Update progress bar
-                    progress_bar.progress((i + 1) / len(test_batch))
-                    
-                    # Fundamental Interrogation
-                    info = yf.Ticker(ticker).info
-                    aum = info.get('totalAssets', 0) or 0
-                    vol = info.get('averageVolume', 0) or 0
-                    weekly_vol = vol * 5
-                    
-                    if (3000000 <= aum <= 20000000) and (weekly_vol >= 100000):
-                        survivors.append(ticker)
-                except:
-                    pass
-            
-            scan_container.success(f"Fundamental scan complete. {len(survivors)} ETFs survived the AUM/Volume gauntlet.")
-            
-            if survivors:
-                st.write(f"**NEW UNIVERSE TARGETS:** {', '.join(survivors)}")
-                st.info("Copy these targets into your master TICKERS array to permanently track them.")
-st.markdown('</div>', unsafe_allow_html=True)
-import streamlit.components.v1 as components
-
-with col1:
-    v_color = "red" if vix_halt else "#00FF00"
-    st.markdown(f"""
-        <div class="bbg-panel">
-            <div class="bbg-header">SYSTEM ARCHITECTURE</div>
-            <table>
-                <tr><th>Component</th><th class="td-right">Status</th></tr>
-                <tr><td>Macro Regime (VIX)</td><td class="td-right" style="color:{v_color};">{vix_close:.2f}</td></tr>
-                <tr><td>Chop Filter (ADX > 25)</td><td class="td-right" style="color:#00FF00;">ACTIVE</td></tr>
-                <tr><td>Dynamic Exit (2.5x ATR)</td><td class="td-right" style="color:#00FF00;">ACTIVE</td></tr>
-                <tr><td>Vol Confirmation (>1.2x)</td><td class="td-right" style="color:#00FF00;">ACTIVE</td></tr>
-            </table>
-        </div>
-        """, unsafe_allow_html=True)
-        
-    st.markdown("""
-        <div class="bbg-panel">
-            <div class="bbg-header">ELITE ENTRY / EXIT</div>
-            <table>
-                <tr><th>Signal</th><th>Rule</th></tr>
-                <tr><td class="c-strong-buy">STRONG BUY</td><td>Perfect Alignment + ADX>25</td></tr>
-                <tr><td class="c-buy">BUY</td><td>Top 10, imperfect setup</td></tr>
-                <tr><td class="c-hold">HOLD</td><td>Buffer zone (Rank 11-15)</td></tr>
-                <tr><td class="c-sell">SELL</td><td>Drop out of Top 15</td></tr>
-                <tr><td class="c-halt">HALT</td><td>VIX > 30 (Risk-Off)</td></tr>
-                <tr><td class="c-strong-sell">STRONG SELL</td><td>Below 200DMA or Hit ATR Stop</td></tr>
-            </table>
-        </div>
-        """, unsafe_allow_html=True)
-        
-    # PANEL: Regime Radar
-    st.markdown(f"""
-        <div class="bbg-panel">
-            <div class="bbg-header">REGIME ROTATION RADAR</div>
-            <div style="text-align:center; padding: 10px 0;">
-                <span style="font-size:11px; color:#888;">CURRENT CAPITAL FLOW STATE:</span><br>
-                <span style="font-size:16px; font-weight:bold; color:{r_color};">{regime}</span>
-            </div>
-            <div style="font-size:10px; color:#888; text-align:center; margin-top:5px;">Analyzed via Top 5 Asset Covariance</div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    # NEW PANEL: Live Macro Feed (Bloomberg TV)
-    st.markdown('<div class="bbg-panel" style="padding-bottom:0px;"><div class="bbg-header">LIVE MACRO FEED: BLOOMBERG TV</div>', unsafe_allow_html=True)
-    youtube_html = """
-    <iframe width="100%" height="220" 
-    src="https://www.youtube.com/embed/iEpJwprxDdk?autoplay=1&mute=1" 
-    title="Bloomberg Global Financial News" frameborder="0" 
-    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-    allowfullscreen></iframe>
-    """
-    components.html(youtube_html, height=225)
-    st.markdown('</div>', unsafe_allow_html=True)
