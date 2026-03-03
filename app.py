@@ -627,10 +627,7 @@ with tab4:
             bt_sorted.index = range(len(bt_sorted))
             month_order = bt_sorted["Month"].tolist()
             vega_data = []
-            st.bar_chart(chart_data, height=220, use_container_width=True, color=["#FF8000","#444444"])
-        st.markdown('</div></div>', unsafe_allow_html=True)
-        st.markdown('<div class="bbg-panel"><div class="bbg-panel-hdr">CUMULATIVE RETURNS</div><div class="bbg-panel-body">', unsafe_allow_html=True)
-       for _, r in bt_sorted.iterrows():
+            for _, r in bt_sorted.iterrows():
                 vega_data.append({"Month": r["Month"], "value": r["Strategy"], "series": "Strategy"})
                 vega_data.append({"Month": r["Month"], "value": r["SPY"], "series": "SPY"})
             st.vega_lite_chart({"values": vega_data}, {
@@ -649,7 +646,20 @@ with tab4:
             bt_cum=bt_df.copy()
             bt_cum["Strat Cumul"]=(1+bt_cum["Strategy"]/100).cumprod()*100-100
             bt_cum["SPY Cumul"]  =(1+bt_cum["SPY"]/100).cumprod()*100-100
-            st.line_chart(bt_cum.set_index("Month")[["Strat Cumul","SPY Cumul"]], height=160, use_container_width=True)
+            month_order_cum = bt_cum["Month"].tolist()
+            cum_data = []
+            for _, r in bt_cum.iterrows():
+                cum_data.append({"Month": r["Month"], "value": r["Strat Cumul"], "series": "Strategy"})
+                cum_data.append({"Month": r["Month"], "value": r["SPY Cumul"], "series": "SPY"})
+            st.vega_lite_chart({"values": cum_data}, {
+                "mark": "line",
+                "encoding": {
+                    "x": {"field": "Month", "type": "ordinal", "sort": month_order_cum, "axis": {"grid": False}, "title": ""},
+                    "y": {"field": "value", "type": "quantitative", "axis": {"grid": True}, "title": ""},
+                    "color": {"field": "series", "type": "nominal", "scale": {"domain": ["Strategy", "SPY"], "range": ["#FF8000", "#444444"]}, "legend": {"orient": "bottom", "title": " "}}
+                },
+                "height": 160
+            }, use_container_width=True)
         st.markdown('</div></div>', unsafe_allow_html=True)
     with bc3:
         st.markdown('<div class="bbg-panel"><div class="bbg-panel-hdr">SUMMARY STATS</div><div class="bbg-panel-body">', unsafe_allow_html=True)
@@ -703,11 +713,11 @@ with tab4:
             st.markdown('<div style="color:#555;font-size:9px;">No upcoming events or FMP calendar loading...</div></div></div>', unsafe_allow_html=True)
 with tab5:
     n1,n2=st.columns([2.2,1.8])
-    st.markdown('<style>[data-testid="stHorizontalBlock"]{align-items:stretch;} [data-testid="stTextArea"]{height:100%;} [data-testid="stTextArea"] textarea{height:100% !important; min-height:800px;}</style>', unsafe_allow_html=True)
+    st.markdown('<style>[data-testid="stHorizontalBlock"]{align-items:stretch;} [data-testid="stTextArea"]{height:100%;} [data-testid="stTextArea"] textarea{height:100% !important; min-height:500px;}</style>', unsafe_allow_html=True)
     with n1:
         st.markdown('<div class="bbg-panel"><div class="bbg-panel-hdr">FINANCIAL NEWS — LIVE BUSINESS HEADLINES</div>', unsafe_allow_html=True)
         if newsapi_articles:
-            news_html='<div class="bbg-panel" style="margin-top:12px;"><table class="bbg-tbl"><thead><tr><th class="l">HEADLINE</th><th class="l">SOURCE</th><th class="l">TIME</th></tr></thead><tbody>'
+            news_html='<div class="bbg-scroll"><table class="bbg-tbl"><thead><tr><th class="l">HEADLINE</th><th class="l">SOURCE</th><th class="l">TIME</th></tr></thead><tbody>'
             for item in newsapi_articles:
                 title  = (item.get("title","") or "")[:90]
                 source = (item.get("source",{}).get("name","") or "")
@@ -726,15 +736,15 @@ with tab5:
                 news_html+=f'<tr><td class="l" style="white-space:normal;max-width:400px;word-wrap:break-word;">{title}</td><td class="l" style="color:#555;font-size:9px;white-space:nowrap;">{source}</td><td style="color:{sc_col};font-size:9px;white-space:nowrap;">{overall_label}</td><td class="l" style="color:#444;font-size:9px;white-space:nowrap;">{time_p}</td></tr>'
             news_html+='</tbody></table></div>'
         else:
-            news_html='<div style="padding:0px;color:#555;font-size:10px;">News loading...</div>'
+            news_html='<div style="padding:15px;color:#555;font-size:10px;">News loading...</div>'
         st.markdown(news_html+'</div>', unsafe_allow_html=True)
     with n2:
         st.markdown('<div class="bbg-panel" style="margin-top:0px;"><div class="bbg-panel-hdr">ANALYST NOTES — TRADE JOURNAL</div><div class="bbg-panel-body">', unsafe_allow_html=True)
-        st.markdown('<div style="color:#555;font-size:9px;margin-bottom:14px;letter-spacing:1px;">TYPE YOUR NOTES BELOW — USE FOR TRADE RATIONALE, OBSERVATIONS, REMINDERS</div>', unsafe_allow_html=True)
+        st.markdown('<div style="color:#555;font-size:9px;margin-bottom:3px;letter-spacing:1px;">TYPE YOUR NOTES BELOW — USE FOR TRADE RATIONALE, OBSERVATIONS, REMINDERS</div>', unsafe_allow_html=True)
         st.text_area(
             label="",
             placeholder="e.g.\n- OIH: Energy capex cycle looks strong. Hold through earnings.\n- Monitor 10Y yield — if breaks 4.8% rotate defensive.\n- FBTC halving cycle Q2 2025 setup. Scale in on dips.\n- Review positions end of month vs SMA filter.",
-            height=100,
+            height=500,
             label_visibility="collapsed",
             key="trade_notes"
         )
