@@ -381,7 +381,18 @@ if st.button("INITIATE AUTONOMOUS MARKET SCAN"):
 st.markdown('</div>', unsafe_allow_html=True)
 import streamlit.components.v1 as components
 
-# Injects a 24/7 Live Financial Broadcast (e.g., Bloomberg TV live feed)
-st.markdown('<div class="bbg-panel"><div class="bbg-header">LIVE GLOBAL SQUAWK</div>', unsafe_allow_html=True)
-components.iframe("https://www.youtube.com/watch?v=iEpJwprxDdk", height=250)
+import streamlit.components.v1 as components
+
+st.markdown('<div class="bbg-panel"><div class="bbg-header">LIVE MACRO FEED</div>', unsafe_allow_html=True)
+
+# The Fix: Explicitly defining the 'allow' parameters so YouTube permits the embed
+youtube_html = """
+<iframe width="100%" height="250" 
+src="https://www.youtube.com/embed/live_stream?channel=UCp0hYYBW6IMayGgR-WeoCvQ&autoplay=1&mute=1" 
+title="Live Financial Feed" frameborder="0" 
+allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+allowfullscreen></iframe>
+"""
+components.html(youtube_html, height=255)
+
 st.markdown('</div>', unsafe_allow_html=True)
