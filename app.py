@@ -932,14 +932,33 @@ with tab7:
             st.markdown('<div style="color:#FF8000;font-size:9px;letter-spacing:1px;margin-bottom:4px;">Step 2 — Paste authorization code:</div>', unsafe_allow_html=True)
             auth_code = st.text_input("", placeholder="Paste code from redirect URL here", key="schwab_code", label_visibility="collapsed")
             if st.button("Connect", key="schwab_connect") and auth_code:
-                token_data = schwab_exchange_code(auth_code.strip())
+                import urllib.parse
+                clean_code = urllib.parse.unquote(auth_code.strip())
+                # Strip full URL if user pasted the whole redirect URL
+                if "code=" in clean_code:
+                    clean_code = clean_code.split("code=")[1].split("&")[0]
+                    clean_code = urllib.parse.unquote(clean_code)
+                token_data = schwab_exchange_code(clean_code)
                 if token_data and "access_token" in token_data:
                     st.session_state.schwab_access_token  = token_data["access_token"]
                     st.session_state.schwab_refresh_token = token_data.get("refresh_token")
                     st.session_state.schwab_token_expiry  = now_est + datetime.timedelta(seconds=token_data.get("expires_in", 1800))
                     st.rerun()
                 else:
-                    st.markdown('<div style="color:#CC0000;font-size:9px;">Connection failed — check code and try again.</div>', unsafe_allow_html=True)
+                    import base64
+                    creds = base64.b64encode(f"{SCHWAB_CLIENT_ID}:{SCHWAB_CLIENT_SECRET}".encode()).decode()
+                    try:
+                        r = requests.post(SCHWAB_TOKEN_URL, headers={
+                            "Authorization": f"Basic {creds}",
+                            "Content-Type": "application/x-www-form-urlencoded"
+                        }, data={
+                            "grant_type": "authorization_code",
+                            "code": clean_code,
+                            "redirect_uri": SCHWAB_REDIRECT_URI
+                        }, timeout=10)
+                        st.markdown(f'<div style="color:#CC0000;font-size:9px;">Error {r.status_code}: {r.text[:300]}</div>', unsafe_allow_html=True)
+                    except Exception as e:
+                        st.markdown(f'<div style="color:#CC0000;font-size:9px;">Exception: {str(e)}</div>', unsafe_allow_html=True)
 
         st.markdown('</div></div>', unsafe_allow_html=True)
 
