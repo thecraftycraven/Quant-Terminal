@@ -147,10 +147,28 @@ def calculate_factors(prices, volumes, current_year):
     
     signals = []
     for idx, row in df.iterrows():
-        if not row['Above_200']: signals.append("STRONG SELL" if row['RNK'] > 15 else "SELL")
-        elif row['RNK'] <= 10: signals.append("STRONG BUY")
-        elif 10 < row['RNK'] <= 15: signals.append("HOLD")
-        else: signals.append("SELL")
+        # Define absolute alignment across all 6 parameters
+        fits_all_parameters = (
+            row['Above_200'] and 
+            row['RAM'] > 0 and 
+            row['REL_STR'] > 0 and 
+            row['ROC_AC'] > 0 and 
+            row['50D_SLP'] > 0 and 
+            row['VOL_CF'] >= 1.0
+        )
+        
+        # New Strict Signal Logic
+        if not row['Above_200']: 
+            signals.append("STRONG SELL" if row['RNK'] > 15 else "SELL")
+        elif fits_all_parameters:
+            signals.append("STRONG BUY") # Uncompromising absolute threshold
+        elif row['RNK'] <= 10:
+            signals.append("BUY") # Good relative rank, but imperfect setup
+        elif 10 < row['RNK'] <= 15:
+            signals.append("HOLD")
+        else: 
+            signals.append("SELL")
+            
     df['SIGNAL'] = signals
     return df
 
@@ -182,7 +200,7 @@ with col1:
             <div class="bbg-header">ENTRY / EXIT SIGNALS</div>
             <table>
                 <tr><th>Signal</th><th>Rule</th></tr>
-                <tr><td class="c-strong-buy">STRONG BUY</td><td>Top 10 composite + Above 200DMA</td></tr>
+                <tr><td class="c-strong-buy">STRONG BUY</td><td>Fits ALL parameters perfectly</td></tr>
                 <tr><td class="c-buy">BUY</td><td>Ranks 11-15 + Above 200DMA</td></tr>
                 <tr><td class="c-hold">HOLD</td><td>Was Top 10, slipped to 11-15</td></tr>
                 <tr><td class="c-sell">SELL</td><td>Dropped out of top 15</td></tr>
