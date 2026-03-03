@@ -747,7 +747,7 @@ with tab5:
         st.markdown(news_html+'</div>', unsafe_allow_html=True)
 
     with n2:
-        st.markdown('<div class="bbg-panel" style="margin-top:-8px;"><div class="bbg-panel-hdr">ANALYST NOTES — TRADE JOURNAL</div><div class="bbg-panel-body">', unsafe_allow_html=True)
+        st.markdown('<div class="bbg-panel" style="margin-top:-15px;"><div class="bbg-panel-hdr">ANALYST NOTES — TRADE JOURNAL</div><div class="bbg-panel-body">', unsafe_allow_html=True)
         st.markdown('<div style="color:#555;font-size:9px;margin-bottom:6px;letter-spacing:1px;">TYPE YOUR NOTES BELOW — USE FOR TRADE RATIONALE, OBSERVATIONS, REMINDERS</div>', unsafe_allow_html=True)
         st.text_area(
             label="",
