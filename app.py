@@ -15,6 +15,9 @@ is_weekend   = now_est.weekday() >= 5
 is_open      = datetime.time(9,30) <= now_est.time() <= datetime.time(16,0)
 market_status = "OPEN" if (not is_weekend and is_open) else "CLOSED"
 status_color  = "#FF8000" if market_status == "OPEN" else "#CC0000"
+# Force time to never be stale — bypass any caching
+if "app_start" not in st.session_state:
+    st.session_state.app_start = True
 CSS = """
 <style>
 @import url("https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@300;400;500;600;700&display=swap");
@@ -1146,3 +1149,24 @@ for sym in tape_syms:
     except: pass
 tape+='</div>'
 st.markdown(tape, unsafe_allow_html=True)
+
+# ── AUTO REFRESH ──────────────────────────────────────────────────────────────
+# During market hours: refresh every 30s
+# Outside market hours: refresh every 5 minutes (keeps clock live)
+refresh_ms = 30000 if (is_open and not is_weekend) else 300000
+components.html(f"""
+<script>
+    // Wait for Streamlit to fully load then set refresh interval
+    function triggerRefresh() {{
+        // Find the Streamlit rerun button and click it, or reload
+        const buttons = window.parent.document.querySelectorAll('button');
+        let rerunBtn = null;
+        buttons.forEach(b => {{
+            if (b.innerText === '' || b.title === 'Rerun') rerunBtn = b;
+        }});
+        // Force page reload as most reliable method
+        window.parent.location.reload();
+    }}
+    setTimeout(triggerRefresh, {refresh_ms});
+</script>
+""", height=0)
