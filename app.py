@@ -625,6 +625,7 @@ with tab4:
         if not bt_df.empty:
             bt_sorted = bt_df.copy()
             bt_sorted.index = range(len(bt_sorted))
+            month_order = bt_sorted["Month"].tolist()
             chart_data = bt_sorted.set_index("Month")[["Strategy","SPY"]]
             st.bar_chart(chart_data, height=220, use_container_width=True, color=["#FF8000","#444444"])
         st.markdown('</div></div>', unsafe_allow_html=True)
