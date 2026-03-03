@@ -381,15 +381,13 @@ if st.button("INITIATE AUTONOMOUS MARKET SCAN"):
 st.markdown('</div>', unsafe_allow_html=True)
 import streamlit.components.v1 as components
 
-import streamlit.components.v1 as components
+st.markdown('<div class="bbg-panel"><div class="bbg-header">LIVE MACRO FEED: BLOOMBERG TV</div>', unsafe_allow_html=True)
 
-st.markdown('<div class="bbg-panel"><div class="bbg-header">LIVE MACRO FEED</div>', unsafe_allow_html=True)
-
-# The Fix: Explicitly defining the 'allow' parameters so YouTube permits the embed
+# Injecting the specific Bloomberg livestream ID (iEpJwprxDdk)
 youtube_html = """
 <iframe width="100%" height="250" 
-src="https://www.youtube.com/embed/live_stream?channel=UCp0hYYBW6IMayGgR-WeoCvQ&autoplay=1&mute=1" 
-title="Live Financial Feed" frameborder="0" 
+src="https://www.youtube.com/embed/iEpJwprxDdk?autoplay=1&mute=1" 
+title="Bloomberg Global Financial News" frameborder="0" 
 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
 allowfullscreen></iframe>
 """
