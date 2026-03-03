@@ -630,6 +630,21 @@ with tab4:
             st.bar_chart(chart_data, height=220, use_container_width=True, color=["#FF8000","#444444"])
         st.markdown('</div></div>', unsafe_allow_html=True)
         st.markdown('<div class="bbg-panel"><div class="bbg-panel-hdr">CUMULATIVE RETURNS</div><div class="bbg-panel-body">', unsafe_allow_html=True)
+       for _, r in bt_sorted.iterrows():
+                vega_data.append({"Month": r["Month"], "value": r["Strategy"], "series": "Strategy"})
+                vega_data.append({"Month": r["Month"], "value": r["SPY"], "series": "SPY"})
+            st.vega_lite_chart({"values": vega_data}, {
+                "mark": "bar",
+                "encoding": {
+                    "x": {"field": "Month", "type": "ordinal", "sort": month_order, "axis": {"grid": False}, "title": ""},
+                    "y": {"field": "value", "type": "quantitative", "axis": {"grid": True}, "title": ""},
+                    "color": {"field": "series", "type": "nominal", "scale": {"domain": ["Strategy", "SPY"], "range": ["#FF8000", "#444444"]}, "legend": {"orient": "bottom", "title": " "}},
+                    "xOffset": {"field": "series", "type": "nominal"}
+                },
+                "height": 220
+            }, use_container_width=True)
+        st.markdown('</div></div>', unsafe_allow_html=True)
+        st.markdown('<div class="bbg-panel"><div class="bbg-panel-hdr">CUMULATIVE RETURNS</div><div class="bbg-panel-body">', unsafe_allow_html=True)
         if not bt_df.empty:
             bt_cum=bt_df.copy()
             bt_cum["Strat Cumul"]=(1+bt_cum["Strategy"]/100).cumprod()*100-100
