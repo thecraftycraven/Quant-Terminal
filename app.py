@@ -3,51 +3,96 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 import datetime
+from zoneinfo import ZoneInfo
 
 # 1. Page & CSS Configuration (Bloomberg TV Aesthetic)
 st.set_page_config(page_title="Quant Terminal", layout="wide", initial_sidebar_state="collapsed")
 
-st.markdown("""
+# Calculate Market Time & Status
+est_zone = ZoneInfo('America/New_York')
+now_est = datetime.datetime.now(est_zone)
+time_str = now_est.strftime("%I:%M %p ET")
+date_str = now_est.strftime("%b %d, %Y")
+
+is_weekend = now_est.weekday() >= 5
+is_open_hours = datetime.time(9, 30) <= now_est.time() <= datetime.time(16, 0)
+market_status = "MARKET CLOSED" if is_weekend or not is_open_hours else "MARKET OPEN"
+status_color = "#00FF00" if market_status == "MARKET OPEN" else "#FF0000"
+
+st.markdown(f"""
     <style>
     /* Global Base */
-    .stApp { background-color: #0c0c0c; }
-    * { font-family: 'Helvetica', sans-serif !important; color: #FFFFFF; }
+    .stApp {{ background-color: #0c0c0c; }}
+    * {{ font-family: 'Helvetica', sans-serif !important; color: #FFFFFF; }}
+    
+    /* Top Status Bar */
+    .status-bar {{
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background-color: #1a1a1a;
+        border-bottom: 2px solid #00FFFF;
+        padding: 5px 10px;
+        margin-top: -40px;
+        margin-bottom: 15px;
+        font-size: 12px;
+        font-weight: bold;
+    }}
+    .status-indicator {{ color: {status_color}; }}
+    .status-clock {{ color: #00FFFF; text-align: right; }}
     
     /* Bloomberg Orange Panels */
-    .bbg-panel {
+    .bbg-panel {{
         border: 2px solid #FF8C00;
         background-color: #000000;
-        padding: 12px;
+        padding: 10px;
         margin-bottom: 16px;
-        border-radius: 4px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.5);
-    }
-    .bbg-header {
+    }}
+    .bbg-header {{
         background-color: #FF8C00;
         color: #000000 !important;
         font-weight: 900;
-        padding: 6px 10px;
-        margin: -12px -12px 12px -12px;
-        font-size: 13px;
+        padding: 4px 8px;
+        margin: -10px -10px 10px -10px;
+        font-size: 12px;
         text-transform: uppercase;
         letter-spacing: 1px;
-    }
+    }}
     
     /* Data Highlights */
-    .tkr-up { color: #00FF00 !important; font-weight: bold; }
-    .tkr-down { color: #FF0000 !important; font-weight: bold; }
-    .tkr-neutral { color: #FFFF00 !important; font-weight: bold; }
+    .tkr-up {{ color: #00FF00 !important; font-weight: bold; }}
+    .tkr-down {{ color: #FF0000 !important; font-weight: bold; }}
+    .tkr-neutral {{ color: #FFFFFF !important; font-weight: bold; }}
+    
+    /* 8-Column Heatmap Grid */
+    .heatmap-grid {{
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+        gap: 2px;
+    }}
+    .heat-cell {{
+        text-align: center;
+        padding: 6px 0px;
+        font-size: 9px;
+        font-weight: bold;
+    }}
     
     /* Table Styling Overrides */
-    .dataframe { font-size: 11px !important; text-align: right; }
-    .dataframe th { background-color: #111111 !important; color: #FF8C00 !important; border-bottom: 2px solid #FF8C00 !important; }
-    .dataframe td { border-bottom: 1px solid #333333 !important; }
+    .dataframe {{ font-size: 10px !important; text-align: right; }}
+    .dataframe th {{ background-color: #111111 !important; color: #FF8C00 !important; border-bottom: 2px solid #FF8C00 !important; }}
+    .dataframe td {{ border-bottom: 1px solid #333333 !important; padding: 4px !important; }}
     
     /* Hide Streamlit default UI elements */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
+    #MainMenu {{visibility: hidden;}}
+    footer {{visibility: hidden;}}
+    header {{visibility: hidden;}}
     </style>
+    
+    <div class="status-bar">
+        <div class="status-indicator">● {market_status}</div>
+        <div style="color: #FFA500; font-size: 14px;">QUANT TERMINAL ENGINE</div>
+        <div class="status-clock">{time_str}<br><span style="font-size:9px; color:#aaa;">{date_str}</span></div>
+    </div>
     """, unsafe_allow_html=True)
 
 # 2. Universe Definition
@@ -66,7 +111,7 @@ ALL_SYMBOLS = TICKERS + BENCHMARKS
 
 # 3. Data Engine
 @st.cache_data(ttl=3600)
-def fetch_and_calculate():
+def fetch_and_calculate(current_year):
     data = yf.download(ALL_SYMBOLS, period="1y", progress=False)
     prices = data['Close']
     volumes = data['Volume']
@@ -92,8 +137,14 @@ def fetch_and_calculate():
             spy_p = prices["SPY"].dropna()
             
             if len(p) < 200: continue
+            
+            # YTD Calculation
+            p_year = p[p.index.year == current_year]
+            if len(p_year) > 0:
+                ytd_ret = ((p.iloc[-1] - p_year.iloc[0]) / p_year.iloc[0]) * 100
+            else:
+                ytd_ret = 0
                 
-            ret_1m_raw = p.pct_change(21).iloc[-1] * 100
             ret_1m = p.pct_change(21).iloc[-1]
             vol_1m = p.pct_change().tail(21).std() * np.sqrt(252)
             ram = ret_1m / vol_1m if vol_1m != 0 else 0
@@ -121,7 +172,7 @@ def fetch_and_calculate():
             day_change = ((p.iloc[-1] - p.iloc[-2]) / p.iloc[-2]) * 100
             
             results.append({
-                'TKR': ticker, 'Ret_1M': ret_1m_raw, 'Day_Change': day_change, 'RAM': ram, 
+                'TKR': ticker, 'YTD_Ret': ytd_ret, 'Day_Change': day_change, 'RAM': ram, 
                 'ROC_AC': roc_accel, 'REL_STR': rel_strength, 
                 '50D_SLP': sma_50_slope, 'VOL_CF': vol_conf, 
                 'MAX_DD': max_dd, 'Above_200': above_200, 'PRICE': p.iloc[-1]
@@ -152,84 +203,47 @@ def fetch_and_calculate():
     df['SIGNAL'] = signals
     return df, bench_stats
 
-@st.cache_data(ttl=3600)
-def fetch_news(ticker_symbol):
-    try:
-        t = yf.Ticker(ticker_symbol)
-        news = t.news[:3]
-        return [{"title": n['title'], "publisher": n['publisher']} for n in news]
-    except:
-        return []
-
 # Execute Data Fetch
 with st.spinner('SYNCING GLOBAL DATA...'):
-    df, bench_stats = fetch_and_calculate()
-    top_ticker = df.index[0] if not df.empty else "SPY"
-    news_feed = fetch_news(top_ticker)
+    df, bench_stats = fetch_and_calculate(now_est.year)
 
-# 4. App Layout (Vertical Mobile Optimization)
-
-st.markdown('<div style="color:#FF8C00; font-size:18px; font-weight:900; margin-bottom:15px; border-bottom:2px solid #333; padding-bottom:5px;">SYS.OP.NORMAL // ACTIVE</div>', unsafe_allow_html=True)
-
-# Panel 1: Benchmarks & Macro Breadth
-st.markdown('<div class="bbg-panel"><div class="bbg-header">MACRO BENCHMARKS & BREADTH</div>', unsafe_allow_html=True)
+# Panel 1: Benchmarks
+st.markdown('<div class="bbg-panel"><div class="bbg-header">GLOBAL BENCHMARKS</div>', unsafe_allow_html=True)
 b_cols = st.columns(4)
 for i, b in enumerate(bench_stats):
     name = b['ticker'].replace("^", "")
     color = "tkr-up" if b['change'] > 0 else "tkr-down" if b['change'] < 0 else "tkr-neutral"
     sign = "+" if b['change'] > 0 else ""
     with b_cols[i % 4]:
-        st.markdown(f"<div style='text-align:center;'><span style='font-size:12px; color:#aaa;'>{name}</span><br><span style='font-size:14px; font-weight:bold;'>{b['price']:.2f}</span><br><span class='{color}' style='font-size:11px;'>{sign}{b['change']:.2f}%</span></div>", unsafe_allow_html=True)
-
-breadth = (df['Above_200'].sum() / len(df)) * 100
-st.markdown(f"<div style='margin-top:10px; border-top:1px solid #333; padding-top:8px; text-align:center; font-size:12px;'>UNIVERSE > 200DMA: <span style='color:{'#00FF00' if breadth > 50 else '#FF0000'}; font-weight:bold;'>{breadth:.1f}%</span></div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='text-align:center;'><span style='font-size:12px; color:#aaa;'>{name}</span><br><span style='font-size:13px; font-weight:bold;'>{b['price']:.2f}</span><br><span class='{color}' style='font-size:11px;'>{sign}{b['change']:.2f}%</span></div>", unsafe_allow_html=True)
 st.markdown('</div>', unsafe_allow_html=True)
 
-# Panel 2: Intraday Velocity Movers
-st.markdown('<div class="bbg-panel"><div class="bbg-header">INTRADAY VELOCITY MOVERS</div>', unsafe_allow_html=True)
-movers_df = df.sort_values(by='Day_Change', ascending=False)
-m_cols = st.columns(2)
-with m_cols[0]:
-    st.markdown("<span style='color:#00FF00; font-size:12px;'>▲ TOP GAINERS</span>", unsafe_allow_html=True)
-    for t, row in movers_df.head(3).iterrows():
-        st.markdown(f"<div style='font-size:12px;'>**{t}** <span class='tkr-up'>+{row['Day_Change']:.2f}%</span></div>", unsafe_allow_html=True)
-with m_cols[1]:
-    st.markdown("<span style='color:#FF0000; font-size:12px;'>▼ TOP LOSERS</span>", unsafe_allow_html=True)
-    for t, row in movers_df.tail(3).iterrows():
-        st.markdown(f"<div style='font-size:12px;'>**{t}** <span class='tkr-down'>{row['Day_Change']:.2f}%</span></div>", unsafe_allow_html=True)
-st.markdown('</div>', unsafe_allow_html=True)
+# Panel 2: 8-Column YTD Heatmap
+st.markdown('<div class="bbg-panel"><div class="bbg-header">YTD PERFORMANCE HEATMAP</div>', unsafe_allow_html=True)
+heat_df = df.sort_values(by='YTD_Ret', ascending=False)
 
-# Panel 3: Performance Heatmap
-st.markdown('<div class="bbg-panel"><div class="bbg-header">1-MONTH PERFORMANCE HEATMAP</div>', unsafe_allow_html=True)
-h_cols = st.columns(6) 
-heat_df = df.sort_values(by='Ret_1M', ascending=False)
-for i, (ticker, row) in enumerate(heat_df.iterrows()):
-    val = row['Ret_1M']
-    color = "#00FF00" if val > 5 else "#006600" if val > 0 else "#660000" if val > -5 else "#FF0000"
+heatmap_html = '<div class="heatmap-grid">'
+for ticker, row in heat_df.iterrows():
+    val = row['YTD_Ret']
+    # Scaling colors for YTD (wider variance than 1-month)
+    color = "#00FF00" if val > 15 else "#006600" if val > 0 else "#660000" if val > -10 else "#FF0000"
     text_color = "#000000" if color == "#00FF00" else "#FFFFFF"
-    with h_cols[i % 6]:
-        st.markdown(f"""
-        <div style="background-color: {color}; color: {text_color}; text-align: center; padding: 4px; margin-bottom: 4px; border-radius: 2px; font-size: 9px; font-weight:bold;">
-            {ticker}<br>{val:.1f}%
-        </div>
-        """, unsafe_allow_html=True)
-st.markdown('</div>', unsafe_allow_html=True)
+    
+    heatmap_html += f"""
+    <div class="heat-cell" style="background-color: {color}; color: {text_color};">
+        {ticker}<br>{val:.1f}%
+    </div>
+    """
+heatmap_html += '</div></div>'
+st.markdown(heatmap_html, unsafe_allow_html=True)
 
-# Panel 4: Algorithmic Top Picks & News
-st.markdown(f'<div class="bbg-panel"><div class="bbg-header">TARGET ACQUISITION: {top_ticker}</div>', unsafe_allow_html=True)
-st.markdown(f"<div style='font-size:13px; margin-bottom:8px;'>**{top_ticker}** is currently ranked #1 with a system score of {df.loc[top_ticker, 'SCORE']:.1f}.</div>", unsafe_allow_html=True)
-if news_feed:
-    for item in news_feed:
-        st.markdown(f"<div style='font-size:11px; margin-bottom:4px; padding-left:8px; border-left:2px solid #FF8C00;'>**{item['publisher']}**: {item['title']}</div>", unsafe_allow_html=True)
-st.markdown('</div>', unsafe_allow_html=True)
-
-# Panel 5: Main Quant Ledger
+# Panel 3: Main Quant Ledger
 st.markdown('<div class="bbg-panel"><div class="bbg-header">QUANTITATIVE FACTOR LEDGER</div>', unsafe_allow_html=True)
-display_df = df[['RNK', 'SIGNAL', 'PRICE', 'SCORE', 'RAM', 'ROC_AC', 'REL_STR', '50D_SLP', 'VOL_CF', 'MAX_DD']].copy()
-# Map colors to signals for the dataframe display
+display_df = df[['RNK', 'SIGNAL', 'PRICE', 'SCORE', 'YTD_Ret', 'RAM', 'ROC_AC', 'REL_STR', '50D_SLP', 'VOL_CF']].copy()
+
 def style_signals(val):
     color = '#00FF00' if 'STRONG BUY' in val else '#66FF66' if 'BUY' in val else '#FFFF00' if 'HOLD' in val else '#FF0000'
     return f'color: {color}; font-weight: bold;'
 
-st.dataframe(display_df.round(2).style.map(style_signals, subset=['SIGNAL']), use_container_width=True, height=400)
+st.dataframe(display_df.round(2).style.map(style_signals, subset=['SIGNAL']), use_container_width=True, height=500)
 st.markdown('</div>', unsafe_allow_html=True)
