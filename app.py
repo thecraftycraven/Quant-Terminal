@@ -97,6 +97,12 @@ section[data-testid="stSidebar"] { display: none !important; }
 
 .notes-area { background:#050505; border:1px solid #222; color:#CCC; font-family:"Source Code Pro",monospace; font-size:11px; width:100%; min-height:300px; padding:10px; resize:vertical; outline:none; }
 .notes-area:focus { border-color:#FF8000; }
+textarea { background:#050505 !important; color:#CCC !important; border:1px solid #222 !important; border-radius:2px !important; font-family:"Source Code Pro",monospace !important; }
+textarea:focus { border-color:#FF8000 !important; box-shadow:none !important; outline:none !important; }
+[data-testid="stTextArea"] textarea { background:#050505 !important; color:#CCC !important; border:1px solid #333 !important; border-radius:2px !important; }
+[data-testid="stTextArea"] textarea:focus { border-color:#FF8000 !important; box-shadow:none !important; }
+[data-testid="stTextArea"] label { display:none !important; }
+[data-testid="stTextArea"] { padding:0 !important; }
 
 .bbg-tape { position:fixed; bottom:0; left:0; width:100%; background:#000; border-top:1px solid #FF8000; padding:4px 12px; font-size:10px; display:flex; gap:20px; z-index:9998; }
 .tape-sym { color:#FF8000; font-weight:700; margin-right:4px; }
@@ -497,7 +503,7 @@ with col_t5:
 with col_tv:
     st.markdown('<div class="bbg-tv-wrap"><div class="bbg-panel"><div class="bbg-panel-hdr">LIVE — BLOOMBERG TV</div>', unsafe_allow_html=True)
     components.html(
-        '<iframe width="100%" height="160" src="https://www.youtube.com/embed/iEpJwprxDdk?autoplay=1&mute=1" frameborder="0" allowfullscreen style="display:block; margin-top:15px; margin-left:-8px; width:calc(100% + 16px);"></iframe>',
+        '<iframe width="100%" height="160" src="https://www.youtube.com/embed/iEpJwprxDdk?autoplay=1&mute=1" frameborder="0" allowfullscreen style="display:block; margin-top:2px; margin-left:-8px; width:calc(100% + 16px);"></iframe>',
         height=165
     )
     st.markdown('</div></div>', unsafe_allow_html=True)
@@ -721,6 +727,8 @@ with tab4:
 # ── TAB 5: NEWS & NOTES ───────────────────────────────────────────────────────
 with tab5:
     n1,n2=st.columns([1.6,1.4])
+    # Force both columns to equal height
+    st.markdown('<style>[data-testid="stHorizontalBlock"]{align-items:stretch;} [data-testid="stTextArea"]{height:100%;} [data-testid="stTextArea"] textarea{height:100% !important; min-height:500px;}</style>', unsafe_allow_html=True)
     with n1:
         st.markdown('<div class="bbg-panel"><div class="bbg-panel-hdr">FINANCIAL NEWS — ALPHA VANTAGE SENTIMENT FEED</div>', unsafe_allow_html=True)
         if news_feed:
@@ -739,7 +747,7 @@ with tab5:
         st.markdown(news_html+'</div>', unsafe_allow_html=True)
 
     with n2:
-        st.markdown('<div class="bbg-panel"><div class="bbg-panel-hdr">ANALYST NOTES — TRADE JOURNAL</div><div class="bbg-panel-body">', unsafe_allow_html=True)
+        st.markdown('<div class="bbg-panel" style="margin-top:-8px;"><div class="bbg-panel-hdr">ANALYST NOTES — TRADE JOURNAL</div><div class="bbg-panel-body">', unsafe_allow_html=True)
         st.markdown('<div style="color:#555;font-size:9px;margin-bottom:6px;letter-spacing:1px;">TYPE YOUR NOTES BELOW — USE FOR TRADE RATIONALE, OBSERVATIONS, REMINDERS</div>', unsafe_allow_html=True)
         st.text_area(
             label="",
