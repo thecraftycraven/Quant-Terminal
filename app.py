@@ -51,8 +51,10 @@ section[data-testid="stSidebar"] { display: none !important; }
 .bbg-panel-body { padding:6px 8px; }
 
 .bbg-top5 { display:grid; grid-template-columns:repeat(5,1fr); }
-.bbg-top5-wrap { margin-top: 22px; }
-.bbg-tv-wrap { margin-top: 22px; }
+.bbg-top5-wrap { margin-top: 35px; }
+.bbg-tv-wrap { margin-top: 35px; display:flex; flex-direction:column; }
+.bbg-tv-wrap .bbg-panel { flex:1; display:flex; flex-direction:column; }
+.bbg-tv-wrap iframe { flex:1; width:100% !important; display:block; border:0; }
 .bbg-t5c { padding:8px 10px; border-right:1px solid #1A1A1A; border-top:3px solid #333; background:#050505; }
 .bbg-t5c:last-child { border-right:none; }
 .bbg-t5c.strong { border-top-color:#FF8000; }
@@ -419,7 +421,7 @@ macro_html += '</div></div>'
 st.markdown(macro_html, unsafe_allow_html=True)
 
 # ── TOP 5 + BLOOMBERG TV ──────────────────────────────────────────────────────
-col_t5, col_tv = st.columns([3.5, 1.5])
+col_t5, col_tv = st.columns([3.0, 2.0])
 
 with col_t5:
     cards = '<div class="bbg-top5-wrap"><div class="bbg-panel"><div class="bbg-panel-hdr">TOP 5 ROTATION TARGETS — SOLOMON STRATEGY</div><div class="bbg-top5">'
@@ -446,8 +448,8 @@ with col_t5:
 with col_tv:
     st.markdown('<div class="bbg-tv-wrap"><div class="bbg-panel"><div class="bbg-panel-hdr">LIVE — BLOOMBERG TV</div>', unsafe_allow_html=True)
     components.html(
-        '<iframe width="105%" height="250" src="https://www.youtube.com/embed/iEpJwprxDdk?autoplay=1&mute=1" frameborder="0" allowfullscreen style="display:block;"></iframe>',
-        height=255
+        '<iframe width="100%" height="248" src="https://www.youtube.com/embed/iEpJwprxDdk?autoplay=1&mute=1" frameborder="0" allowfullscreen style="display:block;"></iframe>',
+        height=253
     )
     st.markdown('</div></div>', unsafe_allow_html=True)
 
