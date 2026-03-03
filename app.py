@@ -24,52 +24,27 @@ st.markdown(f"""
     <style>
     .stApp {{ background-color: #0c0c0c; }}
     * {{ font-family: 'Helvetica', sans-serif !important; color: #FFFFFF; }}
-    
-    /* Top Status Bar */
-    .status-bar {{
-        display: flex; justify-content: space-between; align-items: center;
-        border-bottom: 2px solid #00FFFF; padding: 5px 0px; margin-top: -50px; margin-bottom: 10px;
-    }}
+    .status-bar {{ display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #00FFFF; padding: 5px 0px; margin-top: -50px; margin-bottom: 10px; }}
     .status-left {{ color: {status_color}; font-weight: bold; font-size: 14px; text-transform: uppercase; }}
     .status-right {{ color: #00FFFF; text-align: right; font-weight: bold; font-size: 14px; }}
-    
-    /* Compact Panels */
-    .bbg-panel {{
-        border: 1px solid #444; background-color: #111; padding: 8px; margin-bottom: 10px; border-radius: 2px;
-    }}
-    .bbg-header {{
-        color: #FFFFFF; font-weight: bold; font-size: 14px; text-transform: uppercase; 
-        border-bottom: 1px solid #444; padding-bottom: 4px; margin-bottom: 8px;
-    }}
-    
-    /* Tables */
+    .bbg-panel {{ border: 1px solid #444; background-color: #111; padding: 8px; margin-bottom: 10px; border-radius: 2px; }}
+    .bbg-header {{ color: #FFFFFF; font-weight: bold; font-size: 14px; text-transform: uppercase; border-bottom: 1px solid #444; padding-bottom: 4px; margin-bottom: 8px; }}
     table {{ width: 100%; border-collapse: collapse; font-size: 11px; }}
     th {{ text-align: left; color: #aaa; border-bottom: 1px solid #333; padding: 4px; }}
     td {{ padding: 4px; border-bottom: 1px solid #222; }}
     .td-right {{ text-align: right; }}
-    
-    /* Signal Colors */
     .c-strong-buy {{ color: #00FF00; font-weight: bold; }}
     .c-buy {{ color: #66FF66; font-weight: bold; }}
     .c-hold {{ color: #FFFF00; font-weight: bold; }}
     .c-sell {{ color: #FF6666; font-weight: bold; }}
     .c-strong-sell {{ color: #FF0000; font-weight: bold; }}
-    
-    /* Ticker Tape Bottom */
-    .ticker-tape {{
-        display: flex; justify-content: space-between; background-color: #111;
-        border-top: 2px solid #333; padding: 5px 10px; font-size: 12px; font-weight: bold;
-    }}
-    
-    /* Heatmap Grid */
+    .c-halt {{ color: #FF00FF; font-weight: bold; }}
+    .ticker-tape {{ display: flex; justify-content: space-between; background-color: #111; border-top: 2px solid #333; padding: 5px 10px; font-size: 12px; font-weight: bold; }}
     .heatmap-grid {{ display: grid; grid-template-columns: repeat(8, 1fr); gap: 1px; }}
     .heat-cell {{ text-align: center; padding: 4px 0px; font-size: 10px; font-weight: bold; }}
-    
-    /* Streamlit DataFrame Overrides */
     .dataframe {{ font-size: 10px !important; text-align: right; }}
     .dataframe th {{ background-color: #111111 !important; color: #FF8C00 !important; border-bottom: 2px solid #FF8C00 !important; }}
     .dataframe td {{ border-bottom: 1px solid #333333 !important; padding: 4px !important; }}
-    
     #MainMenu, footer, header {{visibility: hidden;}}
     .stLineChart {{ margin-top: -20px; }} 
     </style>
@@ -96,22 +71,29 @@ ALL_SYMBOLS = TICKERS + BENCHMARKS
 # 3. Data Engine
 @st.cache_data(ttl=3600)
 def fetch_data():
+    # We now need High and Low data for ATR and ADX
     data = yf.download(ALL_SYMBOLS, period="1y", progress=False)
-    return data['Close'], data['Volume']
+    return data['Close'], data['High'], data['Low'], data['Volume']
 
-def calculate_factors(prices, volumes, current_year):
+def calculate_factors(closes, highs, lows, volumes, current_year):
     results = []
-    spy_p = prices["SPY"].dropna()
+    spy_p = closes["SPY"].dropna()
+    
+    # 1. Macro Kill Switch Check
+    vix_close = closes["^VIX"].dropna().iloc[-1]
+    vix_halt = vix_close > 30 # Trigger risk-off if VIX spikes
     
     for ticker in TICKERS:
         try:
-            p = prices[ticker].dropna()
+            p = closes[ticker].dropna()
+            h = highs[ticker].dropna()
+            l = lows[ticker].dropna()
             v = volumes[ticker].dropna()
             if len(p) < 200: continue
             
+            # Basic Returns
             p_year = p[p.index.year == current_year]
             ytd_ret = ((p.iloc[-1] - p_year.iloc[0]) / p_year.iloc[0]) * 100 if len(p_year) > 0 else 0
-                
             ret_1m = p.pct_change(21).iloc[-1]
             vol_1m = p.pct_change().tail(21).std() * np.sqrt(252)
             ram = ret_1m / vol_1m if vol_1m != 0 else 0
@@ -119,92 +101,108 @@ def calculate_factors(prices, volumes, current_year):
             roc_20 = p.pct_change(20).iloc[-1]
             roc_60 = p.pct_change(60).iloc[-1]
             roc_accel = roc_20 - (roc_60 / 3)
-            
             rel_strength = p.pct_change(63).iloc[-1] - spy_p.pct_change(63).iloc[-1]
+            
             sma_50 = p.rolling(50).mean()
             sma_50_slope = (sma_50.iloc[-1] - sma_50.iloc[-21]) / sma_50.iloc[-21]
-            
             vol_90 = v.rolling(90).mean().iloc[-1]
             vol_conf = (v.rolling(20).mean().iloc[-1] / vol_90) if vol_90 != 0 else 1
             
-            rolling_max = p.tail(126).cummax()
-            max_dd = ((p.tail(126) - rolling_max) / rolling_max).min()
+            # Advanced Risk: ATR & Trailing Stop
+            high_low = h - l
+            high_close = np.abs(h - p.shift())
+            low_close = np.abs(l - p.shift())
+            tr = pd.concat([high_low, high_close, low_close], axis=1).max(axis=1)
+            atr = tr.rolling(14).mean().iloc[-1]
+            
+            peak_20d = p.tail(20).max()
+            trailing_stop = peak_20d - (2.5 * atr)
+            
+            # Advanced Risk: ADX (Trend Strength Proxy via Pandas)
+            up_move = h - h.shift(1)
+            down_move = l.shift(1) - l
+            plus_dm = np.where((up_move > down_move) & (up_move > 0), up_move, 0)
+            minus_dm = np.where((down_move > up_move) & (down_move > 0), down_move, 0)
+            tr14 = tr.rolling(14).sum()
+            plus_di = 100 * (pd.Series(plus_dm, index=p.index).rolling(14).sum() / tr14)
+            minus_di = 100 * (pd.Series(minus_dm, index=p.index).rolling(14).sum() / tr14)
+            dx = 100 * np.abs(plus_di - minus_di) / (plus_di + minus_di)
+            adx = dx.rolling(14).mean().iloc[-1]
             
             results.append({
                 'TKR': ticker, 'PRICE': p.iloc[-1], 'YTD': ytd_ret, 'RAM': ram, 
                 'ROC_AC': roc_accel, 'REL_STR': rel_strength, '50D_SLP': sma_50_slope, 
-                'VOL_CF': vol_conf, 'MAX_DD': max_dd, 'Above_200': p.iloc[-1] > p.rolling(200).mean().iloc[-1]
+                'VOL_CF': vol_conf, 'ADX': adx, 'STOP_PRC': trailing_stop, 
+                'Above_200': p.iloc[-1] > p.rolling(200).mean().iloc[-1]
             })
         except: continue
             
     df = pd.DataFrame(results).set_index('TKR')
-    f = ['RAM', 'ROC_AC', 'REL_STR', '50D_SLP', 'VOL_CF', 'MAX_DD']
+    f = ['RAM', 'ROC_AC', 'REL_STR', '50D_SLP', 'VOL_CF'] # Excluded ADX from Z-score, it's a hard filter
     z = (df[f] - df[f].mean()) / df[f].std()
     
-    df['SCORE'] = (z['RAM']*.25 + z['REL_STR']*.20 + z['ROC_AC']*.20 + z['50D_SLP']*.15 + z['VOL_CF']*.10 - z['MAX_DD']*.10) * 100
+    df['SCORE'] = (z['RAM']*.25 + z['REL_STR']*.20 + z['ROC_AC']*.20 + z['50D_SLP']*.20 + z['VOL_CF']*.15) * 100
     df = df.sort_values(by='SCORE', ascending=False)
     df['RNK'] = range(1, len(df) + 1)
     
     signals = []
     for idx, row in df.iterrows():
-        # 1. Stricter Absolute Alignment (Volume must be 20% above average)
+        # Elite Absolute Alignment: Requires Trend (ADX > 25)
         fits_all_parameters = (
-            row['Above_200'] and 
-            row['RAM'] > 0 and 
-            row['REL_STR'] > 0 and 
-            row['ROC_AC'] > 0 and 
-            row['50D_SLP'] > 0 and 
-            row['VOL_CF'] >= 1.2 # Raised from 1.0 to demand real conviction
+            row['Above_200'] and row['RAM'] > 0 and row['REL_STR'] > 0 and 
+            row['ROC_AC'] > 0 and row['50D_SLP'] > 0 and row['VOL_CF'] >= 1.2 and
+            row['ADX'] > 25
         )
         
-        # 2. The Elite Intersection (Absolute Perfection AND Top 10 Rank)
-        if not row['Above_200']: 
+        if vix_halt:
+            signals.append("HALT (VIX)") # Macro Kill Switch
+        elif not row['Above_200'] or row['PRICE'] < row['STOP_PRC']: 
             signals.append("STRONG SELL" if row['RNK'] > 15 else "SELL")
-        elif fits_all_parameters and row['RNK'] <= 10: 
-            signals.append("STRONG BUY") # Must be perfect AND in the top 10
+        elif fits_all_parameters and row['RNK'] <= 10:
+            signals.append("STRONG BUY")
         elif row['RNK'] <= 10:
-            signals.append("BUY") # Top 10 rank, but missing absolute perfection
+            signals.append("BUY")
         elif 10 < row['RNK'] <= 15:
             signals.append("HOLD")
         else: 
             signals.append("SELL")
             
     df['SIGNAL'] = signals
-    return df
+    return df, vix_halt, vix_close
 
-with st.spinner('SYNCING GLOBAL DATA...'):
-    raw_prices, raw_volumes = fetch_data()
-    df = calculate_factors(raw_prices, raw_volumes, now_est.year)
+with st.spinner('SYNCING ELITE DATA...'):
+    c, h, l, v = fetch_data()
+    df, vix_halt, vix_close = calculate_factors(c, h, l, v, now_est.year)
 
-# 4. Interface Layout: Top Panels (Visuals & Rules)
+# 4. Interface Layout: Top Panels
 col1, col2 = st.columns([1.2, 1.8]) 
 
 with col1:
-    st.markdown("""
+    vix_display = f"<span style='color:red;'>HALT TRIGGERED (VIX: {vix_close:.2f})</span>" if vix_halt else f"<span style='color:#00FF00;'>SAFE (VIX: {vix_close:.2f})</span>"
+    st.markdown(f"""
         <div class="bbg-panel">
-            <div class="bbg-header">WEIGHTING THE FACTORS</div>
+            <div class="bbg-header">SYSTEM ARCHITECTURE</div>
             <table>
-                <tr><th>Factor</th><th class="td-right">Weight</th></tr>
-                <tr><td>Risk-Adjusted Momentum (1M)</td><td class="td-right">25%</td></tr>
-                <tr><td>Relative Strength vs SPY</td><td class="td-right">20%</td></tr>
-                <tr><td>ROC Acceleration</td><td class="td-right">20%</td></tr>
-                <tr><td>50DMA Slope</td><td class="td-right">15%</td></tr>
-                <tr><td>Volume Confirmation</td><td class="td-right">10%</td></tr>
-                <tr><td style="color:#00FFFF;">Drawdown Penalty</td><td class="td-right" style="color:#00FFFF;">-10%</td></tr>
+                <tr><th>Component</th><th class="td-right">Status</th></tr>
+                <tr><td>Macro Regime (VIX < 30)</td><td class="td-right">{vix_display}</td></tr>
+                <tr><td>Chop Filter (ADX > 25)</td><td class="td-right">ACTIVE</td></tr>
+                <tr><td>Dynamic Exit (2.5x ATR)</td><td class="td-right">ACTIVE</td></tr>
+                <tr><td>Vol Confirmation (>1.2x)</td><td class="td-right">ACTIVE</td></tr>
             </table>
         </div>
         """, unsafe_allow_html=True)
         
     st.markdown("""
         <div class="bbg-panel">
-            <div class="bbg-header">ENTRY / EXIT SIGNALS</div>
+            <div class="bbg-header">ELITE ENTRY / EXIT</div>
             <table>
                 <tr><th>Signal</th><th>Rule</th></tr>
-                <tr><td class="c-strong-buy">STRONG BUY</td><td>Fits ALL parameters perfectly</td></tr>
-                <tr><td class="c-buy">BUY</td><td>Ranks 11-15 + Above 200DMA</td></tr>
-                <tr><td class="c-hold">HOLD</td><td>Was Top 10, slipped to 11-15</td></tr>
-                <tr><td class="c-sell">SELL</td><td>Dropped out of top 15</td></tr>
-                <tr><td class="c-strong-sell">STRONG SELL</td><td>Below 200DMA</td></tr>
+                <tr><td class="c-strong-buy">STRONG BUY</td><td>Perfect Alignment + ADX>25</td></tr>
+                <tr><td class="c-buy">BUY</td><td>Top 10, imperfect setup</td></tr>
+                <tr><td class="c-hold">HOLD</td><td>Buffer zone (Rank 11-15)</td></tr>
+                <tr><td class="c-sell">SELL</td><td>Drop out of Top 15</td></tr>
+                <tr><td class="c-halt">HALT (VIX)</td><td>VIX > 30 (Risk-Off)</td></tr>
+                <tr><td class="c-strong-sell">STRONG SELL</td><td>Below 200DMA or Hit ATR Stop</td></tr>
             </table>
         </div>
         """, unsafe_allow_html=True)
@@ -216,12 +214,12 @@ with col2:
             <div class="bbg-header" style="color:#00FFFF !important;">TARGET ACQUISITION: {top_asset}</div>
             <div style="display:flex; justify-content:space-between; margin-bottom: 5px;">
                 <span style="font-size:24px; font-weight:bold; color:#00FF00;">${df.loc[top_asset, 'PRICE']:.2f}</span>
-                <span style="font-size:12px; color:#aaa;">Rank: #1 | Score: {df.loc[top_asset, 'SCORE']:.1f}</span>
+                <span style="font-size:12px; color:#aaa;">ATR Stop: ${df.loc[top_asset, 'STOP_PRC']:.2f} | Score: {df.loc[top_asset, 'SCORE']:.1f}</span>
             </div>
         </div>
     """, unsafe_allow_html=True)
     
-    chart_data = raw_prices[top_asset].dropna().tail(63)
+    chart_data = c[top_asset].dropna().tail(63)
     st.line_chart(chart_data, height=140, use_container_width=True)
 
     st.markdown('<div class="bbg-panel"><div class="bbg-header">ETF YTD PERFORMANCE HEATMAP</div>', unsafe_allow_html=True)
@@ -235,13 +233,17 @@ with col2:
     heatmap_html += '</div></div>'
     st.markdown(heatmap_html, unsafe_allow_html=True)
 
-# 5. Interface Layout: Bottom Panel (The Master Ledger)
+# 5. Interface Layout: Bottom Panel
 st.markdown('<div class="bbg-panel"><div class="bbg-header">QUANTITATIVE FACTOR LEDGER</div>', unsafe_allow_html=True)
 
-display_df = df[['RNK', 'SIGNAL', 'PRICE', 'SCORE', 'YTD', 'RAM', 'ROC_AC', 'REL_STR', '50D_SLP', 'VOL_CF', 'MAX_DD']].copy()
+display_df = df[['RNK', 'SIGNAL', 'PRICE', 'STOP_PRC', 'ADX', 'SCORE', 'YTD', 'RAM', 'ROC_AC', 'REL_STR', '50D_SLP', 'VOL_CF']].copy()
 
 def style_signals(val):
-    color = '#00FF00' if 'STRONG BUY' in val else '#66FF66' if 'BUY' in val else '#FFFF00' if 'HOLD' in val else '#FF0000'
+    if 'STRONG BUY' in val: color = '#00FF00'
+    elif 'BUY' in val: color = '#66FF66'
+    elif 'HOLD' in val: color = '#FFFF00'
+    elif 'HALT' in val: color = '#FF00FF'
+    else: color = '#FF0000'
     return f'color: {color}; font-weight: bold;'
 
 st.dataframe(display_df.round(2).style.map(style_signals, subset=['SIGNAL']), use_container_width=True, height=350)
@@ -251,8 +253,8 @@ st.markdown('</div>', unsafe_allow_html=True)
 tape_html = '<div class="ticker-tape">'
 for b in BENCHMARKS:
     try:
-        cur = raw_prices[b].dropna().iloc[-1]
-        pct = ((cur - raw_prices[b].dropna().iloc[-2]) / raw_prices[b].dropna().iloc[-2]) * 100
+        cur = c[b].dropna().iloc[-1]
+        pct = ((cur - c[b].dropna().iloc[-2]) / c[b].dropna().iloc[-2]) * 100
         c_class = "c-strong-buy" if pct > 0 else "c-strong-sell"
         sym = b.replace("^", "")
         tape_html += f'<span>{sym} <span style="color:#FFF;">{cur:.2f}</span> <span class="{c_class}">{pct:+.2f}%</span></span>'
