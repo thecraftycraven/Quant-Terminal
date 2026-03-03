@@ -34,12 +34,12 @@ section[data-testid="stSidebar"] { display: none !important; }
 .bbg-status-c { color:#FF8000; font-size:10px; letter-spacing:2px; font-weight:600; }
 .bbg-status-r { color:#AAAAAA; font-size:10px; text-align:right; }
 
-.bbg-macro-row { display:grid; grid-template-columns:repeat(13,1fr); border-bottom:1px solid #333; background:#050505; }
-.bbg-macro-cell { padding:5px 6px; border-right:1px solid #1A1A1A; text-align:center; }
+.bbg-macro-row { display:grid; grid-template-columns:repeat(13,1fr); border-bottom:1px solid #333; background:#050505; margin-top:15px; }
+.bbg-macro-cell { padding:10px 6px; border-right:1px solid #1A1A1A; text-align:center; }
 .bbg-macro-cell:last-child { border-right:none; }
-.bbg-macro-lbl { color:#888; font-size:7px; letter-spacing:1px; text-transform:uppercase; margin-bottom:2px; }
-.bbg-macro-val { font-size:12px; font-weight:700; line-height:1; }
-.bbg-macro-sub { color:#555; font-size:7px; margin-top:1px; }
+.bbg-macro-lbl { color:#888; font-size:8px; letter-spacing:1px; text-transform:uppercase; margin-bottom:3px; }
+.bbg-macro-val { font-size:14px; font-weight:700; line-height:1; }
+.bbg-macro-sub { color:#555; font-size:8px; margin-top:2px; }
 
 .yc-inline { display:flex; align-items:flex-end; gap:2px; height:26px; padding:0 2px; }
 .yc-inline-col { flex:1; display:flex; flex-direction:column; align-items:center; }
@@ -87,8 +87,8 @@ section[data-testid="stSidebar"] { display: none !important; }
 .sig-ht { color:#FF00FF; font-weight:700; }
 
 /* HEATMAP: small squares, 9 columns */
-.bbg-hm { display:grid; grid-template-columns:repeat(9,1fr); gap:2px; padding:6px; }
-.bbg-hm-cell { aspect-ratio:1/1; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:7.5px; font-weight:700; line-height:1.4; border-radius:2px; }
+.bbg-hm { display:grid; grid-template-columns:repeat(6,1fr); gap:2px; padding:6px; }
+.bbg-hm-cell { display:flex; justify-content:space-between; align-items:center; padding:3px 6px; font-size:9px; font-weight:700; border-radius:2px; white-space:nowrap; }
 
 .stTabs [data-baseweb="tab-list"] { background:#000 !important; border-bottom:1px solid #333 !important; gap:0 !important; padding:0 !important; }
 .stTabs [data-baseweb="tab"] { background:#000 !important; color:#555 !important; font-size:10px !important; letter-spacing:1.5px !important; padding:6px 18px !important; border-radius:0 !important; border:none !important; }
@@ -138,6 +138,7 @@ BENCHMARKS = ["SPY","QQQ","DIA","^VIX","^TNX","^TYX","GC=F","CL=F"]
 # ── API KEYS ──────────────────────────────────────────────────────────────────
 FRED_API_KEY = "93069da065d835f300947c9dd312c50d"
 ALPHA_KEY    = "I7L9I79E7WRJGLFC"
+FMP_KEY      = "JNYpveoF4uOcnTzewvlbRPkyJt1sEn8T"
 
 YIELD_CURVE_IDS = {
     "DGS1MO":"1M","DGS3MO":"3M","DGS6MO":"6M",
@@ -199,6 +200,52 @@ def fetch_bls_cpi():
     return None, None, None
 
 @st.cache_data(ttl=1800)
+@st.cache_data(ttl=3600)
+def fetch_fmp_macro_calendar():
+    """FMP economic calendar — upcoming events"""
+    try:
+        today = now_est.strftime("%Y-%m-%d")
+        future = (now_est + datetime.timedelta(days=14)).strftime("%Y-%m-%d")
+        r = requests.get(
+            f"https://financialmodelingprep.com/api/v3/economic_calendar",
+            params={"from": today, "to": future, "apikey": FMP_KEY},
+            timeout=8
+        )
+        if r.status_code == 200:
+            return r.json()[:20]
+    except:
+        pass
+    return []
+
+@st.cache_data(ttl=3600)
+def fetch_fmp_sector_pe():
+    """FMP sector P/E ratios"""
+    try:
+        r = requests.get(
+            "https://financialmodelingprep.com/api/v4/sector_price_earning_ratio",
+            params={"date": now_est.strftime("%Y-%m-%d"), "exchange": "NYSE", "apikey": FMP_KEY},
+            timeout=8
+        )
+        if r.status_code == 200:
+            return r.json()
+    except:
+        pass
+    return []
+
+@st.cache_data(ttl=1800)
+def fetch_fmp_market_hours():
+    """FMP market hours / status"""
+    try:
+        r = requests.get(
+            "https://financialmodelingprep.com/api/v3/market-hours",
+            params={"apikey": FMP_KEY}, timeout=6
+        )
+        if r.status_code == 200:
+            return r.json()
+    except:
+        pass
+    return {}
+
 def fetch_financial_news():
     """Alpha Vantage news sentiment"""
     try:
@@ -348,6 +395,8 @@ with st.spinner(""):
     av_sec   = fetch_alpha_vantage_sector()
     cpi_val,cpi_per,cpi_yr = fetch_bls_cpi()
     news_feed = fetch_financial_news()
+    fmp_calendar = fetch_fmp_macro_calendar()
+    fmp_sector_pe = fetch_fmp_sector_pe()
 
 closes = raw["Close"]
 top5_df = df[df["RNK"]<=5]
@@ -448,7 +497,7 @@ with col_t5:
 with col_tv:
     st.markdown('<div class="bbg-tv-wrap"><div class="bbg-panel"><div class="bbg-panel-hdr">LIVE — BLOOMBERG TV</div>', unsafe_allow_html=True)
     components.html(
-        '<iframe width="100%" height="160" src="https://www.youtube.com/embed/iEpJwprxDdk?autoplay=1&mute=1" frameborder="0" allowfullscreen style="display:block; margin-top:11px; margin-left:-8px; width:calc(100% + 16px);"></iframe>',
+        '<iframe width="100%" height="160" src="https://www.youtube.com/embed/iEpJwprxDdk?autoplay=1&mute=1" frameborder="0" allowfullscreen style="display:block; margin-top:2px; margin-left:-8px; width:calc(100% + 16px);"></iframe>',
         height=165
     )
     st.markdown('</div></div>', unsafe_allow_html=True)
@@ -547,7 +596,7 @@ with tab3:
             elif v>-10: bg,fg="#1A0000","#CC3333"
             else:       bg,fg="#2A0000","#FF4444"
             bdr="border:1px solid #FF8000;" if "BUY" in row["SIGNAL"] else "border:1px solid #1A1A1A;"
-            hm+=f'<div class="bbg-hm-cell" style="background:{bg};color:{fg};{bdr}">{tkr}<br>{v:+.1f}%</div>'
+            hm+=f'<div class="bbg-hm-cell" style="background:{bg};color:{fg};{bdr}"><span>{tkr}</span><span>{v:+.1f}%</span></div>'
         st.markdown(hm+'</div></div>', unsafe_allow_html=True)
     with h2:
         st.markdown('<div class="bbg-panel"><div class="bbg-panel-hdr">MOMENTUM SCORE</div><div class="bbg-hm">', unsafe_allow_html=True)
@@ -559,7 +608,7 @@ with tab3:
             bg=f"rgb(0,{int(n*160)+20},0)" if n>0.5 else f"rgb({int((1-n)*130)},20,0)"
             fg="#FF8000" if n>0.7 else "#FFCC00" if n>0.4 else "#CC3333"
             bdr="border:1px solid #FF8000;" if "BUY" in row["SIGNAL"] else "border:1px solid #1A1A1A;"
-            hm2+=f'<div class="bbg-hm-cell" style="background:{bg};color:{fg};{bdr}">{tkr}<br>{s:.0f}</div>'
+            hm2+=f'<div class="bbg-hm-cell" style="background:{bg};color:{fg};{bdr}"><span>{tkr}</span><span>{s:.0f}</span></div>'
         st.markdown(hm2+'</div></div>', unsafe_allow_html=True)
 
 # ── TAB 4: BACKTEST ───────────────────────────────────────────────────────────
@@ -652,6 +701,23 @@ with tab4:
         alloc_html+='</tbody></table>'
         st.markdown(alloc_html+'</div></div>', unsafe_allow_html=True)
 
+        # ── FMP ECONOMIC CALENDAR ────────────────────────────────────────────
+        st.markdown('<div class="bbg-panel" style="margin-top:4px;"><div class="bbg-panel-hdr">FMP — UPCOMING ECONOMIC EVENTS</div><div class="bbg-panel-body">', unsafe_allow_html=True)
+        if fmp_calendar:
+            cal_html='<table class="bbg-tbl"><thead><tr><th class="l">DATE</th><th class="l">EVENT</th><th>ACTUAL</th><th>EST</th><th>IMPACT</th></tr></thead><tbody>'
+            for ev in fmp_calendar[:10]:
+                date_s = ev.get("date","")[:10]
+                event  = ev.get("event","")[:35]
+                actual = ev.get("actual","—") or "—"
+                est    = ev.get("estimate","—") or "—"
+                impact = ev.get("impact","")
+                imp_col= "#CC0000" if impact=="High" else "#FF8000" if impact=="Medium" else "#555"
+                cal_html+=f'<tr><td class="l" style="color:#555;font-size:9px;">{date_s}</td><td class="l">{event}</td><td>{actual}</td><td style="color:#888;">{est}</td><td style="color:{imp_col};font-size:9px;">{impact}</td></tr>'
+            cal_html+='</tbody></table>'
+            st.markdown(cal_html+'</div></div>', unsafe_allow_html=True)
+        else:
+            st.markdown('<div style="color:#555;font-size:9px;">No upcoming events or FMP calendar loading...</div></div></div>', unsafe_allow_html=True)
+
 # ── TAB 5: NEWS & NOTES ───────────────────────────────────────────────────────
 with tab5:
     n1,n2=st.columns([1.6,1.4])
@@ -697,7 +763,7 @@ with tab6:
         ("Nasdaq Data Link",           "COT reports, futures positioning, alternative data",               False, "Register at data.nasdaq.com"),
         ("CFTC",                       "Commitment of Traders — futures net positioning",                  False, "Free CSV — cftc.gov/MarketReports"),
         ("SEC EDGAR",                  "ETF 13F filings, institutional ownership flow",                    False, "Free REST — efts.sec.gov"),
-        ("Financial Modeling Prep",    "Macro calendar, dividends, analyst ratings",                       False, "Free tier — financialmodelingprep.com"),
+        ("Financial Modeling Prep",    "Economic calendar, sector P/E, market hours, dividends",           bool(fmp_calendar or fmp_sector_pe), "Key active — financialmodelingprep.com"),
     ]
     tbl3='<div class="bbg-panel"><div class="bbg-panel-hdr">API CONNECTION STATUS</div>'
     tbl3+='<table class="bbg-tbl"><thead><tr><th class="l">API</th><th class="l">DATA</th><th>STATUS</th><th class="l">NOTES</th></tr></thead><tbody>'
