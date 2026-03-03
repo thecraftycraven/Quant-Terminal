@@ -448,7 +448,7 @@ with col_t5:
 with col_tv:
     st.markdown('<div class="bbg-tv-wrap"><div class="bbg-panel"><div class="bbg-panel-hdr">LIVE — BLOOMBERG TV</div>', unsafe_allow_html=True)
     components.html(
-        '<iframe width="100%" height="160" src="https://www.youtube.com/embed/iEpJwprxDdk?autoplay=1&mute=1" frameborder="0" allowfullscreen style="display:block; margin-top:5px; margin-left:-8px; width:calc(100% + 16px);"></iframe>',
+        '<iframe width="100%" height="160" src="https://www.youtube.com/embed/iEpJwprxDdk?autoplay=1&mute=1" frameborder="0" allowfullscreen style="display:block; margin-top:11px; margin-left:-8px; width:calc(100% + 16px);"></iframe>',
         height=165
     )
     st.markdown('</div></div>', unsafe_allow_html=True)
