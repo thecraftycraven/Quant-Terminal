@@ -47,7 +47,7 @@ st.markdown(f"""
     """, unsafe_allow_html=True)
 
 # ==========================================
-# 2. SECTOR-MAPPED UNIVERSE (46 ASSETS)
+# 2. FULL 46-ASSET SECTOR MAP
 # ==========================================
 TICKER_SECTORS = {
     "OIH": "Energy", "XLE": "Energy", "XLB": "Materials", "XME": "Materials", "WOOD": "Materials",
@@ -79,7 +79,7 @@ def calculate_snapshot(data, target_date):
     if len(closes) < 200: return pd.DataFrame(), False, 0.0
     
     spy_p = closes["SPY"].dropna()
-    vix_close = closes["^VIX"].dropna().iloc[-1]
+    vix_close = data['Close']["^VIX"].loc[:target_date].iloc[-1]
     vix_halt = vix_close > 30 
     
     results = []
@@ -88,22 +88,17 @@ def calculate_snapshot(data, target_date):
             p, h, l, v = closes[t].dropna(), highs[t].dropna(), lows[t].dropna(), vols[t].dropna()
             if len(p) < 200: continue
             
-            # FACTOR MATH
+            # MATH
+            ytd = ((p.iloc[-1] / p[p.index.year == target_date.year].iloc[0]) - 1) * 100 if not p[p.index.year == target_date.year].empty else 0
             ret_1m = p.pct_change(21).iloc[-1]
             vol_1m = p.pct_change().tail(21).std() * np.sqrt(252)
             ram = ret_1m / vol_1m if vol_1m != 0 else 0
-            roc_20 = p.pct_change(20).iloc[-1]
-            roc_60 = p.pct_change(60).iloc[-1]
-            roc_accel = roc_20 - (roc_60 / 3)
             rel_str = p.pct_change(63).iloc[-1] - spy_p.pct_change(63).iloc[-1]
-            sma_50 = p.rolling(50).mean()
-            sma_50_slp = (sma_50.iloc[-1] - sma_50.iloc[-21]) / sma_50.iloc[-21]
+            sma_50 = p.rolling(50).mean(); sma_50_slp = (sma_50.iloc[-1] - sma_50.iloc[-21]) / sma_50.iloc[-21]
             vol_cf = (v.rolling(20).mean().iloc[-1] / v.rolling(90).mean().iloc[-1])
-            atr = (h - l).rolling(14).mean().iloc[-1]
-            stop = p.tail(20).max() - (2.5 * atr)
-            alloc = (0.01 / ((p.iloc[-1] - stop) / p.iloc[-1])) * 100 if p.iloc[-1] > stop else 0
+            atr = (h - l).rolling(14).mean().iloc[-1]; stop = p.tail(20).max() - (2.5 * atr)
             
-            # ADX Math
+            # ADX
             tr = pd.concat([h-l, np.abs(h-p.shift()), np.abs(l-p.shift())], axis=1).max(axis=1)
             up, dw = h-h.shift(1), l.shift(1)-l
             pd_di = 100 * (pd.Series(np.where((up>dw)&(up>0),up,0), index=p.index).rolling(14).sum() / tr.rolling(14).sum())
@@ -111,9 +106,10 @@ def calculate_snapshot(data, target_date):
             adx = (100 * np.abs(pd_di - md_di) / (pd_di + md_di)).rolling(14).mean().iloc[-1]
 
             results.append({
-                'TKR': t, 'SECTOR': TICKER_SECTORS[t], 'PRICE': p.iloc[-1], 'YTD': ((p.iloc[-1]/p[p.index.year==target_date.year].iloc[0])-1)*100 if not p[p.index.year==target_date.year].empty else 0,
-                'RAM': ram, 'REL_STR': rel_str, '50D_SLP': sma_50_slp, 'VOL_CF': vol_cf, 'ROC_AC': roc_accel,
-                'ADX': adx, 'STOP': stop, 'ALLOC': min(alloc, 25.0), 'Above_200': p.iloc[-1] > p.rolling(200).mean().iloc[-1]
+                'TKR': t, 'SECTOR': TICKER_SECTORS[t], 'PRICE': p.iloc[-1], 'YTD': ytd,
+                'RAM': ram, 'REL_STR': rel_str, '50D_SLP': sma_50_slp, 'VOL_CF': vol_cf,
+                'ADX': adx, 'STOP': stop, 'ROC_AC': p.pct_change(20).iloc[-1] - (p.pct_change(60).iloc[-1]/3),
+                'Above_200': p.iloc[-1] > p.rolling(200).mean().iloc[-1]
             })
         except: continue
             
@@ -128,8 +124,7 @@ def calculate_snapshot(data, target_date):
     for _, row in df.iterrows():
         r = ""
         if not row['Above_200']: r = "Below 200DMA"
-        elif row['ADX'] <= 25: r = f"Choppy({row['ADX']:.1f})"
-        elif row['VOL_CF'] < 1.1: r = "Low Vol"
+        elif row['ADX'] <= 25: r = "Choppy"
         
         if vix_halt: sig.append("HALT"); res.append("VIX>30")
         elif r == "" and row['RNK'] <= 5: sig.append("STRONG BUY"); res.append("PASSED")
@@ -141,11 +136,18 @@ def calculate_snapshot(data, target_date):
 
 @st.cache_data(ttl=3600)
 def run_bt(data):
-    m = data['Close'].resample('ME').last(); d = m.index[-13:-1]; log = []
+    closes = data['Close']
+    m = closes.resample('ME').last(); d = m.index[-13:-1]; log = []
     for i in range(len(d)-1):
-        s, e = d[i], d[i+1]; snap, _, _ = calculate_snapshot(data, s)
+        s_raw, e_raw = d[i], d[i+1]
+        # FIX: Find nearest valid trading index
+        s_idx = closes.index.get_indexer([s_raw], method='pad')[0]
+        e_idx = closes.index.get_indexer([e_raw], method='pad')[0]
+        s, e = closes.index[s_idx], closes.index[e_idx]
+        
+        snap, _, _ = calculate_snapshot(data, s)
         buys = snap[snap['SIGNAL'] == 'STRONG BUY'].head(5).index.tolist()
-        ret = ((data['Close'].loc[e, buys].mean() / data['Close'].loc[s, buys].mean()) - 1) * 100 if buys else 0
+        ret = ((closes.loc[e, buys].mean() / closes.loc[s, buys].mean()) - 1) * 100 if buys else 0
         log.append({"Month": s.strftime('%y-%b'), "Targets": ", ".join(buys) if buys else "CASH", "Return": ret})
     return pd.DataFrame(log)
 
@@ -156,34 +158,43 @@ raw = fetch_data(); df, v_h, v_c = calculate_snapshot(raw, raw.index[-1]); bt_df
 c1, c2 = st.columns([1.2, 1.8])
 with c1:
     v_col = "red" if v_h else "#00FF00"
-    st.markdown(f'<div class="bbg-panel"><div class="bbg-header">ARCHITECTURE</div><table><tr><td>VIX</td><td style="text-align:right; color:{v_col};">{v_c:.2f}</td></tr></table></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="bbg-panel"><div class="bbg-header">ARCHITECTURE</div><table><tr><td>VIX</td><td class="num" style="color:{v_col};">{v_c:.2f}</td></tr></table></div>', unsafe_allow_html=True)
     top5 = df.head(5).index.tolist(); reg, rc = ("RISK-OFF", "#FBBF24") if any(x in top5 for x in ["BIL", "TLT", "IAU"]) else ("RISK-ON", "#00FF00")
     st.markdown(f'<div class="bbg-panel"><div class="bbg-header">REGIME</div><div style="text-align:center; font-weight:bold; color:{rc};">{reg}</div></div>', unsafe_allow_html=True)
 
 with c2:
     s1, s2 = st.columns(2)
     with s1:
-        st.markdown('<div class="bbg-panel" style="padding-bottom:0px;"><div class="bbg-header">YTD EQUITY VS SPY</div>', unsafe_allow_html=True)
+        st.markdown('<div class="bbg-panel" style="padding-bottom:0px;"><div class="bbg-header">YTD STRATEGY VS SPY</div>', unsafe_allow_html=True)
         spy_y = (raw['Close']['SPY'] / raw['Close']['SPY'][raw['Close'].index.year == now_est.year][0] - 1) * 100
         st.line_chart(spy_y.tail(60), height=205)
         st.markdown('</div>', unsafe_allow_html=True)
     with s2:
-        st.markdown('<div class="bbg-panel" style="padding-bottom:0px;"><div class="bbg-header">BLOOMBERG TV</div>', unsafe_allow_html=True)
+        st.markdown('<div class="bbg-panel" style="padding-bottom:0px;"><div class="bbg-header">LIVE BLOOMBERG TV</div>', unsafe_allow_html=True)
         components.html('<iframe width="100%" height="205" src="https://www.youtube.com/embed/iEpJwprxDdk?autoplay=1&mute=1" frameborder="0" allowfullscreen></iframe>', height=210)
         st.markdown('</div>', unsafe_allow_html=True)
-    st.markdown('<div class="bbg-panel"><div class="bbg-header">HEATMAP</div><div class="heatmap-grid">' + "".join([f'<div class="heat-cell" style="background-color:{"#00FF00" if r["YTD"]>0 else "#FF0000"};">{t}</div>' for t, r in df.sort_values("YTD", ascending=False).iterrows()]) + '</div></div>', unsafe_allow_html=True)
+    st.markdown('<div class="bbg-panel"><div class="bbg-header">HEATMAP</div><div class="heatmap-grid">' + "".join([f'<div class="heat-cell" style="background-color:{"#00FF00" if r["YTD"]>0 else "#FF0000"};">{t}<br>{r["YTD"]:.1f}%</div>' for t, r in df.sort_values("YTD", ascending=False).iterrows()]) + '</div></div>', unsafe_allow_html=True)
 
 # --- LEDGER ---
-st.markdown('<div class="bbg-panel"><div class="bbg-header">LEDGER</div><div class="ledger-container"><table class="ledger-table"><thead><tr><th>RNK</th><th>TKR</th><th>SECTOR</th><th>SIGNAL</th><th>REASON</th><th>ALLOC</th><th>PRICE</th><th>STOP</th><th>ADX</th><th>SCORE</th><th>YTD</th><th>RAM</th><th>VOL_CF</th></tr></thead><tbody>' + 
-            "".join([f'<tr><td>{r["RNK"]}</td><td style="color:#FF6600; font-weight:bold;">{t}</td><td style="color:#888;">{r["SECTOR"]}</td><td style="color:{"#00FF00" if "BUY" in r["SIGNAL"] else "#FF0000"}; font-weight:bold;">{r["SIGNAL"]}</td><td>{r["REASON"]}</td><td class="num">{r["ALLOC"]:.1f}%</td><td class="num">{r["PRICE"]:.2f}</td><td class="num">{r["STOP"]:.2f}</td><td class="num">{r["ADX"]:.1f}</td><td class="num">{r["SCORE"]:.1f}</td><td class="num">{r["YTD"]:.1f}%</td><td class="num">{r["RAM"]:.2f}</td><td class="num">{r["VOL_CF"]:.2f}</td></tr>' for t, r in df.iterrows()]) + '</tbody></table></div></div>', unsafe_allow_html=True)
+st.markdown('<div class="bbg-panel"><div class="bbg-header">QUANTITATIVE LEDGER</div><div class="ledger-container"><table class="ledger-table"><thead><tr><th>RNK</th><th>TKR</th><th>SECTOR</th><th>SIGNAL</th><th>REASON</th><th>PRICE</th><th>STOP</th><th>ADX</th><th>SCORE</th><th>YTD</th><th>RAM</th><th>VOL_CF</th></tr></thead><tbody>' + 
+            "".join([f'<tr><td>{r["RNK"]}</td><td style="color:#FF6600; font-weight:bold;">{t}</td><td style="color:#888;">{r["SECTOR"]}</td><td style="color:{"#00FF00" if "BUY" in r["SIGNAL"] else "#FBBF24" if "HOLD" in r["SIGNAL"] else "#FF0000"}; font-weight:bold;">{r["SIGNAL"]}</td><td>{r["REASON"]}</td><td class="num">{r["PRICE"]:.2f}</td><td class="num">{r["STOP"]:.2f}</td><td class="num">{r["ADX"]:.1f}</td><td class="num">{r["SCORE"]:.1f}</td><td class="num">{r["YTD"]:.1f}%</td><td class="num">{r["RAM"]:.2f}</td><td class="num">{r["VOL_CF"]:.2f}</td></tr>' for t, r in df.iterrows()]) + '</tbody></table></div></div>', unsafe_allow_html=True)
 
-# --- BT ---
-st.markdown('<div class="bbg-panel"><div class="bbg-header">BACKTEST</div>', unsafe_allow_html=True)
+# --- BACKTEST ---
+st.markdown('<div class="bbg-panel"><div class="bbg-header">12-MONTH BACKTEST</div>', unsafe_allow_html=True)
 bc1, bc2 = st.columns(2)
 with bc1:
-    st.markdown('<div class="ledger-container" style="max-height:250px;"><table class="ledger-table"><thead><tr><th>MONTH</th><th>TARGETS</th><th>RET</th></tr></thead><tbody>' + "".join([f'<tr><td>{r["Month"]}</td><td style="color:#00FFFF;">{r["Targets"]}</td><td style="color:{"#00FF00" if r["Return"]>0 else "#FF0000"};">{r["Return"]:.1f}%</td></tr>' for _, r in bt_df.iterrows()]) + '</tbody></table></div>', unsafe_allow_html=True)
+    st.markdown('<div class="ledger-container" style="max-height:250px;"><table class="ledger-table"><thead><tr><th>MONTH</th><th>TARGETS</th><th>RET</th></tr></thead><tbody>' + "".join([f'<tr><td>{r["Month"]}</td><td style="color:#00FFFF;">{r["Targets"]}</td><td class="num" style="color:{"#00FF00" if r["Return"]>0 else "#FF0000"}; font-weight:bold;">{r["Return"]:.1f}%</td></tr>' for _, r in bt_df.iterrows()]) + '</tbody></table></div>', unsafe_allow_html=True)
 with bc2: st.bar_chart(bt_df.set_index("Month")["Return"], color="#FF6600", height=250)
 st.markdown('</div>', unsafe_allow_html=True)
+
+# --- TICKER TAPE ---
+tape_html = '<div class="ticker-tape">'
+for b in BENCHMARKS:
+    try:
+        cur = raw['Close'][b].iloc[-1]; prev = raw['Close'][b].iloc[-2]; pct = ((cur-prev)/prev)*100
+        tape_html += f'<span>{b.replace("^","")} <span style="color:#FFF;">{cur:.2f}</span> <span style="color:{"#00FF00" if pct>0 else "#FF0000"};">{pct:+.2f}%</span></span>'
+    except: pass
+st.markdown(tape_html + '</div>', unsafe_allow_html=True)
 
 # ==========================================
 # 4. INTERFACE LAYOUT
