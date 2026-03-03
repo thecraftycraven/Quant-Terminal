@@ -103,9 +103,10 @@ st.markdown(CSS, unsafe_allow_html=True)
 STATUS_HTML = f"""<div class="bbg-status">
     <div class="bbg-status-l" style="color:{status_color};">■ MKT {market_status}</div>
     <div class="bbg-status-c">NEW YORK LATINO FINANCIAL TERMINAL &nbsp;·&nbsp; SOLOMON STRATEGY</div>
-    <div class="bbg-status-r"><span style="color:{data_src_col};margin-right:12px;">{data_source}</span>{time_str}&nbsp;&nbsp;{date_str}</div>
+    <div class="bbg-status-r">{time_str}&nbsp;&nbsp;{date_str}</div>
 </div>"""
 st.markdown(STATUS_HTML, unsafe_allow_html=True)
+status_placeholder = st.empty()
 TICKER_SECTORS = {
     "OIH":"Energy","XLE":"Energy","XLB":"Materials","XME":"Materials","WOOD":"Materials",
     "XLI":"Industrials","IYT":"Industrials","CARZ":"Cons Disc","XLY":"Cons Disc",
@@ -476,6 +477,7 @@ def live_chg(tkr, fallback_price, prev_price):
 data_source = "● SCHWAB LIVE" if schwab_live else "○ YAHOO FINANCE"
 data_src_col = "#00FFFF" if schwab_live else "#555"
 last_refresh_str = now_est.strftime("%H:%M:%S ET")
+status_placeholder.markdown(f'<div style="position:sticky;top:28px;z-index:9998;background:#000;border-bottom:1px solid #1A1A1A;padding:2px 12px;text-align:right;font-size:9px;"><span style="color:{data_src_col};">{data_source}</span><span style="color:#444;margin-left:12px;">REFRESHED {last_refresh_str}</span></div>', unsafe_allow_html=True)
 top5_df = df[df["RNK"]<=5]
 top5_tickers = top5_df.index.tolist()
 safe_e=["BIL","TLT","IEF","IAU","XLU","XLP"]
