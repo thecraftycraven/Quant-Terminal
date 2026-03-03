@@ -726,7 +726,7 @@ with tab4:
 
 # ── TAB 5: NEWS & NOTES ───────────────────────────────────────────────────────
 with tab5:
-    n1,n2=st.columns([1.6,1.4])
+    n1,n2=st.columns([2.2,1.8])
     # Force both columns to equal height
     st.markdown('<style>[data-testid="stHorizontalBlock"]{align-items:stretch;} [data-testid="stTextArea"]{height:100%;} [data-testid="stTextArea"] textarea{height:100% !important; min-height:500px;}</style>', unsafe_allow_html=True)
     with n1:
@@ -740,14 +740,14 @@ with tab5:
                 overall_score=item.get("overall_sentiment_score",0)
                 overall_label=item.get("overall_sentiment_label","Neutral")
                 sc_col="#00CC00" if "Bullish" in overall_label else "#CC0000" if "Bearish" in overall_label else "#888"
-                news_html+=f'<tr><td class="l" style="white-space:normal;max-width:320px;">{title}</td><td class="l" style="color:#555;font-size:9px;">{source}</td><td style="color:{sc_col};font-size:9px;">{overall_label}</td><td class="l" style="color:#444;font-size:9px;">{time_p}</td></tr>'
+                news_html+=f'<tr><td class="l" style="white-space:normal; max-width:400px; word-wrap:break-word;">{title}</td><td class="l" style="color:#555;font-size:9px;white-space:nowrap;">{source}</td><td style="color:{sc_col};font-size:9px;white-space:nowrap;">{overall_label}</td><td class="l" style="color:#444;font-size:9px;white-space:nowrap;">{time_p}</td></tr>'
             news_html+='</tbody></table></div>'
         else:
             news_html='<div style="padding:12px; color:#555; font-size:10px;">News feed requires Alpha Vantage premium plan for NEWS_SENTIMENT endpoint.<br><br>Alternative: Add NewsAPI.org key (free tier available) for live financial headlines.</div>'
         st.markdown(news_html+'</div>', unsafe_allow_html=True)
 
     with n2:
-        st.markdown('<div class="bbg-panel" style="margin-top:-3px;"><div class="bbg-panel-hdr">ANALYST NOTES — TRADE JOURNAL</div><div class="bbg-panel-body">', unsafe_allow_html=True)
+        st.markdown('<div class="bbg-panel" style="margin-top:-8px;"><div class="bbg-panel-hdr">ANALYST NOTES — TRADE JOURNAL</div><div class="bbg-panel-body">', unsafe_allow_html=True)
         st.markdown('<div style="color:#555;font-size:9px;margin-bottom:6px;letter-spacing:1px;">TYPE YOUR NOTES BELOW — USE FOR TRADE RATIONALE, OBSERVATIONS, REMINDERS</div>', unsafe_allow_html=True)
         st.text_area(
             label="",
