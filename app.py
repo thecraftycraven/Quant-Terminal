@@ -445,7 +445,7 @@ with col_tv:
     st.markdown('<div class="bbg-panel"><div class="bbg-panel-hdr">LIVE — BLOOMBERG TV</div>', unsafe_allow_html=True)
     components.html(
         '<iframe width="100%" height="162" src="https://www.youtube.com/embed/iEpJwprxDdk?autoplay=1&mute=1" frameborder="0" allowfullscreen style="display:block;"></iframe>',
-        height=167
+        height=164
     )
     st.markdown('</div>', unsafe_allow_html=True)
 
