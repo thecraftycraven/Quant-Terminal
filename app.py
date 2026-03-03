@@ -49,7 +49,7 @@ st.markdown(f"""
     .heatmap-grid {{ display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px; }}
     .heat-cell {{ text-align: center; padding: 8px 0px; font-size: 10px; font-weight: 900; color: #000; }}
     
-    .ledger-container {{ max-height: 400px; overflow-y: auto; border: 1px solid #333; background: #000; margin-bottom: 15px; }}
+    .ledger-container {{ max-height: 400px; overflow-y: auto; border: 1px solid #333; background: #000; margin-bottom: 40px; }}
     .ledger-table {{ width: 100%; border-collapse: collapse; font-size: 11px; }}
     .ledger-table th {{ position: sticky; top: 0; background-color: #111; color: #FF6600; z-index: 10; border-bottom: 2px solid #FF6600; padding: 8px; text-align: left; }}
     .ledger-table td {{ padding: 8px; border-bottom: 1px solid #222; text-align: left; font-family: monospace; font-size: 12px; }}
@@ -58,7 +58,6 @@ st.markdown(f"""
     
     #MainMenu, footer, header {{visibility: hidden;}}
     .stLineChart {{ margin-top: -15px; }} 
-    .stBarChart {{ margin-top: -15px; }} 
     </style>
     
     <div class="status-bar">
@@ -68,40 +67,25 @@ st.markdown(f"""
     """, unsafe_allow_html=True)
 
 # ==========================================
-# 2. FULL 46-ASSET UNIVERSE DEFINITION
+# 2. SECTOR-MAPPED UNIVERSE DEFINITION
 # ==========================================
 BENCHMARKS = ["SPY", "QQQ", "^VIX", "DIA"] 
 
 TICKER_SECTORS = {
-    # Energy
     "OIH": "Energy", "XLE": "Energy",
-    # Materials
     "XLB": "Materials", "XME": "Materials", "WOOD": "Materials",
-    # Industrials
     "XLI": "Industrials", "IYT": "Industrials",
-    # Consumer Discretionary
     "CARZ": "Cons Discretionary", "XLY": "Cons Discretionary", "PEJ": "Cons Discretionary", "XRT": "Cons Discretionary",
-    # Consumer Staples
     "XLP": "Cons Staples", "PBJ": "Cons Staples",
-    # Health Care
     "IHI": "Health Care", "XBI": "Health Care",
-    # Financials
     "KBE": "Financials", "IAI": "Financials", "KIE": "Financials",
-    # Information Technology
     "IGV": "Info Tech", "SMH": "Info Tech",
-    # Communication Services
     "IYZ": "Comm Services", "XLC": "Comm Services",
-    # Utilities
     "XLU": "Utilities", "FCG": "Utilities", "IDU": "Utilities", "PHO": "Utilities", "ICLN": "Utilities",
-    # Real Estate
     "VNQ": "Real Estate", "REET": "Real Estate",
-    # Global Overlays
     "EFA": "Global Overlay", "VWO": "Global Overlay", "INDY": "Global Overlay", "KWEB": "Global Overlay",
-    # Uncorrelated Assets
     "DBA": "Uncorrelated", "PDBC": "Uncorrelated", "UUP": "Uncorrelated", "VIXY": "Uncorrelated", "SLV": "Uncorrelated", "TIP": "Uncorrelated", "DBB": "Uncorrelated", "CWB": "Uncorrelated",
-    # Macro
     "IAU": "Macro", "FBTC": "Macro",
-    # Safe Harbors
     "BIL": "Safe Harbor", "IEF": "Safe Harbor", "TLT": "Safe Harbor"
 }
 
@@ -109,36 +93,25 @@ TICKERS = list(TICKER_SECTORS.keys())
 ALL_SYMBOLS = TICKERS + BENCHMARKS
 
 # ==========================================
-# 3. CORE DATA ENGINE
+# 3. DATA ENGINE
 # ==========================================
 @st.cache_data(ttl=3600)
 def fetch_data():
-    # Fetch 2 years so historical 12-month backtest has enough data for 200DMA math
-    data = yf.download(ALL_SYMBOLS, period="2y", progress=False) 
+    data = yf.download(ALL_SYMBOLS, period="1y", progress=False) 
     return data['Close'], data['High'], data['Low'], data['Volume']
 
-def calculate_snapshot(closes, highs, lows, volumes, target_date, is_current=True):
-    # This engine runs math for any given day in history
-    p_snap = closes.loc[:target_date]
-    h_snap = highs.loc[:target_date]
-    l_snap = lows.loc[:target_date]
-    v_snap = volumes.loc[:target_date]
-    
-    if len(p_snap) < 200: return pd.DataFrame() # Needs 200 days of history
-    
-    spy_p = p_snap["SPY"].dropna()
-    vix_close = p_snap["^VIX"].dropna().iloc[-1]
-    vix_halt = vix_close > 30 
-    current_year = target_date.year
-    
+def calculate_factors(closes, highs, lows, volumes, current_year):
     results = []
+    spy_p = closes["SPY"].dropna()
+    vix_close = closes["^VIX"].dropna().iloc[-1]
+    vix_halt = vix_close > 30 
     
     for ticker in TICKERS:
         try:
-            p = p_snap[ticker].dropna()
-            h = h_snap[ticker].dropna()
-            l = l_snap[ticker].dropna()
-            v = v_snap[ticker].dropna()
+            p = closes[ticker].dropna()
+            h = highs[ticker].dropna()
+            l = lows[ticker].dropna()
+            v = volumes[ticker].dropna()
             
             if len(p) < 200: continue 
             
@@ -191,8 +164,6 @@ def calculate_snapshot(closes, highs, lows, volumes, target_date, is_current=Tru
         except: continue
             
     df = pd.DataFrame(results).set_index('TKR')
-    if df.empty: return df, vix_halt, vix_close
-    
     f = ['RAM', 'ROC_AC', 'REL_STR', '50D_SLP', 'VOL_CF'] 
     z = (df[f] - df[f].mean()) / df[f].std()
     
@@ -242,50 +213,9 @@ def calculate_snapshot(closes, highs, lows, volumes, target_date, is_current=Tru
     df['REASON'] = reasons
     return df, vix_halt, vix_close
 
-@st.cache_data(ttl=3600)
-def run_historical_backtest(closes, highs, lows, volumes):
-    # Finds the last trading day of each month for the last 12 months
-    monthly_dates = closes.resample('M').last().index
-    last_12_months = monthly_dates[-13:-1] # Exclude current incomplete month
-    
-    backtest_log = []
-    
-    for i in range(len(last_12_months) - 1):
-        start_date = last_12_months[i]
-        end_date = last_12_months[i+1]
-        
-        # Calculate algorithm state at the START of the month
-        df_hist, v_h, v_c = calculate_snapshot(closes, highs, lows, volumes, start_date, is_current=False)
-        if df_hist.empty: continue
-        
-        # Extract the Top 5 Strong Buys for that month
-        strong_buys = df_hist[df_hist['SIGNAL'] == 'STRONG BUY'].head(5).index.tolist()
-        
-        # If no strong buys passed, hold cash (BIL)
-        if not strong_buys:
-            strong_buys = ["BIL"]
-            basket_ret = ((closes.loc[end_date, "BIL"] / closes.loc[start_date, "BIL"]) - 1) * 100
-        else:
-            # Calculate actual return of those assets over the following month
-            p_start = closes.loc[start_date, strong_buys].mean()
-            p_end = closes.loc[end_date, strong_buys].mean()
-            basket_ret = ((p_end / p_start) - 1) * 100
-            
-        month_label = start_date.strftime('%Y-%b')
-        backtest_log.append({
-            "Month": month_label,
-            "Top 5 Allocation": ", ".join(strong_buys),
-            "1-Month Return (%)": basket_ret
-        })
-        
-    return pd.DataFrame(backtest_log)
-
-with st.spinner('SYNCING CURRENT & HISTORICAL QUANTITATIVE ENGINES...'):
+with st.spinner('SYNCING QUANTITATIVE ENGINE...'):
     c, h, l, v = fetch_data()
-    # Current Engine
-    df, vix_halt, vix_close = calculate_snapshot(c, h, l, v, c.index[-1], is_current=True)
-    # Historical Engine
-    backtest_df = run_historical_backtest(c, h, l, v)
+    df, vix_halt, vix_close = calculate_factors(c, h, l, v, now_est.year)
 
 # Chart Math
 c_ytd = c[c.index.year == now_est.year]
@@ -298,7 +228,7 @@ if not c_ytd.empty:
 else:
     chart_data = pd.DataFrame()
 
-# Updated Regime Logic 
+# Updated Regime Logic (Reflecting the new universe)
 top_5 = df.head(5).index.tolist()
 safe_harbor_etfs = ["BIL", "TLT", "IEF", "IAU", "XLU", "XLP"]
 inflation_etfs = ["PDBC", "DBA", "DBB", "XLE", "XME", "OIH"]
@@ -389,6 +319,86 @@ with col2:
     heatmap_html += '</div></div>'
     st.markdown(heatmap_html, unsafe_allow_html=True)
 
+# ==========================================
+# 5. CUSTOM HTML LEDGER
+# ==========================================
+st.markdown('<div class="bbg-panel"><div class="bbg-header">QUANTITATIVE FACTOR LEDGER</div>', unsafe_allow_html=True)
+
+ledger_html = '<div class="ledger-container"><table class="ledger-table"><thead><tr><th>SECTOR</th><th>TKR</th><th>RNK</th><th>SIGNAL</th><th>REASON</th><th>ALLOC</th><th>PRICE</th><th>STOP</th><th>ADX</th><th>SCORE</th><th>YTD</th><th>RAM</th><th>VOL_CF</th></tr></thead><tbody>'
+
+for tkr, row in df.iterrows():
+    sig = row['SIGNAL']
+    if 'STRONG BUY' in sig: s_col = '#00FF00'
+    elif 'BUY' in sig: s_col = '#4ADE80'
+    elif 'HOLD' in sig: s_col = '#FBBF24'
+    elif 'HALT' in sig: s_col = '#D946EF'
+    else: s_col = '#FF0000'
+    
+    ledger_html += f'<tr><td style="color:#888;">{row["SECTOR"]}</td><td style="font-weight:bold; color:#FFF;">{tkr}</td><td class="num">{row["RNK"]}</td><td style="color:{s_col}; font-weight:bold;">{sig}</td><td style="color:#aaa;">{row["REASON"]}</td><td class="num" style="color:#FF6600;">{row["ALLOC"]:.1f}%</td><td class="num">{row["PRICE"]:.2f}</td><td class="num">{row["STOP_PRC"]:.2f}</td><td class="num">{row["ADX"]:.1f}</td><td class="num">{row["SCORE"]:.1f}</td><td class="num" style="color:{"#00FF00" if row["YTD"]>0 else "#FF0000"};">{row["YTD"]:.1f}%</td><td class="num">{row["RAM"]:.2f}</td><td class="num">{row["VOL_CF"]:.2f}</td></tr>'
+
+ledger_html += '</tbody></table></div></div>'
+st.markdown(ledger_html, unsafe_allow_html=True)
+
+# ==========================================
+# 6. ADMINISTRATOR TOOLS: DEEP MARKET SCANNER
+# ==========================================
+with st.expander("⚙️ ADMINISTRATOR TOOLS: DEEP MARKET SCANNER"):
+    st.markdown('<div class="bbg-header" style="margin-top: 10px;">AUTONOMOUS UNIVERSE DISCOVERY</div>', unsafe_allow_html=True)
+    st.write("Execute live data-mining against the Nasdaq FTP directory to locate assets fitting your structural parameters ($300M-$2B AUM, >1M Weekly Vol).")
+    
+    if st.button("INITIATE MARKET SCAN"):
+        scan_container = st.empty()
+        progress_bar = st.progress(0)
+        
+        with st.spinner("STEP 1: Scraping official Nasdaq FTP directory..."):
+            url = "ftp://ftp.nasdaqtrader.com/SymbolDirectory/nasdaqtraded.txt"
+            try:
+                ftp_df = pd.read_csv(url, sep='|')
+                etfs = ftp_df[(ftp_df['ETF'] == 'Y') & (ftp_df['Test Issue'] == 'N')]
+                all_tickers = [t.replace('$', '-').replace('.', '-') for t in etfs['Symbol'].dropna().tolist()]
+                scan_container.success(f"Located {len(all_tickers)} total ETFs in the US market.")
+            except Exception as e:
+                scan_container.error(f"FTP Scrape Failed: {e}")
+                all_tickers = []
+
+        if all_tickers:
+            with st.spinner("STEP 2: Executing fundamental gatekeeper (AUM & Volume)..."):
+                survivors = []
+                test_batch = all_tickers[:100] 
+                
+                for i, ticker in enumerate(test_batch):
+                    try:
+                        progress_bar.progress((i + 1) / len(test_batch))
+                        info = yf.Ticker(ticker).info
+                        aum = info.get('totalAssets', 0) or 0
+                        vol = info.get('averageVolume', 0) or 0
+                        weekly_vol = vol * 5
+                        
+                        if (300000000 <= aum <= 2000000000) and (weekly_vol >= 1000000):
+                            survivors.append(ticker)
+                    except:
+                        pass
+                
+                scan_container.success(f"Scan complete. {len(survivors)} ETFs survived the liquidity gauntlet.")
+                
+                if survivors:
+                    st.write(f"**NEW UNIVERSE TARGETS:** {', '.join(survivors)}")
+                    st.info("Copy these targets into your master TICKERS array to permanently track them.")
+
+# ==========================================
+# 7. BOTTOM TICKER TAPE
+# ==========================================
+tape_html = '<div class="ticker-tape">'
+for b in BENCHMARKS:
+    try:
+        cur = c[b].dropna().iloc[-1]
+        pct = ((cur - c[b].dropna().iloc[-2]) / c[b].dropna().iloc[-2]) * 100
+        c_class = "c-strong-buy" if pct > 0 else "c-strong-sell"
+        sym = b.replace("^", "")
+        tape_html += f'<span>{sym} <span style="color:#FFF;">{cur:.2f}</span> <span class="{c_class}">{pct:+.2f}%</span></span>'
+    except: pass
+tape_html += '</div>'
+st.markdown(tape_html, unsafe_allow_html=True)
 # ==========================================
 # 5. CUSTOM HTML LEDGER (REORDERED: RNK, TKR, SECTOR)
 # ==========================================
