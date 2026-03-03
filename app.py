@@ -34,7 +34,7 @@ section[data-testid="stSidebar"] { display: none !important; }
 .bbg-status-c { color:#FF8000; font-size:10px; letter-spacing:2px; font-weight:600; }
 .bbg-status-r { color:#AAAAAA; font-size:10px; text-align:right; }
 
-.bbg-macro-row { display:grid; grid-template-columns:repeat(13,1fr); border-bottom:1px solid #333; background:#050505; margin-top:15px; }
+.bbg-macro-row { display:grid; grid-template-columns:repeat(13,1fr); border-bottom:1px solid #333; background:#050505; margin-top:12px; }
 .bbg-macro-cell { padding:10px 6px; border-right:1px solid #1A1A1A; text-align:center; }
 .bbg-macro-cell:last-child { border-right:none; }
 .bbg-macro-lbl { color:#888; font-size:8px; letter-spacing:1px; text-transform:uppercase; margin-bottom:3px; }
