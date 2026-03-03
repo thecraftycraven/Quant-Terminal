@@ -73,7 +73,7 @@ st.markdown(f"""
     .heat-cell {{
         text-align: center;
         padding: 6px 0px;
-        font-size: 9px;
+        font-size: 10px;
         font-weight: bold;
     }}
     
@@ -225,15 +225,12 @@ heat_df = df.sort_values(by='YTD_Ret', ascending=False)
 heatmap_html = '<div class="heatmap-grid">'
 for ticker, row in heat_df.iterrows():
     val = row['YTD_Ret']
-    # Scaling colors for YTD (wider variance than 1-month)
     color = "#00FF00" if val > 15 else "#006600" if val > 0 else "#660000" if val > -10 else "#FF0000"
     text_color = "#000000" if color == "#00FF00" else "#FFFFFF"
     
-    heatmap_html += f"""
-    <div class="heat-cell" style="background-color: {color}; color: {text_color};">
-        {ticker}<br>{val:.1f}%
-    </div>
-    """
+    # FIX: Generating raw HTML string on a single line to bypass the Markdown code block trigger
+    heatmap_html += f'<div class="heat-cell" style="background-color: {color}; color: {text_color};">{ticker}<br>{val:.1f}%</div>'
+    
 heatmap_html += '</div></div>'
 st.markdown(heatmap_html, unsafe_allow_html=True)
 
