@@ -381,20 +381,6 @@ if st.button("INITIATE AUTONOMOUS MARKET SCAN"):
 st.markdown('</div>', unsafe_allow_html=True)
 import streamlit.components.v1 as components
 
-st.markdown('<div class="bbg-panel"><div class="bbg-header">LIVE MACRO FEED: BLOOMBERG TV</div>', unsafe_allow_html=True)
-
-# Injecting the specific Bloomberg livestream ID (iEpJwprxDdk)
-youtube_html = """
-<iframe width="100%" height="250" 
-src="https://www.youtube.com/embed/iEpJwprxDdk?autoplay=1&mute=1" 
-title="Bloomberg Global Financial News" frameborder="0" 
-allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-allowfullscreen></iframe>
-"""
-components.html(youtube_html, height=255)
-
-st.markdown('</div>', unsafe_allow_html=True)
-
 with col1:
     v_color = "red" if vix_halt else "#00FF00"
     st.markdown(f"""
