@@ -743,12 +743,12 @@ with tab5:
                 news_html+=f'<tr><td class="l" style="white-space:normal; max-width:400px; word-wrap:break-word;">{title}</td><td class="l" style="color:#555;font-size:9px;white-space:nowrap;">{source}</td><td style="color:{sc_col};font-size:9px;white-space:nowrap;">{overall_label}</td><td class="l" style="color:#444;font-size:9px;white-space:nowrap;">{time_p}</td></tr>'
             news_html+='</tbody></table></div>'
         else:
-            news_html='<div style="padding:16px; color:#555; font-size:10px;">News feed requires Alpha Vantage premium plan for NEWS_SENTIMENT endpoint.<br><br>Alternative: Add NewsAPI.org key (free tier available) for live financial headlines.</div>'
+            news_html='<div style="padding:15px; color:#555; font-size:10px;">News feed requires Alpha Vantage premium plan for NEWS_SENTIMENT endpoint.<br><br>Alternative: Add NewsAPI.org key (free tier available) for live financial headlines.</div>'
         st.markdown(news_html+'</div>', unsafe_allow_html=True)
 
     with n2:
         st.markdown('<div class="bbg-panel" style="margin-top:0px;"><div class="bbg-panel-hdr">ANALYST NOTES — TRADE JOURNAL</div><div class="bbg-panel-body">', unsafe_allow_html=True)
-        st.markdown('<div style="color:#555;font-size:9px;margin-bottom:4px;letter-spacing:1px;">TYPE YOUR NOTES BELOW — USE FOR TRADE RATIONALE, OBSERVATIONS, REMINDERS</div>', unsafe_allow_html=True)
+        st.markdown('<div style="color:#555;font-size:9px;margin-bottom:3px;letter-spacing:1px;">TYPE YOUR NOTES BELOW — USE FOR TRADE RATIONALE, OBSERVATIONS, REMINDERS</div>', unsafe_allow_html=True)
         st.text_area(
             label="",
             placeholder="e.g.\n- OIH: Energy capex cycle looks strong. Hold through earnings.\n- Monitor 10Y yield — if breaks 4.8% rotate defensive.\n- FBTC halving cycle Q2 2025 setup. Scale in on dips.\n- Review positions end of month vs SMA filter.",
