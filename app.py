@@ -51,8 +51,8 @@ section[data-testid="stSidebar"] { display: none !important; }
 .bbg-panel-body { padding:6px 8px; }
 
 .bbg-top5 { display:grid; grid-template-columns:repeat(5,1fr); }
-.bbg-top5-wrap { margin-top: 35px; }
-.bbg-tv-wrap { margin-top: 35px; }
+.bbg-top5-wrap { margin-top: 25px; }
+.bbg-tv-wrap { margin-top: 25px; }
 .bbg-t5c { padding:8px 10px; border-right:1px solid #1A1A1A; border-top:3px solid #333; background:#050505; }
 .bbg-t5c:last-child { border-right:none; }
 .bbg-t5c.strong { border-top-color:#FF8000; }
