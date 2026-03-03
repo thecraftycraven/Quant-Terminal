@@ -632,12 +632,17 @@ with tab4:
                 vega_data.append({"Month": r["Month"], "value": r["SPY"], "series": "SPY"})
             st.vega_lite_chart({
                 "data": {"values": vega_data},
-                "mark": "bar",
+                "mark": {"type": "bar", "width": {"band": 0.9}},
                 "encoding": {
-                    "x": {"field": "Month", "type": "ordinal", "sort": month_order, "axis": {"grid": False}, "title": ""},
-                    "y": {"field": "value", "type": "quantitative", "axis": {"grid": True}, "title": ""},
-                    "color": {"field": "series", "type": "nominal", "scale": {"domain": ["Strategy", "SPY"], "range": ["#FF8000", "#444444"]}, "legend": {"orient": "bottom", "title": " "}},
-                    "xOffset": {"field": "series", "type": "nominal"}
+                    "x": {"field": "Month", "type": "ordinal", "sort": month_order, "axis": {"grid": False, "title": "", "labelFontSize": 11, "labelColor": "#888"}},
+                    "y": {"field": "value", "type": "quantitative", "axis": {"grid": True, "title": "", "labelFontSize": 11, "labelColor": "#888", "format": ".1f"}, "scale": {"zero": True}},
+                    "color": {"field": "series", "type": "nominal", "scale": {"domain": ["Strategy", "SPY"], "range": ["#00FFFF", "#CC0000"]}, "legend": {"orient": "bottom", "title": " ", "labelColor": "#CCC", "labelFontSize": 12}},
+                    "xOffset": {"field": "series", "type": "nominal"},
+                    "tooltip": [
+                        {"field": "Month", "type": "nominal"},
+                        {"field": "series", "type": "nominal", "title": "Series"},
+                        {"field": "value", "type": "quantitative", "title": "Return %", "format": ".2f"}
+                    ]
                 },
                 "height": 220
             }, use_container_width=True)
@@ -654,11 +659,16 @@ with tab4:
                 cum_data.append({"Month": r["Month"], "value": r["SPY Cumul"], "series": "SPY"})
             st.vega_lite_chart({
                 "data": {"values": cum_data},
-                "mark": "line",
+                "mark": {"type": "line", "strokeWidth": 2.5},
                 "encoding": {
-                    "x": {"field": "Month", "type": "ordinal", "sort": month_order_cum, "axis": {"grid": False}, "title": ""},
-                    "y": {"field": "value", "type": "quantitative", "axis": {"grid": True}, "title": ""},
-                    "color": {"field": "series", "type": "nominal", "scale": {"domain": ["Strategy", "SPY"], "range": ["#FF8000", "#444444"]}, "legend": {"orient": "bottom", "title": " "}}
+                    "x": {"field": "Month", "type": "ordinal", "sort": month_order_cum, "axis": {"grid": False, "title": "", "labelFontSize": 11, "labelColor": "#888"}},
+                    "y": {"field": "value", "type": "quantitative", "axis": {"grid": True, "title": "", "labelFontSize": 11, "labelColor": "#888", "format": ".1f"}, "scale": {"zero": False}},
+                    "color": {"field": "series", "type": "nominal", "scale": {"domain": ["Strategy", "SPY"], "range": ["#00FFFF", "#CC0000"]}, "legend": {"orient": "bottom", "title": " ", "labelColor": "#CCC", "labelFontSize": 12}},
+                    "tooltip": [
+                        {"field": "Month", "type": "nominal"},
+                        {"field": "series", "type": "nominal", "title": "Series"},
+                        {"field": "value", "type": "quantitative", "title": "Cumul %", "format": ".2f"}
+                    ]
                 },
                 "height": 160
             }, use_container_width=True)
