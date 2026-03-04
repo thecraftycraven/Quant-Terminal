@@ -1017,7 +1017,7 @@ with tab5:
     with n1:
         st.markdown('<div class="bbg-panel" style="margin-top:0px;"><div class="bbg-panel-hdr">FINANCIAL NEWS — LIVE BUSINESS HEADLINES</div>', unsafe_allow_html=True)
         if newsapi_articles:
-            news_html='<div class="bbg-scroll" style="max-height:490px;"><table class="bbg-tbl"><thead><tr><th class="l">HEADLINE</th><th class="l">SOURCE</th><th class="l">TIME</th></tr></thead><tbody>'
+            news_html='<div class="bbg-panel" style="margin-top: 40px;">;"><table class="bbg-tbl"><thead><tr><th class="l">HEADLINE</th><th class="l">SOURCE</th><th class="l">TIME</th></tr></thead><tbody>'
             for item in newsapi_articles:
                 title  = (item.get("title","") or "")[:90]
                 source = (item.get("source",{}).get("name","") or "")
@@ -1043,8 +1043,8 @@ with tab5:
             news_html='<div style="padding:15px;color:#555;font-size:10px;">News loading...</div>'
         st.markdown(news_html+'</div>', unsafe_allow_html=True)
     with n2:
-        st.markdown('<div class="bbg-panel" style="margin-top:10px;"><div class="bbg-panel-hdr">ANALYST NOTES — TRADE JOURNAL</div><div class="bbg-panel-body">', unsafe_allow_html=True)
-        st.markdown('<div style="color:#555;font-size:9px;margin-bottom:3px;letter-spacing:1px;">TYPE YOUR NOTES BELOW — USE FOR TRADE RATIONALE, OBSERVATIONS, REMINDERS</div>', unsafe_allow_html=True)
+        st.markdown('<div class="bbg-panel" style="margin-top:0px;"><div class="bbg-panel-hdr">ANALYST NOTES — TRADE JOURNAL</div><div class="bbg-panel-body">', unsafe_allow_html=True)
+        st.markdown('<div style="color:#555;font-size:9px;margin-bottom:2px;letter-spacing:1px;">TYPE YOUR NOTES BELOW — USE FOR TRADE RATIONALE, OBSERVATIONS, REMINDERS</div>', unsafe_allow_html=True)
         st.text_area(
             label="",
             placeholder="e.g.\n- OIH: Energy capex cycle looks strong. Hold through earnings.\n- Monitor 10Y yield — if breaks 4.8% rotate defensive.\n- FBTC halving cycle Q2 2025 setup. Scale in on dips.\n- Review positions end of month vs SMA filter.",
