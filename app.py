@@ -384,7 +384,14 @@ def calculate_factors(data, target_date):
             ret_9m = p.pct_change(189).iloc[-1]
             vol_1m = p.pct_change().tail(21).std() * np.sqrt(252)
             ram    = ret_1m / vol_1m if vol_1m != 0 else 0
-            rel_str = ret_3m - spy_p.pct_change(63).iloc[-1]
+            # REL_STR: avg return across 1M/3M/6M/9M minus SPY avg across same periods
+            spy_1m = spy_p.pct_change(21).iloc[-1]
+            spy_3m = spy_p.pct_change(63).iloc[-1]
+            spy_6m = spy_p.pct_change(126).iloc[-1]
+            spy_9m = spy_p.pct_change(189).iloc[-1]
+            avg_ret = (ret_1m + ret_3m + ret_6m + ret_9m) / 4
+            avg_spy = (spy_1m + spy_3m + spy_6m + spy_9m) / 4
+            rel_str = avg_ret - avg_spy
             sma50  = p.rolling(50).mean()
             sma200 = p.rolling(200).mean()
             slp50  = (sma50.iloc[-1] - sma50.iloc[-21]) / sma50.iloc[-21]
@@ -731,7 +738,7 @@ with tab2:
         if "STRONG SELL"in s: return "sig-ss"
         return "sig-s"
     src_badge = f'<span style="color:{data_src_col};font-size:9px;margin-left:8px;">{data_source} · <span id="ledger-clock">{last_refresh_str}</span></span>'
-    hdrs=["RNK","TKR","SECTOR","SIGNAL","REASON","ALLOC","PRICE","CHG%","STOP","ADX","SCORE","YTD","1M%","3M%","6M%","9M%","RAM","VOL_CF"]
+    hdrs=["RNK","TKR","SECTOR","SIGNAL","REASON","ALLOC","PRICE","CHG%","STOP","ADX","SCORE","YTD","1M%","3M%","6M%","9M%","REL_STR","50D_SLP","RAM","VOL_CF"]
     tbl=f'<div class="bbg-panel"><div class="bbg-panel-hdr">SOLOMON STRATEGY — QUANTITATIVE LEDGER — ALL 46 ASSETS {src_badge}</div>'
     tbl+='<div class="bbg-scroll"><table class="bbg-tbl"><thead><tr>'
     for h in hdrs:
@@ -747,6 +754,8 @@ with tab2:
         chg_pct  = live_chg(tkr, live_px, prev_px)
         chg_col  = "#00CC00" if chg_pct >= 0 else "#CC0000"
         px_col   = "#00FFFF" if tkr in schwab_live else "#CCC"
+        rel_col  = "#00CC00" if row["REL_STR"]>0 else "#CC0000"
+        slp_col  = "#00CC00" if row["50D_SLP"]>0 else "#CC0000"
         tbl+=f'''<tr>
             <td>{row["RNK"]}</td><td class="l">{tkr}</td><td class="sec">{row["SECTOR"]}</td>
             <td class="l {c_}">{row["SIGNAL"]}</td>
@@ -759,6 +768,8 @@ with tab2:
             <td style="color:{yc_};">{row["YTD"]:.1f}%</td>
             <td>{row["RET_1M"]:.1f}%</td><td>{row["RET_3M"]:.1f}%</td>
             <td>{row["RET_6M"]:.1f}%</td><td>{row["RET_9M"]:.1f}%</td>
+            <td style="color:{rel_col};">{row["REL_STR"]*100:+.2f}%</td>
+            <td style="color:{slp_col};">{row["50D_SLP"]*100:+.3f}%</td>
             <td>{row["RAM"]:.2f}</td><td>{row["VOL_CF"]:.2f}</td>
         </tr>'''
     tbl+='</tbody></table></div></div>'
@@ -776,8 +787,8 @@ with tab2:
         <tr><td class="l" style="color:#FF8000;">CHG%</td><td class="l" style="color:#888;">Intraday % change from previous close</td><td class="l" style="color:#555;">Live from Schwab when connected</td></tr>
         <tr><td class="l" style="color:#FF8000;">YTD</td><td class="l" style="color:#888;">Year-to-date return % from Jan 1</td><td class="l" style="color:#555;">Context — not a signal input</td></tr>
         <tr><td class="l" style="color:#FF8000;">1M / 3M / 6M / 9M</td><td class="l" style="color:#888;">Rolling return over each lookback period</td><td class="l" style="color:#555;">3M drives relative strength (20% weight)</td></tr>
-        <tr><td class="l" style="color:#FF8000;">REL_STR</td><td class="l" style="color:#888;">3M return minus SPY 3M return</td><td class="l" style="color:#555;">Must be &gt;0 — must beat the benchmark</td></tr>
-        <tr><td class="l" style="color:#FF8000;">50D_SLP</td><td class="l" style="color:#888;">Slope of 50-day SMA over last 21 days</td><td class="l" style="color:#555;">Must be rising — confirms uptrend structure</td></tr>
+        <tr><td class="l" style="color:#FF8000;">REL_STR</td><td class="l" style="color:#888;">Avg return (1M+3M+6M+9M ÷ 4) minus SPY avg across same 4 periods</td><td class="l" style="color:#555;">Must be &gt;0 — must outpace SPY on all timeframes</td></tr>
+        <tr><td class="l" style="color:#FF8000;">50D_SLP</td><td class="l" style="color:#888;">Slope of 50-day SMA over last 21 days — measures trend acceleration</td><td class="l" style="color:#555;">Must be rising (+) — confirms uptrend structure</td></tr>
         </tbody></table>
         <div style="color:#444;font-size:9px;margin-top:6px;padding-top:4px;border-top:1px solid #1A1A1A;">
         SOLOMON 7-CRITERIA CHECKLIST: ① Above 200MA &nbsp;② ADX &gt;25 &nbsp;③ Vol CF &gt;1.2× &nbsp;④ RAM &gt;0 &nbsp;⑤ Rel Strength &gt;SPY &nbsp;⑥ ROC Accelerating &nbsp;⑦ 50D Slope Rising — ALL 7 must pass for STRONG BUY
