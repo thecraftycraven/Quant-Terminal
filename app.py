@@ -78,12 +78,12 @@ section[data-testid="stSidebar"] { display: none !important; }
 .sig-s  { color:#CC3333; }
 .sig-ss { color:#FF0000; font-weight:700; }
 .sig-ht { color:#FF00FF; font-weight:700; }
-.bbg-hm { display:grid; grid-template-columns:repeat(6,1fr); gap:2px; padding:6px 6px 80px 6px; }
+.bbg-hm { display:grid; grid-template-columns:repeat(6,1fr); gap:2px; padding:6px; }
 .bbg-hm-cell { display:flex; justify-content:space-between; align-items:center; padding:3px 6px; font-size:9px; font-weight:700; border-radius:2px; white-space:nowrap; }
 .stTabs [data-baseweb="tab-list"] { background:#000 !important; border-bottom:1px solid #333 !important; gap:0 !important; padding:0 !important; }
 .stTabs [data-baseweb="tab"] { background:#000 !important; color:#555 !important; font-size:10px !important; letter-spacing:1.5px !important; padding:6px 18px !important; border-radius:0 !important; border:none !important; }
 .stTabs [aria-selected="true"] { background:#111 !important; color:#FF8000 !important; border-bottom:2px solid #FF8000 !important; }
-.stTabs [data-baseweb="tab-panel"] { padding:0 !important; }
+.stTabs [data-baseweb="tab-panel"] { padding:0 !important; margin-bottom:50px !important; }
 .notes-area { background:#050505; border:1px solid #222; color:#CCC; font-family:"Source Code Pro",monospace; font-size:11px; width:100%; min-height:300px; padding:10px; resize:vertical; outline:none; }
 .notes-area:focus { border-color:#FF8000; }
 textarea { background:#050505 !important; color:#CCC !important; border:1px solid #222 !important; border-radius:2px !important; font-family:"Source Code Pro",monospace !important; }
