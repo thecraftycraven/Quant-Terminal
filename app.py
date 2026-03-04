@@ -23,7 +23,7 @@ CSS = """
 @import url("https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@300;400;500;600;700&display=swap");
 *, *::before, *::after { font-family: "Source Code Pro", "Courier New", monospace !important; box-sizing: border-box; }
 html, body, [class*="stApp"] { background-color: #000000 !important; color: #FFFFFF; margin: 0; padding: 0; }
-.stApp { padding-bottom: 190px !important; }
+.stApp { padding-bottom: 120px !important; }
 .block-container { padding: 0 !important; max-width: 100% !important; }
 #MainMenu, footer, header, .stDeployButton, [data-testid="stToolbar"] { visibility: hidden !important; display: none !important; }
 section[data-testid="stSidebar"] { display: none !important; }
@@ -78,7 +78,7 @@ section[data-testid="stSidebar"] { display: none !important; }
 .sig-s  { color:#CC3333; }
 .sig-ss { color:#FF0000; font-weight:700; }
 .sig-ht { color:#FF00FF; font-weight:700; }
-.bbg-hm { display:grid; grid-template-columns:repeat(6,1fr); gap:2px; padding:6px; }
+.bbg-hm { display:grid; grid-template-columns:repeat(6,1fr); gap:2px; padding:6px 6px 80px 6px; }
 .bbg-hm-cell { display:flex; justify-content:space-between; align-items:center; padding:3px 6px; font-size:9px; font-weight:700; border-radius:2px; white-space:nowrap; }
 .stTabs [data-baseweb="tab-list"] { background:#000 !important; border-bottom:1px solid #333 !important; gap:0 !important; padding:0 !important; }
 .stTabs [data-baseweb="tab"] { background:#000 !important; color:#555 !important; font-size:10px !important; letter-spacing:1.5px !important; padding:6px 18px !important; border-radius:0 !important; border:none !important; }
@@ -92,7 +92,7 @@ textarea:focus { border-color:#FF8000 !important; box-shadow:none !important; ou
 [data-testid="stTextArea"] textarea:focus { border-color:#FF8000 !important; box-shadow:none !important; }
 [data-testid="stTextArea"] label { display:none !important; }
 [data-testid="stTextArea"] { padding:0 !important; }
-.bbg-tape { position:fixed; bottom:0; left:0; width:100%; background:#000; border-top:1px solid #FF8000; padding:6px 12px; font-size:10px; display:flex; gap:20px; z-index:9998; }
+.bbg-tape { position:fixed; bottom:0; left:0; width:100%; background:#000; border-top:1px solid #FF8000; padding:4px 12px; font-size:10px; display:flex; gap:20px; z-index:9998; }
 .tape-sym { color:#FF8000; font-weight:700; margin-right:4px; }
 .tape-prc { color:#FFF; }
 .tape-up  { color:#00CC00; }
