@@ -1015,7 +1015,7 @@ with tab4:
 with tab5:
     n1,n2=st.columns([2.2,1.8])
     with n1:
-        st.markdown('<div class="bbg-panel" style="margin-top:2px;"><div class="bbg-panel-hdr">FINANCIAL NEWS — LIVE BUSINESS HEADLINES</div>', unsafe_allow_html=True)
+        st.markdown('<div class="bbg-panel" style="margin-top:0px;"><div class="bbg-panel-hdr">FINANCIAL NEWS — LIVE BUSINESS HEADLINES</div>', unsafe_allow_html=True)
         if newsapi_articles:
             news_html='<div class="bbg-scroll" style="max-height:490px;"><table class="bbg-tbl"><thead><tr><th class="l">HEADLINE</th><th class="l">SOURCE</th><th class="l">TIME</th></tr></thead><tbody>'
             for item in newsapi_articles:
@@ -1028,7 +1028,7 @@ with tab5:
                 news_html+=f'<tr><td class="l" style="white-space:normal;max-width:420px;word-wrap:break-word;">{link}</td><td class="l" style="color:#555;font-size:9px;white-space:nowrap;">{source}</td><td class="l" style="color:#444;font-size:9px;white-space:nowrap;">{pub}</td></tr>'
             news_html+='</tbody></table></div>'
         elif news_feed:
-            news_html='<div class="bbg-scroll" style="max-height:490px;"><table class="bbg-tbl"><thead><tr><th class="l">HEADLINE</th><th class="l">SOURCE</th><th>SENTIMENT</th><th class="l">TIME</th></tr></thead><tbody>'
+            news_html='<div class="bbg-scroll" style="max-height:540px;"><table class="bbg-tbl"><thead><tr><th class="l">HEADLINE</th><th class="l">SOURCE</th><th>SENTIMENT</th><th class="l">TIME</th></tr></thead><tbody>'
             for item in news_feed:
                 title  =item.get("title","")[:80]
                 source =item.get("source","")
