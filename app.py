@@ -1003,11 +1003,10 @@ with tab4:
             st.markdown('<div style="color:#555;font-size:9px;">No upcoming events or FMP calendar loading...</div></div></div>', unsafe_allow_html=True)
 with tab5:
     n1,n2=st.columns([2.2,1.8])
-    st.markdown('<style>[data-testid="stHorizontalBlock"]{align-items:stretch;} [data-testid="stTextArea"]{height:100%;} [data-testid="stTextArea"] textarea{height:100% !important; min-height:500px;}</style>', unsafe_allow_html=True)
     with n1:
-        st.markdown('<div class="bbg-panel" style="margin-top:10px;"><div class="bbg-panel-hdr">FINANCIAL NEWS — LIVE BUSINESS HEADLINES</div>', unsafe_allow_html=True)
+        st.markdown('<div class="bbg-panel" style="margin-top:10px;height:560px;display:flex;flex-direction:column;"><div class="bbg-panel-hdr">FINANCIAL NEWS — LIVE BUSINESS HEADLINES</div>', unsafe_allow_html=True)
         if newsapi_articles:
-            news_html='<div class="bbg-scroll"><table class="bbg-tbl"><thead><tr><th class="l">HEADLINE</th><th class="l">SOURCE</th><th class="l">TIME</th></tr></thead><tbody>'
+            news_html='<div style="overflow-y:auto;flex:1;scrollbar-width:thin;scrollbar-color:#FF8000 #111;"><table class="bbg-tbl"><thead><tr><th class="l">HEADLINE</th><th class="l">SOURCE</th><th class="l">TIME</th></tr></thead><tbody>'
             for item in newsapi_articles:
                 title  = (item.get("title","") or "")[:90]
                 source = (item.get("source",{}).get("name","") or "")
@@ -1016,7 +1015,7 @@ with tab5:
                 news_html+=f'<tr><td class="l" style="white-space:normal;max-width:420px;word-wrap:break-word;">{title}</td><td class="l" style="color:#555;font-size:9px;white-space:nowrap;">{source}</td><td class="l" style="color:#444;font-size:9px;white-space:nowrap;">{pub}</td></tr>'
             news_html+='</tbody></table></div>'
         elif news_feed:
-            news_html='<div class="bbg-scroll"><table class="bbg-tbl"><thead><tr><th class="l">HEADLINE</th><th class="l">SOURCE</th><th>SENTIMENT</th><th class="l">TIME</th></tr></thead><tbody>'
+            news_html='<div style="overflow-y:auto;flex:1;scrollbar-width:thin;scrollbar-color:#FF8000 #111;"><table class="bbg-tbl"><thead><tr><th class="l">HEADLINE</th><th class="l">SOURCE</th><th>SENTIMENT</th><th class="l">TIME</th></tr></thead><tbody>'
             for item in news_feed:
                 title  =item.get("title","")[:80]
                 source =item.get("source","")
@@ -1029,12 +1028,12 @@ with tab5:
             news_html='<div style="padding:15px;color:#555;font-size:10px;">News loading...</div>'
         st.markdown(news_html+'</div>', unsafe_allow_html=True)
     with n2:
-        st.markdown('<div class="bbg-panel" style="margin-top:0px;"><div class="bbg-panel-hdr">ANALYST NOTES — TRADE JOURNAL</div><div class="bbg-panel-body">', unsafe_allow_html=True)
+        st.markdown('<div class="bbg-panel" style="margin-top:10px;height:560px;display:flex;flex-direction:column;"><div class="bbg-panel-hdr">ANALYST NOTES — TRADE JOURNAL</div><div class="bbg-panel-body" style="flex:1;display:flex;flex-direction:column;">', unsafe_allow_html=True)
         st.markdown('<div style="color:#555;font-size:9px;margin-bottom:3px;letter-spacing:1px;">TYPE YOUR NOTES BELOW — USE FOR TRADE RATIONALE, OBSERVATIONS, REMINDERS</div>', unsafe_allow_html=True)
         st.text_area(
             label="",
             placeholder="e.g.\n- OIH: Energy capex cycle looks strong. Hold through earnings.\n- Monitor 10Y yield — if breaks 4.8% rotate defensive.\n- FBTC halving cycle Q2 2025 setup. Scale in on dips.\n- Review positions end of month vs SMA filter.",
-            height=500,
+            height=480,
             label_visibility="collapsed",
             key="trade_notes"
         )
