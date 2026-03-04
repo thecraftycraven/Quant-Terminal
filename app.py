@@ -83,7 +83,7 @@ section[data-testid="stSidebar"] { display: none !important; }
 .stTabs [data-baseweb="tab-list"] { background:#000 !important; border-bottom:1px solid #333 !important; gap:0 !important; padding:0 !important; }
 .stTabs [data-baseweb="tab"] { background:#000 !important; color:#555 !important; font-size:10px !important; letter-spacing:1.5px !important; padding:6px 18px !important; border-radius:0 !important; border:none !important; }
 .stTabs [aria-selected="true"] { background:#111 !important; color:#FF8000 !important; border-bottom:2px solid #FF8000 !important; }
-.stTabs [data-baseweb="tab-panel"] { padding:0 !important; margin-bottom:40px !important; }
+.stTabs [data-baseweb="tab-panel"] { padding:0 !important; margin-bottom:30px !important; }
 .notes-area { background:#050505; border:1px solid #222; color:#CCC; font-family:"Source Code Pro",monospace; font-size:11px; width:100%; min-height:300px; padding:10px; resize:vertical; outline:none; }
 .notes-area:focus { border-color:#FF8000; }
 textarea { background:#050505 !important; color:#CCC !important; border:1px solid #222 !important; border-radius:2px !important; font-family:"Source Code Pro",monospace !important; }
