@@ -14,7 +14,7 @@ date_str = now_est.strftime("%d %b %Y").upper()
 is_weekend   = now_est.weekday() >= 5
 is_open      = datetime.time(9,30) <= now_est.time() <= datetime.time(16,0)
 market_status = "OPEN" if (not is_weekend and is_open) else "CLOSED"
-status_color  = "#FF8000" if market_status == "OPEN" else "#CC0000"
+status_color  = "#00CC00" if market_status == "OPEN" else "#CC0000"
 # Force time to never be stale — bypass any caching
 if "app_start" not in st.session_state:
     st.session_state.app_start = True
@@ -23,7 +23,7 @@ CSS = """
 @import url("https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@300;400;500;600;700&display=swap");
 *, *::before, *::after { font-family: "Source Code Pro", "Courier New", monospace !important; box-sizing: border-box; }
 html, body, [class*="stApp"] { background-color: #000000 !important; color: #FFFFFF; margin: 0; padding: 0; }
-.stApp { padding-bottom: 36px !important; }
+.stApp { padding-bottom: 60px !important; }
 .block-container { padding: 0 !important; max-width: 100% !important; }
 #MainMenu, footer, header, .stDeployButton, [data-testid="stToolbar"] { visibility: hidden !important; display: none !important; }
 section[data-testid="stSidebar"] { display: none !important; }
@@ -122,21 +122,24 @@ components.html("""
         var m = String(et.getMinutes()).padStart(2,'0');
         var s = String(et.getSeconds()).padStart(2,'0');
         var timeStr = h + ':' + m + ':' + s + ' ET';
-        // Walk up to parent Streamlit document and find the clock span
-        try {
-            var el = window.parent.document.getElementById('live-clock');
-            if (el) { el.textContent = timeStr; return; }
-        } catch(e) {}
-        // Fallback: search all iframes in parent
-        try {
-            var frames = window.parent.document.querySelectorAll('iframe');
-            frames.forEach(function(f) {
-                try {
-                    var el = f.contentDocument.getElementById('live-clock');
-                    if (el) el.textContent = timeStr;
-                } catch(e) {}
-            });
-        } catch(e) {}
+        var ids = ['live-clock', 'ledger-clock'];
+        ids.forEach(function(id) {
+            // Try parent document first
+            try {
+                var el = window.parent.document.getElementById(id);
+                if (el) { el.textContent = timeStr; return; }
+            } catch(e) {}
+            // Walk all iframes
+            try {
+                var frames = window.parent.document.querySelectorAll('iframe');
+                frames.forEach(function(f) {
+                    try {
+                        var el = f.contentDocument.getElementById(id);
+                        if (el) el.textContent = timeStr;
+                    } catch(e) {}
+                });
+            } catch(e) {}
+        });
     }
     updateClock();
     setInterval(updateClock, 1000);
@@ -727,7 +730,7 @@ with tab2:
         if "HALT"       in s: return "sig-ht"
         if "STRONG SELL"in s: return "sig-ss"
         return "sig-s"
-    src_badge = f'<span style="color:{data_src_col};font-size:9px;margin-left:8px;">{data_source} · {last_refresh_str}</span>'
+    src_badge = f'<span style="color:{data_src_col};font-size:9px;margin-left:8px;">{data_source} · <span id="ledger-clock">{last_refresh_str}</span></span>'
     hdrs=["RNK","TKR","SECTOR","SIGNAL","REASON","ALLOC","PRICE","CHG%","STOP","ADX","SCORE","YTD","1M%","3M%","6M%","9M%","RAM","VOL_CF"]
     tbl=f'<div class="bbg-panel"><div class="bbg-panel-hdr">SOLOMON STRATEGY — QUANTITATIVE LEDGER — ALL 46 ASSETS {src_badge}</div>'
     tbl+='<div class="bbg-scroll"><table class="bbg-tbl"><thead><tr>'
@@ -759,7 +762,27 @@ with tab2:
             <td>{row["RAM"]:.2f}</td><td>{row["VOL_CF"]:.2f}</td>
         </tr>'''
     tbl+='</tbody></table></div></div>'
-    st.markdown(tbl, unsafe_allow_html=True)
+    glossary = '''<div class="bbg-panel" style="margin-top:4px;">
+        <div class="bbg-panel-hdr">LEDGER COLUMN GLOSSARY</div>
+        <div class="bbg-panel-body">
+        <table class="bbg-tbl"><thead><tr><th class="l">COLUMN</th><th class="l">MEANING</th><th class="l">SIGNAL ROLE</th></tr></thead><tbody>
+        <tr><td class="l" style="color:#FF8000;">RNK</td><td class="l" style="color:#888;">Composite rank 1–46 by total score</td><td class="l" style="color:#555;">Top 5 are BUY candidates</td></tr>
+        <tr><td class="l" style="color:#FF8000;">SCORE</td><td class="l" style="color:#888;">Weighted z-score of 5 momentum factors</td><td class="l" style="color:#555;">Higher = stronger momentum edge</td></tr>
+        <tr><td class="l" style="color:#FF8000;">ALLOC</td><td class="l" style="color:#888;">Suggested position size % of portfolio</td><td class="l" style="color:#555;">ATR-based, capped at 20%</td></tr>
+        <tr><td class="l" style="color:#FF8000;">STOP</td><td class="l" style="color:#888;">ATR stop-loss price (20-day high − 2.5×ATR14)</td><td class="l" style="color:#555;">Exit if price closes below this</td></tr>
+        <tr><td class="l" style="color:#FF8000;">ADX</td><td class="l" style="color:#888;">Average Directional Index — trend strength 0–100</td><td class="l" style="color:#555;">Must be &gt;25 to confirm trend</td></tr>
+        <tr><td class="l" style="color:#FF8000;">RAM</td><td class="l" style="color:#888;">Risk-Adjusted Momentum: 1M return ÷ 1M volatility</td><td class="l" style="color:#555;">Highest alpha factor (25% weight)</td></tr>
+        <tr><td class="l" style="color:#FF8000;">VOL_CF</td><td class="l" style="color:#888;">Volume Confirmation: 20-day avg ÷ 90-day avg volume</td><td class="l" style="color:#555;">Must be &gt;1.2× — confirms price move</td></tr>
+        <tr><td class="l" style="color:#FF8000;">CHG%</td><td class="l" style="color:#888;">Intraday % change from previous close</td><td class="l" style="color:#555;">Live from Schwab when connected</td></tr>
+        <tr><td class="l" style="color:#FF8000;">YTD</td><td class="l" style="color:#888;">Year-to-date return % from Jan 1</td><td class="l" style="color:#555;">Context — not a signal input</td></tr>
+        <tr><td class="l" style="color:#FF8000;">1M / 3M / 6M / 9M</td><td class="l" style="color:#888;">Rolling return over each lookback period</td><td class="l" style="color:#555;">3M drives relative strength (20% weight)</td></tr>
+        <tr><td class="l" style="color:#FF8000;">REL_STR</td><td class="l" style="color:#888;">3M return minus SPY 3M return</td><td class="l" style="color:#555;">Must be &gt;0 — must beat the benchmark</td></tr>
+        <tr><td class="l" style="color:#FF8000;">50D_SLP</td><td class="l" style="color:#888;">Slope of 50-day SMA over last 21 days</td><td class="l" style="color:#555;">Must be rising — confirms uptrend structure</td></tr>
+        </tbody></table>
+        <div style="color:#444;font-size:9px;margin-top:6px;padding-top:4px;border-top:1px solid #1A1A1A;">
+        SOLOMON 7-CRITERIA CHECKLIST: ① Above 200MA &nbsp;② ADX &gt;25 &nbsp;③ Vol CF &gt;1.2× &nbsp;④ RAM &gt;0 &nbsp;⑤ Rel Strength &gt;SPY &nbsp;⑥ ROC Accelerating &nbsp;⑦ 50D Slope Rising — ALL 7 must pass for STRONG BUY
+        </div></div></div>'''
+    st.markdown(tbl + glossary, unsafe_allow_html=True)
 with tab3:
     h1,h2=st.columns(2)
     with h1:
@@ -890,7 +913,44 @@ with tab4:
                 "config": {"background": "#0A0A0A", "view": {"stroke": "transparent"}, "axisY": {"gridColor": "#1A1A1A"}}
             }, use_container_width=True)
         st.markdown('</div></div>', unsafe_allow_html=True)
-    with bc3:
+        # ── ROLLING ALPHA (3-MONTH) ──────────────────────────────────────────
+        st.markdown('<div class="bbg-panel"><div class="bbg-panel-hdr">ROLLING 3-MONTH ALPHA vs SPY</div><div class="bbg-panel-body">', unsafe_allow_html=True)
+        if not bt_df.empty and len(bt_df) >= 3:
+            roll_data = []
+            months_list = bt_df["Month"].tolist()
+            strat_list  = bt_df["Strategy"].tolist()
+            spy_list    = bt_df["SPY"].tolist()
+            for i in range(2, len(bt_df)):
+                r3_strat = sum(strat_list[i-2:i+1])
+                r3_spy   = sum(spy_list[i-2:i+1])
+                alpha3   = r3_strat - r3_spy
+                roll_data.append({
+                    "Month": months_list[i],
+                    "Rolling Alpha": round(alpha3, 2),
+                    "color": "Positive" if alpha3 >= 0 else "Negative"
+                })
+            month_order_roll = [d["Month"] for d in roll_data]
+            st.vega_lite_chart({
+                "data": {"values": roll_data},
+                "layer": [
+                    {
+                        "mark": {"type": "bar", "width": {"band": 0.7}},
+                        "encoding": {
+                            "x": {"field": "Month", "type": "ordinal", "sort": month_order_roll, "axis": {"grid": False, "title": "", "labelFontSize": 10, "labelColor": "#888", "labelAngle": -30}},
+                            "y": {"field": "Rolling Alpha", "type": "quantitative", "axis": {"grid": True, "title": "3M Alpha %", "labelFontSize": 10, "labelColor": "#888", "format": "+.1f", "titleColor": "#555", "titleFontSize": 10}, "scale": {"zero": True}},
+                            "color": {"field": "color", "type": "nominal", "scale": {"domain": ["Positive","Negative"], "range": ["#00FFFF","#CC0000"]}, "legend": None},
+                            "tooltip": [{"field": "Month"}, {"field": "Rolling Alpha", "format": "+.2f", "title": "3M Alpha %"}]
+                        }
+                    },
+                    {
+                        "mark": {"type": "rule", "strokeDash": [4,4], "color": "#444", "strokeWidth": 1},
+                        "encoding": {"y": {"datum": 0}}
+                    }
+                ],
+                "height": 120,
+                "config": {"background": "#0A0A0A", "view": {"stroke": "transparent"}, "axisY": {"gridColor": "#1A1A1A"}}
+            }, use_container_width=True)
+        st.markdown('</div></div>', unsafe_allow_html=True)
         st.markdown('<div class="bbg-panel"><div class="bbg-panel-hdr">SUMMARY STATS</div><div class="bbg-panel-body">', unsafe_allow_html=True)
         if not bt_df.empty:
             ts =bt_df["Strategy"].sum(); tsp=bt_df["SPY"].sum(); ta=bt_df["Alpha"].sum()
@@ -944,7 +1004,7 @@ with tab5:
     n1,n2=st.columns([2.2,1.8])
     st.markdown('<style>[data-testid="stHorizontalBlock"]{align-items:stretch;} [data-testid="stTextArea"]{height:100%;} [data-testid="stTextArea"] textarea{height:100% !important; min-height:500px;}</style>', unsafe_allow_html=True)
     with n1:
-        st.markdown('<div class="bbg-panel"><div class="bbg-panel-hdr">FINANCIAL NEWS — LIVE BUSINESS HEADLINES</div>', unsafe_allow_html=True)
+        st.markdown('<div class="bbg-panel" style="margin-top:10px;"><div class="bbg-panel-hdr">FINANCIAL NEWS — LIVE BUSINESS HEADLINES</div>', unsafe_allow_html=True)
         if newsapi_articles:
             news_html='<div class="bbg-scroll"><table class="bbg-tbl"><thead><tr><th class="l">HEADLINE</th><th class="l">SOURCE</th><th class="l">TIME</th></tr></thead><tbody>'
             for item in newsapi_articles:
