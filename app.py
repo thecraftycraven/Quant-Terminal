@@ -32,9 +32,60 @@ section[data-testid="stSidebar"] { display: none !important; }
 .bbg-status-l { font-size:11px; font-weight:700; letter-spacing:1.5px; }
 .bbg-status-c { color:#FF8000; font-size:10px; letter-spacing:2px; font-weight:600; }
 .bbg-status-r { color:#AAAAAA; font-size:10px; text-align:right; }
-.bbg-macro-row { display:grid; grid-template-columns:repeat(13,1fr); border-bottom:1px solid #333; background:#050505; margin-top:10px; }
-.bbg-macro-cell { padding:10px 6px; border-right:1px solid #1A1A1A; text-align:center; }
-.bbg-macro-cell:last-child { border-right:none; }
+/* Base Desktop Grid (13 columns) */
+.bbg-macro-row { 
+    display: grid; 
+    grid-template-columns: repeat(13, 1fr); 
+    border-bottom: 1px solid #333; 
+    background: #050505; 
+    margin-top: 10px; 
+}
+.bbg-macro-cell { 
+    padding: 10px 6px; 
+    border-right: 1px solid #1A1A1A; 
+    border-bottom: none;
+    text-align: center; 
+}
+.bbg-macro-cell:last-child { 
+    border-right: none; 
+}
+
+/* MOBILE OVERRIDE: Triggers on screens smaller than 900px (iPhones/Tablets) */
+@media (max-width: 900px) {
+    .bbg-macro-row { 
+        grid-template-columns: repeat(3, 1fr); /* 3 items per row on mobile */
+    }
+    .bbg-macro-cell { 
+        border-right: 1px solid #1A1A1A; 
+        border-bottom: 1px solid #1A1A1A; /* Add bottom borders for stacking */
+    }
+    /* Remove right border on the 3rd item of every row */
+    .bbg-macro-cell:nth-child(3n) { 
+        border-right: none; 
+    }
+    /* The Yield Curve (13th item) spans all 3 columns on the last row */
+    .bbg-macro-cell:last-child { 
+        grid-column: span 3; 
+        border-bottom: none;
+        border-right: none;
+    }
+}
+
+/* SMALL MOBILE OVERRIDE: Triggers on very narrow screens (<400px) */
+@media (max-width: 400px) {
+    .bbg-macro-row { 
+        grid-template-columns: repeat(2, 1fr); /* 2 items per row on narrow phones */
+    }
+    .bbg-macro-cell:nth-child(3n) { 
+        border-right: 1px solid #1A1A1A; /* Reset previous rule */
+    }
+    .bbg-macro-cell:nth-child(2n) { 
+        border-right: none; 
+    }
+    .bbg-macro-cell:last-child { 
+        grid-column: span 2; 
+    }
+}
 .bbg-macro-lbl { color:#888; font-size:8px; letter-spacing:1px; text-transform:uppercase; margin-bottom:3px; }
 .bbg-macro-val { font-size:14px; font-weight:700; line-height:1; }
 .bbg-macro-sub { color:#555; font-size:8px; margin-top:2px; }
