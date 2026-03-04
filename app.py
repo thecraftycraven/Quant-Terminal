@@ -92,7 +92,7 @@ textarea:focus { border-color:#FF8000 !important; box-shadow:none !important; ou
 [data-testid="stTextArea"] textarea:focus { border-color:#FF8000 !important; box-shadow:none !important; }
 [data-testid="stTextArea"] label { display:none !important; }
 [data-testid="stTextArea"] { padding:0 !important; }
-.bbg-tape { position:fixed; bottom:0; left:0; width:100%; background:#000; border-top:1px solid #FF8000; padding:4px 12px; font-size:10px; display:flex; gap:20px; z-index:9998; }
+.bbg-tape { position:fixed; bottom:0; left:0; width:100%; background:#000; border-top:1px solid #FF8000; padding:8px 12px; font-size:10px; display:flex; gap:20px; z-index:9998; }
 .tape-sym { color:#FF8000; font-weight:700; margin-right:4px; }
 .tape-prc { color:#FFF; }
 .tape-up  { color:#00CC00; }
