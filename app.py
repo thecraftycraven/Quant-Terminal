@@ -23,7 +23,7 @@ CSS = """
 @import url("https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@300;400;500;600;700&display=swap");
 *, *::before, *::after { font-family: "Source Code Pro", "Courier New", monospace !important; box-sizing: border-box; }
 html, body, [class*="stApp"] { background-color: #000000 !important; color: #FFFFFF; margin: 0; padding: 0; }
-.stApp { padding-bottom: 150px !important; }
+.stApp { padding-bottom: 190px !important; }
 .block-container { padding: 0 !important; max-width: 100% !important; }
 #MainMenu, footer, header, .stDeployButton, [data-testid="stToolbar"] { visibility: hidden !important; display: none !important; }
 section[data-testid="stSidebar"] { display: none !important; }
