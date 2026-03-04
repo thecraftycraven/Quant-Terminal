@@ -1230,7 +1230,7 @@ with tab7:
                 st.markdown('</div></div>', unsafe_allow_html=True)
 
             # ── SIGNAL REVIEW TABLE ───────────────────────────────────────────
-            st.markdown('<div class="bbg-panel" style="margin-top:4px;"><div class="bbg-panel-hdr">SOLOMON SIGNALS — READY TO REVIEW</div><div class="bbg-panel-body">', unsafe_allow_html=True)
+            st.markdown('<div class="bbg-panel" style="margin-top:2px;"><div class="bbg-panel-hdr">SOLOMON SIGNALS — READY TO REVIEW</div><div class="bbg-panel-body">', unsafe_allow_html=True)
             st.markdown('<div style="color:#555;font-size:9px;margin-bottom:6px;letter-spacing:1px;">REVIEW SIGNALS BEFORE PLACING ANY ORDERS IN YOUR SCHWAB ACCOUNT</div>', unsafe_allow_html=True)
             rev_html = '<table class="bbg-tbl"><thead><tr><th class="l">ASSET</th><th class="l">SECTOR</th><th class="l">SIGNAL</th><th>SCORE</th><th>ALLOC %</th><th>PRICE</th><th>STOP</th><th>ACTION</th></tr></thead><tbody>'
             for tkr, row in top5_df.iterrows():
