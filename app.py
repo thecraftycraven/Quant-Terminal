@@ -1232,7 +1232,7 @@ with tab7:
             # ── SIGNAL REVIEW TABLE ───────────────────────────────────────────
             st.markdown('<div class="bbg-panel" style="margin-top:2px;"><div class="bbg-panel-hdr">SOLOMON SIGNALS — READY TO REVIEW</div><div class="bbg-panel-body">', unsafe_allow_html=True)
             st.markdown('<div style="color:#555;font-size:9px;margin-bottom:6px;letter-spacing:1px;">REVIEW SIGNALS BEFORE PLACING ANY ORDERS IN YOUR SCHWAB ACCOUNT</div>', unsafe_allow_html=True)
-            rev_html = '<table class="bbg-tbl" style="margin-top:6px;"><thead><tr><th class="l">ASSET</th><th class="l">SECTOR</th><th class="l">SIGNAL</th><th>SCORE</th><th>ALLOC %</th><th>PRICE</th><th>STOP</th><th>ACTION</th></tr></thead><tbody>'
+            rev_html = '<table class="bbg-tbl" style="margin-top:7px;"><thead><tr><th class="l">ASSET</th><th class="l">SECTOR</th><th class="l">SIGNAL</th><th>SCORE</th><th>ALLOC %</th><th>PRICE</th><th>STOP</th><th>ACTION</th></tr></thead><tbody>'
             for tkr, row in top5_df.iterrows():
                 sig_col = "#FF8000" if row["SIGNAL"] == "STRONG BUY" else "#FFCC00"
                 rev_html += f'<tr><td class="l">{tkr}</td><td class="l" style="color:#555;font-size:9px;">{row["SECTOR"]}</td><td class="l" style="color:{sig_col};">{row["SIGNAL"]}</td><td style="color:#FF8000;">{row["SCORE"]:.1f}</td><td style="color:#FF8000;">{row["ALLOC"]:.1f}%</td><td>{row["PRICE"]:.2f}</td><td style="color:#CC0000;">{row["STOP"]:.2f}</td><td style="color:#00CC00;font-size:9px;">→ LOG IN TO SCHWAB</td></tr>'
