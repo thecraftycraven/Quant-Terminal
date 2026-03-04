@@ -23,7 +23,7 @@ CSS = """
 @import url("https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@300;400;500;600;700&display=swap");
 *, *::before, *::after { font-family: "Source Code Pro", "Courier New", monospace !important; box-sizing: border-box; }
 html, body, [class*="stApp"] { background-color: #000000 !important; color: #FFFFFF; margin: 0; padding: 0; }
-.stApp { padding-bottom: 80px !important; }
+.stApp { padding-bottom: 150px !important; }
 .block-container { padding: 0 !important; max-width: 100% !important; }
 #MainMenu, footer, header, .stDeployButton, [data-testid="stToolbar"] { visibility: hidden !important; display: none !important; }
 section[data-testid="stSidebar"] { display: none !important; }
@@ -92,7 +92,7 @@ textarea:focus { border-color:#FF8000 !important; box-shadow:none !important; ou
 [data-testid="stTextArea"] textarea:focus { border-color:#FF8000 !important; box-shadow:none !important; }
 [data-testid="stTextArea"] label { display:none !important; }
 [data-testid="stTextArea"] { padding:0 !important; }
-.bbg-tape { position:fixed; bottom:0; left:0; width:100%; background:#000; border-top:1px solid #FF8000; padding:8px 18px; font-size:10px; display:flex; gap:20px; z-index:9998; }
+.bbg-tape { position:fixed; bottom:0; left:0; width:100%; background:#000; border-top:1px solid #FF8000; padding:6px 12px; font-size:10px; display:flex; gap:20px; z-index:9998; }
 .tape-sym { color:#FF8000; font-weight:700; margin-right:4px; }
 .tape-prc { color:#FFF; }
 .tape-up  { color:#00CC00; }
