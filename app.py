@@ -1004,36 +1004,40 @@ with tab4:
 with tab5:
     n1,n2=st.columns([2.2,1.8])
     with n1:
-        st.markdown('<div class="bbg-panel" style="margin-top:10px;height:560px;display:flex;flex-direction:column;"><div class="bbg-panel-hdr">FINANCIAL NEWS — LIVE BUSINESS HEADLINES</div>', unsafe_allow_html=True)
+        st.markdown('<div class="bbg-panel" style="margin-top:10px;"><div class="bbg-panel-hdr">FINANCIAL NEWS — LIVE BUSINESS HEADLINES</div>', unsafe_allow_html=True)
         if newsapi_articles:
-            news_html='<div style="overflow-y:auto;flex:1;scrollbar-width:thin;scrollbar-color:#FF8000 #111;"><table class="bbg-tbl"><thead><tr><th class="l">HEADLINE</th><th class="l">SOURCE</th><th class="l">TIME</th></tr></thead><tbody>'
+            news_html='<div class="bbg-scroll" style="max-height:490px;"><table class="bbg-tbl"><thead><tr><th class="l">HEADLINE</th><th class="l">SOURCE</th><th class="l">TIME</th></tr></thead><tbody>'
             for item in newsapi_articles:
                 title  = (item.get("title","") or "")[:90]
                 source = (item.get("source",{}).get("name","") or "")
                 pub    = (item.get("publishedAt","") or "")[:16].replace("T"," ")
+                url    = (item.get("url","") or "")
                 if not title or title == "[Removed]": continue
-                news_html+=f'<tr><td class="l" style="white-space:normal;max-width:420px;word-wrap:break-word;">{title}</td><td class="l" style="color:#555;font-size:9px;white-space:nowrap;">{source}</td><td class="l" style="color:#444;font-size:9px;white-space:nowrap;">{pub}</td></tr>'
+                link = f'<a href="{url}" target="_blank" style="color:#CCC;text-decoration:none;border-bottom:1px solid #333;">{title}</a>' if url else title
+                news_html+=f'<tr><td class="l" style="white-space:normal;max-width:420px;word-wrap:break-word;">{link}</td><td class="l" style="color:#555;font-size:9px;white-space:nowrap;">{source}</td><td class="l" style="color:#444;font-size:9px;white-space:nowrap;">{pub}</td></tr>'
             news_html+='</tbody></table></div>'
         elif news_feed:
-            news_html='<div style="overflow-y:auto;flex:1;scrollbar-width:thin;scrollbar-color:#FF8000 #111;"><table class="bbg-tbl"><thead><tr><th class="l">HEADLINE</th><th class="l">SOURCE</th><th>SENTIMENT</th><th class="l">TIME</th></tr></thead><tbody>'
+            news_html='<div class="bbg-scroll" style="max-height:490px;"><table class="bbg-tbl"><thead><tr><th class="l">HEADLINE</th><th class="l">SOURCE</th><th>SENTIMENT</th><th class="l">TIME</th></tr></thead><tbody>'
             for item in news_feed:
                 title  =item.get("title","")[:80]
                 source =item.get("source","")
                 time_p =item.get("time_published","")[:12]
+                url    =item.get("url","")
                 overall_label=item.get("overall_sentiment_label","Neutral")
                 sc_col="#00CC00" if "Bullish" in overall_label else "#CC0000" if "Bearish" in overall_label else "#888"
-                news_html+=f'<tr><td class="l" style="white-space:normal;max-width:400px;word-wrap:break-word;">{title}</td><td class="l" style="color:#555;font-size:9px;white-space:nowrap;">{source}</td><td style="color:{sc_col};font-size:9px;white-space:nowrap;">{overall_label}</td><td class="l" style="color:#444;font-size:9px;white-space:nowrap;">{time_p}</td></tr>'
+                link = f'<a href="{url}" target="_blank" style="color:#CCC;text-decoration:none;border-bottom:1px solid #333;">{title}</a>' if url else title
+                news_html+=f'<tr><td class="l" style="white-space:normal;max-width:400px;word-wrap:break-word;">{link}</td><td class="l" style="color:#555;font-size:9px;white-space:nowrap;">{source}</td><td style="color:{sc_col};font-size:9px;white-space:nowrap;">{overall_label}</td><td class="l" style="color:#444;font-size:9px;white-space:nowrap;">{time_p}</td></tr>'
             news_html+='</tbody></table></div>'
         else:
             news_html='<div style="padding:15px;color:#555;font-size:10px;">News loading...</div>'
         st.markdown(news_html+'</div>', unsafe_allow_html=True)
     with n2:
-        st.markdown('<div class="bbg-panel" style="margin-top:10px;height:560px;display:flex;flex-direction:column;"><div class="bbg-panel-hdr">ANALYST NOTES — TRADE JOURNAL</div><div class="bbg-panel-body" style="flex:1;display:flex;flex-direction:column;">', unsafe_allow_html=True)
+        st.markdown('<div class="bbg-panel" style="margin-top:10px;"><div class="bbg-panel-hdr">ANALYST NOTES — TRADE JOURNAL</div><div class="bbg-panel-body">', unsafe_allow_html=True)
         st.markdown('<div style="color:#555;font-size:9px;margin-bottom:3px;letter-spacing:1px;">TYPE YOUR NOTES BELOW — USE FOR TRADE RATIONALE, OBSERVATIONS, REMINDERS</div>', unsafe_allow_html=True)
         st.text_area(
             label="",
             placeholder="e.g.\n- OIH: Energy capex cycle looks strong. Hold through earnings.\n- Monitor 10Y yield — if breaks 4.8% rotate defensive.\n- FBTC halving cycle Q2 2025 setup. Scale in on dips.\n- Review positions end of month vs SMA filter.",
-            height=480,
+            height=490,
             label_visibility="collapsed",
             key="trade_notes"
         )
