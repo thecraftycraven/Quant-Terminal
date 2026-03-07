@@ -1330,7 +1330,8 @@ components.html(f"""
             }}));
         }}
     }}
-    setTimeout(clickRerun, {refresh_ms});
+    setTimeout(clickRerun, {refresh
+    _ms});
 }})();
 </script>
 """, height=0)
