@@ -1,4 +1,2 @@
-yfinance
-pandas
-streamlit>=1.32.0
-altair==4.2.2
+pip install streamlit yfinance pandas pandas_ta plotly numpy requests
+streamlit run quant_terminal_v3.py
