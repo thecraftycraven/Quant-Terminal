@@ -485,31 +485,31 @@ if adx < 30:
 
 # BUY factors
 if close > ema20 > ema50 > ema200:
-    buy_score += 2; reasons.append("[OK] Full bullish EMA stack (20>50>200)")
+    buy_score += 2; reasons.append("[BUY] Full bullish EMA stack (20>50>200)")
 if macd > macd_sig and p_macd <= p_sig:
-    buy_score += 2; reasons.append("[OK] MACD bullish crossover confirmed this bar")
+    buy_score += 2; reasons.append("[BUY] MACD bullish crossover confirmed this bar")
 if 55 < rsi < 80:
-    buy_score += 1; reasons.append(f"[OK] RSI in bullish momentum zone ({rsi:.1f})")
+    buy_score += 1; reasons.append(f"[BUY] RSI in bullish momentum zone ({rsi:.1f})")
 if stochk > stochd and stochk > 50:
-    buy_score += 1; reasons.append("[OK] Stochastic bullish cross above midline")
+    buy_score += 1; reasons.append("[BUY] Stochastic bullish cross above midline")
 if close > bbu:
-    buy_score += 1; reasons.append("[OK] BB upper breakout -- volatility expansion buy")
+    buy_score += 1; reasons.append("[BUY] BB upper breakout -- volatility expansion buy")
 if vol_r > 1.8:
-    buy_score += 1; reasons.append(f"[OK] Volume anomaly: {vol_r:.1f}x institutional avg")
+    buy_score += 1; reasons.append(f"[BUY] Volume anomaly: {vol_r:.1f}x institutional avg")
 
 # SELL factors
 if close < ema20 < ema50 < ema200:
-    sell_score += 2; reasons.append("? Full bearish EMA stack (20<50<200)")
+    sell_score += 2; reasons.append("[SELL] Full bearish EMA stack (20<50<200)")
 if macd < macd_sig and p_macd >= p_sig:
-    sell_score += 2; reasons.append("? MACD bearish crossover confirmed this bar")
+    sell_score += 2; reasons.append("[SELL] MACD bearish crossover confirmed this bar")
 if 20 < rsi < 45:
-    sell_score += 1; reasons.append(f"? RSI in bearish distribution zone ({rsi:.1f})")
+    sell_score += 1; reasons.append(f"[SELL] RSI in bearish distribution zone ({rsi:.1f})")
 if stochk < stochd and stochk < 50:
-    sell_score += 1; reasons.append("? Stochastic bearish cross below midline")
+    sell_score += 1; reasons.append("[SELL] Stochastic bearish cross below midline")
 if close < bbl:
-    sell_score += 1; reasons.append("? BB lower breakdown -- expansion to downside")
+    sell_score += 1; reasons.append("[SELL] BB lower breakdown -- expansion to downside")
 if vol_r > 1.8 and sell_score > 0:
-    sell_score += 1; reasons.append(f"? Volume confirms distribution ({vol_r:.1f}x avg)")
+    sell_score += 1; reasons.append(f"[SELL] Volume confirms distribution ({vol_r:.1f}x avg)")
 
 entry = round(close, 2)
 if buy_score >= 5:
@@ -559,19 +559,19 @@ reasons = []
 if close > ema200:
     buy_score += 2; reasons.append("[OK] Price above 200 EMA -- secular uptrend intact")
 else:
-    sell_score += 2; reasons.append("? Price below 200 EMA -- secular downtrend")
+    sell_score += 2; reasons.append("[SELL] Price below 200 EMA -- secular downtrend")
 
 if ema50 > ema200:
     buy_score += 2; reasons.append("[OK] Golden Cross active (50 EMA > 200 EMA)")
 else:
-    sell_score += 2; reasons.append("? Death Cross active (50 EMA < 200 EMA)")
+    sell_score += 2; reasons.append("[SELL] Death Cross active (50 EMA < 200 EMA)")
 
 if adx > 25:
     buy_score += 1; reasons.append(f"[OK] Sustained trend strength (ADX {adx:.1f} > 25)")
 if macd > macd_s:
     buy_score += 1; reasons.append("[OK] MACD above signal -- positive long-term momentum")
 else:
-    sell_score += 1; reasons.append("? MACD below signal -- negative long-term momentum")
+    sell_score += 1; reasons.append("[SELL] MACD below signal -- negative long-term momentum")
 if 40 < rsi < 75:
     buy_score += 1; reasons.append(f"[OK] RSI in healthy bull range ({rsi:.1f})")
 if fib618 > 0 and close > fib618:
@@ -645,7 +645,7 @@ if rsi < 35 and p_rsi < rsi:
 if close <= bbl * 1.015 and close > bbl_p * 0.99:
     buy_score += 2; reasons.append("[OK] Price at lower BB -- mean reversion setup")
 if stochk > stochd and p_stochk <= p_stochd and stochk < 30:
-    buy_score += 2; reasons.append("[OK] Stochastic bullish cross from oversold (<30)")
+    buy_score += 2; reasons.append("[BUY] Stochastic bullish cross from oversold (<30)")
 if close > ema20:
     buy_score += 1; reasons.append("[OK] Reclaimed 20 EMA -- short-term trend restored")
 if fib382 > 0 and abs(close - fib382) / close < 0.01:
@@ -655,13 +655,13 @@ if vol_r > 1.2:
 
 # Overbought fade
 if rsi > 70 and p_rsi > rsi:
-    sell_score += 2; reasons.append(f"? RSI overbought rolling over ({rsi:.1f} from >70)")
+    sell_score += 2; reasons.append(f"[SELL] RSI overbought rolling over ({rsi:.1f} from >70)")
 if close >= bbu * 0.99 and close < bbu_p * 1.01:
-    sell_score += 2; reasons.append("? Price at upper BB -- overbought fade setup")
+    sell_score += 2; reasons.append("[SELL] Price at upper BB -- overbought fade setup")
 if stochk < stochd and p_stochk >= p_stochd and stochk > 70:
-    sell_score += 2; reasons.append("? Stochastic bearish cross from overbought (>70)")
+    sell_score += 2; reasons.append("[SELL] Stochastic bearish cross from overbought (>70)")
 if vol_r > 1.2 and sell_score > 0:
-    sell_score += 1; reasons.append(f"? Volume confirms selling pressure ({vol_r:.1f}x avg)")
+    sell_score += 1; reasons.append(f"[SELL] Volume confirms selling pressure ({vol_r:.1f}x avg)")
 
 entry = round(close, 2)
 if buy_score >= 4:
@@ -1142,7 +1142,7 @@ delta=f”{round((tgt-entry)/entry*100,2)}%”)
 c4.metric(“RISK / REWARD”, f”{result.get(‘rr’,‘N/A’)}:1”)
 
 def show_rationale(result: dict, hold_label: str = “”):
-with st.expander(”? TRADE RATIONALE – FULL SIGNAL BREAKDOWN”, expanded=True):
+with st.expander(“TRADE RATIONALE – FULL SIGNAL BREAKDOWN”, expanded=True):
 st.markdown(’<div class="rationale-box">’, unsafe_allow_html=True)
 st.markdown(”**TECHNICAL CONFLUENCE FACTORS:**”)
 for r in result.get(‘reasons’, []):
@@ -1166,7 +1166,7 @@ st.markdown(f”””
 st.markdown(’</div>’, unsafe_allow_html=True)
 
 def show_backtest_section(df: pd.DataFrame, strategy: str):
-with st.expander(”? WALK-FORWARD BACKTEST + MONTE CARLO SIMULATION”):
+with st.expander(“WALK-FORWARD BACKTEST + MONTE CARLO SIMULATION”):
 with st.spinner(“Running simulations across test window…”):
 bt = walk_forward_backtest(df, strategy)
 
@@ -1274,7 +1274,7 @@ return results
 # —————————————————————–
 
 def portfolio_section():
-st.markdown(”### ? PORTFOLIO TRACKER – POSITION SIZING . GICS SECTOR ATTRIBUTION”)
+st.markdown(”### PORTFOLIO TRACKER – POSITION SIZING . GICS SECTOR ATTRIBUTION”)
 st.markdown(”—”)
 
 ```
@@ -1373,7 +1373,7 @@ if 'GICS Node' in port_df.columns:
         )
     st.markdown(conc_html, unsafe_allow_html=True)
 
-if st.button("? CLEAR PORTFOLIO"):
+if st.button("CLEAR PORTFOLIO"):
     st.session_state.portfolio = []
     st.rerun()
 ```
@@ -1422,7 +1422,7 @@ st.markdown(”—”)
 
 ```
     # FIX #12: GICS sector selector
-    st.markdown("### ? GICS SECTOR NAVIGATOR")
+    st.markdown("### GICS SECTOR NAVIGATOR")
     selected_gics = st.selectbox(
         "SELECT SECTOR NODE",
         ["(Free entry)"] + list(GICS_UNIVERSE.keys()),
@@ -1438,7 +1438,7 @@ st.markdown(”—”)
         st.session_state['gics_ticker'] = reps[0] if reps else ""
 
     st.markdown("---")
-    st.markdown("### ? EMAIL ALERTS")
+    st.markdown("### EMAIL ALERTS")
     email_on = st.toggle("Enable Email Alerts", value=False)
     if email_on:
         ae = st.text_input("Alert Email",  placeholder="you@email.com")
@@ -1454,7 +1454,7 @@ st.markdown(”—”)
         st.session_state['alert_config'] = {'enabled': False}
 
     st.markdown("---")
-    st.markdown("### ? SCAN SETTINGS")
+    st.markdown("### SCAN SETTINGS")
     st.session_state['scan_mode'] = st.selectbox(
         "Universe Scope", ["Core 9", "Full 25 GICS"])
 
@@ -1574,12 +1574,12 @@ st.markdown(macro_html, unsafe_allow_html=True)
 # —————————————————————–
 
 tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-“  ? SUREFIRE  “,
-“  ? LONG-TERM  “,
+“  SUREFIRE  “,
+“  LONG-TERM  “,
 “  ! SWING  “,
-“  ? FAT PITCH  “,
-“  ? SOLOMON STRATEGY  “,
-“  ? PORTFOLIO  “,
+“  FAT PITCH  “,
+“  SOLOMON STRATEGY  “,
+“  PORTFOLIO  “,
 ])
 
 # ===============================================================
@@ -1589,7 +1589,7 @@ tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
 # ===============================================================
 
 with tab1:
-st.markdown(’<div class="bbg-panel"><div class="bbg-panel-hdr">? SUREFIRE BUY / SELL – ULTRA-STRICT CONFLUENCE SCANNER</div><div class="bbg-panel-body">’, unsafe_allow_html=True)
+st.markdown(’<div class="bbg-panel"><div class="bbg-panel-hdr"> SUREFIRE BUY / SELL – ULTRA-STRICT CONFLUENCE SCANNER</div><div class="bbg-panel-body">’, unsafe_allow_html=True)
 st.markdown(
 “Requires 5/7 confluence score: full EMA stack, MACD crossover, BB breakout, “
 “RSI zone, Stochastic, volume spike (>=1.3x), ADX strength (>=30). “
@@ -1630,8 +1630,8 @@ if run_sf:
         show_backtest_section(df_ind, "surefire")
 
 st.markdown("---")
-st.markdown('<div class="bbg-panel-hdr">? UNIVERSE SCAN -- SUREFIRE ACROSS ALL 25 GICS NODES</div>', unsafe_allow_html=True)
-if st.button("? SCAN ALL GICS SECTORS", key="scan_sf"):
+st.markdown('<div class="bbg-panel-hdr"> UNIVERSE SCAN -- SUREFIRE ACROSS ALL 25 GICS NODES</div>', unsafe_allow_html=True)
+if st.button("SCAN ALL GICS SECTORS", key="scan_sf"):
     with st.spinner("Scanning 25 GICS nodes for surefire setups..."):
         results = run_universe_scan("surefire")
     if results:
@@ -1648,7 +1648,7 @@ if st.button("? SCAN ALL GICS SECTORS", key="scan_sf"):
 # ===============================================================
 
 with tab2:
-st.markdown(’<div class="bbg-panel"><div class="bbg-panel-hdr">? LONG-TERM MONTHLY – POSITION TRADE SCANNER</div><div class="bbg-panel-body">’, unsafe_allow_html=True)
+st.markdown(’<div class="bbg-panel"><div class="bbg-panel-hdr"> LONG-TERM MONTHLY – POSITION TRADE SCANNER</div><div class="bbg-panel-body">’, unsafe_allow_html=True)
 st.markdown(
 “Secular trend following. Golden/Death Cross, 200 EMA positioning, “
 “Fibonacci retracement, MACD trend confirmation. Holding period: weeks to months.”
@@ -1684,8 +1684,8 @@ if run_lt:
         show_backtest_section(df_ind, "longterm")
 
 st.markdown("---")
-st.markdown('<div class="bbg-panel-hdr">? UNIVERSE SCAN -- LONG-TERM SIGNALS ACROSS ALL 25 GICS</div>', unsafe_allow_html=True)
-if st.button("? SCAN ALL GICS SECTORS", key="scan_lt"):
+st.markdown('<div class="bbg-panel-hdr"> UNIVERSE SCAN -- LONG-TERM SIGNALS ACROSS ALL 25 GICS</div>', unsafe_allow_html=True)
+if st.button("SCAN ALL GICS SECTORS", key="scan_lt"):
     with st.spinner("Scanning for long-term structural setups..."):
         results = run_universe_scan("longterm")
     if results:
@@ -1738,8 +1738,8 @@ if run_sw:
         show_backtest_section(df_ind, "swing")
 
 st.markdown("---")
-st.markdown('<div class="bbg-panel-hdr">? UNIVERSE SCAN -- SWING SETUPS ACROSS ALL 25 GICS</div>', unsafe_allow_html=True)
-if st.button("? SCAN ALL GICS SECTORS", key="scan_sw"):
+st.markdown('<div class="bbg-panel-hdr"> UNIVERSE SCAN -- SWING SETUPS ACROSS ALL 25 GICS</div>', unsafe_allow_html=True)
+if st.button("SCAN ALL GICS SECTORS", key="scan_sw"):
     with st.spinner("Scanning for swing setups..."):
         results = run_universe_scan("swing")
     if results:
@@ -1756,7 +1756,7 @@ if st.button("? SCAN ALL GICS SECTORS", key="scan_sw"):
 # ===============================================================
 
 with tab4:
-st.markdown(’<div class="bbg-panel"><div class="bbg-panel-hdr">? FAT PITCH – ORIGINAL SOLOMON SCANNER . 3-GATE MAXIMUM CONVICTION</div><div class="bbg-panel-body">’, unsafe_allow_html=True)
+st.markdown(’<div class="bbg-panel"><div class="bbg-panel-hdr"> FAT PITCH – ORIGINAL SOLOMON SCANNER . 3-GATE MAXIMUM CONVICTION</div><div class="bbg-panel-body">’, unsafe_allow_html=True)
 st.markdown(
 “The original strategy: do nothing 90% of the time. Only execute when all 3 ultra-strict gates “
 “fire simultaneously – **Gate 1:** Volume >= 150% avg . “
@@ -1796,8 +1796,8 @@ if run_fp:
         show_backtest_section(df_ind, "fatpitch")
 
 st.markdown("---")
-st.markdown('<div class="bbg-panel-hdr">? FAT PITCH UNIVERSE SCAN -- ALL 25 GICS NODES</div>', unsafe_allow_html=True)
-if st.button("? SCAN ALL GICS FOR FAT PITCH SETUPS", key="scan_fp"):
+st.markdown('<div class="bbg-panel-hdr"> FAT PITCH UNIVERSE SCAN -- ALL 25 GICS NODES</div>', unsafe_allow_html=True)
+if st.button("SCAN ALL GICS FOR FAT PITCH SETUPS", key="scan_fp"):
     with st.spinner("Running 3-gate scan across all GICS sectors..."):
         results = run_universe_scan("fatpitch")
     if results:
@@ -1818,7 +1818,7 @@ if st.button("? SCAN ALL GICS FOR FAT PITCH SETUPS", key="scan_fp"):
 # ===============================================================
 
 with tab5:
-st.markdown(’<div class="bbg-panel"><div class="bbg-panel-hdr">? SOLOMON STRATEGY – QUANTITATIVE ROTATION ENGINE . 32 ASSETS . 7-CRITERIA SCORING</div><div class="bbg-panel-body">’, unsafe_allow_html=True)
+st.markdown(’<div class="bbg-panel"><div class="bbg-panel-hdr"> SOLOMON STRATEGY – QUANTITATIVE ROTATION ENGINE . 32 ASSETS . 7-CRITERIA SCORING</div><div class="bbg-panel-body">’, unsafe_allow_html=True)
 st.markdown(
 “Multi-factor quantitative rotation across 32 ETFs spanning all major GICS sectors, “
 “macro proxies, and safe harbors. Scores each asset on RAM, Relative Strength, “
