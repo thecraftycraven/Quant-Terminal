@@ -13,7 +13,7 @@ import requests
 from zoneinfo import ZoneInfo
 import streamlit.components.v1 as components
 import warnings
-warnings.filterwarnings("ignore")
+warnings.filterwarnings('ignore')
 
 # -- SESSION STATE INIT --------------------------------------------
 for _k, _v in {"portfolio": [], "alert_config": {"enabled": False}, "scan_mode": "Core 9", "trade_notes": ""}.items():
