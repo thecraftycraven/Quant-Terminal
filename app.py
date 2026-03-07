@@ -1091,4 +1091,4 @@ for sym in ["SPY","QQQ","DIA","^VIX","^TNX","GC=F","CL=F"]:
     except Exception: pass
 
 if tape_items:
-    st.markdown("<div style=\"position:fixed;bottom:0;left:0;width:100%;background:#000;border-top:1px solid #FF8000;padding:4px 12px;font-size:10px;display:flex;gap:4px;z-index:9998;\">"+"".join(tape_items)+"</div>", unsafe_allow_html=True)st.markdown(”<div style="position:fixed;bottom:0;left:0;width:100%;background:#000;border-top:1px solid #FF8000;padding:4px 12px;font-size:10px;display:flex;gap:4px;z-index:9998;">”+””.join(tape_items)+”</div>”, unsafe_allow_html=True)
+    st.markdown("<div style=\"position:fixed;bottom:0;left:0;width:100%;background:#000;border-top:1px solid #FF8000;padding:4px 12px;font-size:10px;display:flex;gap:4px;z-index:9998;\">"+"".join(tape_items)+"</div>", unsafe_allow_html=True)st.markdown("<div style="position:fixed;bottom:0;left:0;width:100%;background:#000;border-top:1px solid #FF8000;padding:4px 12px;font-size:10px;display:flex;gap:4px;z-index:9998;">”+””.join(tape_items)+”</div>”, unsafe_allow_html=True)
