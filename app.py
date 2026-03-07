@@ -1,11 +1,11 @@
-“””
-╔══════════════════════════════════════════════════════════════════╗
-║  GLOBAL MACRO QUANTITATIVE TERMINAL  v3.0                       ║
-║  GICS-MODEL · SOLOMON STRATEGY · MULTI-TIMEFRAME SIGNALS        ║
-║  FINRA Rule 15c3-5 · SEC Reg T · SEC Reg NMS Compliant          ║
-║  FOR INFORMATIONAL PURPOSES ONLY — NOT FINANCIAL ADVICE          ║
-╚══════════════════════════════════════════════════════════════════╝
-“””
+# GLOBAL MACRO QUANTITATIVE TERMINAL v3.0
+
+# GICS-MODEL | SOLOMON STRATEGY | MULTI-TIMEFRAME SIGNALS
+
+# FINRA Rule 15c3-5 | SEC Reg T | SEC Reg NMS Compliant
+
+# FOR INFORMATIONAL PURPOSES ONLY - NOT FINANCIAL ADVICE
+
 import streamlit as st
 import yfinance as yf
 import pandas as pd
@@ -23,11 +23,11 @@ import streamlit.components.v1 as components
 import warnings
 warnings.filterwarnings(‘ignore’)
 
-# ─────────────────────────────────────────────────────────────────
+# —————————————————————–
 
-# 0. SESSION STATE INIT  (must be first — before any rendering)
+# 0. SESSION STATE INIT  (must be first – before any rendering)
 
-# ─────────────────────────────────────────────────────────────────
+# —————————————————————–
 
 for key, default in {
 ‘portfolio’: [],
@@ -38,24 +38,24 @@ for key, default in {
 if key not in st.session_state:
 st.session_state[key] = default
 
-# ─────────────────────────────────────────────────────────────────
+# —————————————————————–
 
 # 1. PAGE CONFIG
 
-# ─────────────────────────────────────────────────────────────────
+# —————————————————————–
 
 st.set_page_config(
 layout=“wide”,
 page_title=“QUANT TERMINAL v3”,
-page_icon=“◈”,
+page_icon=”*”,
 initial_sidebar_state=“expanded”
 )
 
-# ─────────────────────────────────────────────────────────────────
+# —————————————————————–
 
 # 2. MARKET CLOCK
 
-# ─────────────────────────────────────────────────────────────────
+# —————————————————————–
 
 est_zone     = ZoneInfo(“America/New_York”)
 now_est      = datetime.now(est_zone)
@@ -66,11 +66,11 @@ is_open      = datetime.strptime(“09:30”, “%H:%M”).time() <= now_est.tim
 market_status = “OPEN” if (not is_weekend and is_open) else “CLOSED”
 status_color  = “#00CC00” if market_status == “OPEN” else “#CC0000”
 
-# ─────────────────────────────────────────────────────────────────
+# —————————————————————–
 
-# 3. CSS — UNIFIED BLOOMBERG / TERMINAL AESTHETIC
+# 3. CSS – UNIFIED BLOOMBERG / TERMINAL AESTHETIC
 
-# ─────────────────────────────────────────────────────────────────
+# —————————————————————–
 
 CSS = “””
 
@@ -87,7 +87,7 @@ html, body, [class*="stApp"] { background-color: #000000 !important; color: #CCC
 #MainMenu, footer, header, .stDeployButton, [data-testid="stToolbar"] { visibility: hidden !important; }
 [data-testid="stDecoration"] { display: none !important; }
 
-/* ── STATUS BAR ── */
+/* -- STATUS BAR -- */
 .bbg-status {
     display: flex; justify-content: space-between; align-items: center;
     background: #000; border-bottom: 2px solid #FF8000;
@@ -97,7 +97,7 @@ html, body, [class*="stApp"] { background-color: #000000 !important; color: #CCC
 .bbg-status-c  { color: #FF8000; font-size: 10px; letter-spacing: 2px; font-weight: 600; }
 .bbg-status-r  { color: #AAAAAA; font-size: 10px; text-align: right; }
 
-/* ── TABS ── */
+/* -- TABS -- */
 .stTabs [data-baseweb="tab-list"] {
     background: #000 !important; border-bottom: 1px solid #333 !important;
     gap: 0 !important; padding-left: 4px !important;
@@ -113,7 +113,7 @@ html, body, [class*="stApp"] { background-color: #000000 !important; color: #CCC
 }
 .stTabs [data-baseweb="tab-panel"] { padding: 0 !important; margin-bottom: 50px !important; }
 
-/* ── PANELS ── */
+/* -- PANELS -- */
 .bbg-panel { border: 1px solid #222; background: #0A0A0A; margin-bottom: 4px; }
 .bbg-panel-hdr {
     background: #111; color: #FF8000; font-size: 10px; font-weight: 700;
@@ -122,7 +122,7 @@ html, body, [class*="stApp"] { background-color: #000000 !important; color: #CCC
 .bbg-panel-body { padding: 4px 6px; }
 .bbg-scroll { max-height: 400px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #FF8000 #111; }
 
-/* ── TABLES ── */
+/* -- TABLES -- */
 .bbg-tbl { width: 100%; border-collapse: collapse; font-size: 10px; }
 .bbg-tbl th {
     background: #111; color: #FF8000; font-size: 9px; font-weight: 600;
@@ -138,32 +138,32 @@ html, body, [class*="stApp"] { background-color: #000000 !important; color: #CCC
 .bbg-tbl td.sec { text-align: left; color: #555; font-size: 9px; }
 .bbg-tbl tr:hover td { background: #0D0D0D; }
 
-/* ── SIGNAL BOXES ── */
+/* -- SIGNAL BOXES -- */
 .signal-box-buy   { background: linear-gradient(135deg,#003300,#001a00); border: 2px solid #00FF41; border-radius: 3px; padding: 16px; text-align: center; margin: 8px 0; }
 .signal-box-sell  { background: linear-gradient(135deg,#330000,#1a0000); border: 2px solid #FF4444; border-radius: 3px; padding: 16px; text-align: center; margin: 8px 0; }
 .signal-box-standby { background: linear-gradient(135deg,#1a1000,#0d0800); border: 2px solid #FFA500; border-radius: 3px; padding: 16px; text-align: center; margin: 8px 0; }
 .signal-box-fat   { background: linear-gradient(135deg,#001a33,#000d1a); border: 2px solid #00CCFF; border-radius: 3px; padding: 16px; text-align: center; margin: 8px 0; }
 
-/* ── RATIONALE ── */
+/* -- RATIONALE -- */
 .rationale-box {
     background: #050505; border-left: 3px solid #FF8000;
     padding: 12px 16px; margin: 8px 0; font-size: 0.82rem; line-height: 1.7;
 }
 
-/* ── COMPLIANCE ── */
+/* -- COMPLIANCE -- */
 .compliance-badge {
     background: #001a33; border: 1px solid #0066cc; color: #4da6ff;
     padding: 4px 10px; border-radius: 2px; font-size: 0.7rem;
     letter-spacing: 1px; display: inline-block; margin-bottom: 4px;
 }
 
-/* ── METRICS ── */
+/* -- METRICS -- */
 .stMetric { background: #0a0a0a; border: 1px solid #1a1a1a; padding: 10px; border-radius: 2px; }
 [data-testid="stMetricValue"] { color: #FF8000 !important; font-size: 1.3rem !important; }
 [data-testid="stMetricLabel"] { color: #888 !important; font-size: 0.7rem !important; letter-spacing: 1px; }
 [data-testid="stMetricDelta"] { font-size: 0.75rem !important; }
 
-/* ── INPUTS ── */
+/* -- INPUTS -- */
 .stTextInput>div>div>input, .stNumberInput>div>div>input {
     background: #0a0a0a !important; color: #00FF41 !important;
     border: 1px solid #333 !important;
@@ -172,23 +172,23 @@ html, body, [class*="stApp"] { background-color: #000000 !important; color: #CCC
 textarea { background: #050505 !important; color: #CCC !important; border: 1px solid #222 !important; border-radius: 2px !important; }
 textarea:focus { border-color: #FF8000 !important; box-shadow: none !important; }
 
-/* ── BUTTONS ── */
+/* -- BUTTONS -- */
 .stButton>button {
     background: #0a0a0a; color: #00FF41; border: 1px solid #00FF41;
     border-radius: 2px; letter-spacing: 1px; width: 100%;
 }
 .stButton>button:hover { background: #003300; }
 
-/* ── PROGRESS / SPINNER ── */
+/* -- PROGRESS / SPINNER -- */
 .stProgress > div > div { background: #00FF41 !important; }
 .stSpinner > div { border-top-color: #FF8000 !important; }
 .stAlert { background: #0a0a0a !important; border: 1px solid #333 !important; }
 hr { border-color: #1a1a1a !important; }
 
-/* ── SIDEBAR ── */
+/* -- SIDEBAR -- */
 section[data-testid="stSidebar"] { background: #050505 !important; border-right: 1px solid #1a1a1a; }
 
-/* ── HEATMAP ── */
+/* -- HEATMAP -- */
 .bbg-hm { display: grid; grid-template-columns: repeat(6,1fr); gap: 2px; padding: 6px; }
 .bbg-hm-cell {
     display: flex; justify-content: space-between; align-items: center;
@@ -196,7 +196,7 @@ section[data-testid="stSidebar"] { background: #050505 !important; border-right:
     border-radius: 2px; white-space: nowrap;
 }
 
-/* ── TOP 5 CARDS ── */
+/* -- TOP 5 CARDS -- */
 .bbg-top5 { display: grid; grid-template-columns: repeat(5,1fr); }
 .bbg-t5c  { padding: 8px 10px; border-right: 1px solid #1A1A1A; border-top: 3px solid #333; background: #050505; }
 .bbg-t5c:last-child { border-right: none; }
@@ -213,7 +213,7 @@ section[data-testid="stSidebar"] { background: #050505 !important; border-right:
 .ytd-pos { color: #00CC00; font-size: 11px; }
 .ytd-neg { color: #CC0000; font-size: 11px; }
 
-/* ── SIG COLORS ── */
+/* -- SIG COLORS -- */
 .sig-sb { color: #FF8000; font-weight: 700; }
 .sig-b  { color: #FFCC00; font-weight: 600; }
 .sig-h  { color: #888; }
@@ -221,7 +221,7 @@ section[data-testid="stSidebar"] { background: #050505 !important; border-right:
 .sig-ss { color: #FF0000; font-weight: 700; }
 .sig-ht { color: #FF00FF; font-weight: 700; }
 
-/* ── MACRO ROW ── */
+/* -- MACRO ROW -- */
 .bbg-macro-row {
     display: grid; grid-template-columns: repeat(11,1fr);
     border-bottom: 1px solid #333; background: #050505; margin-top: 4px;
@@ -243,17 +243,17 @@ section[data-testid="stSidebar"] { background: #050505 !important; border-right:
 “””
 st.markdown(CSS, unsafe_allow_html=True)
 
-# ─────────────────────────────────────────────────────────────────
+# —————————————————————–
 
 # 4. STATUS BAR
 
-# ─────────────────────────────────────────────────────────────────
+# —————————————————————–
 
 st.markdown(f”””
 
 <div class="bbg-status">
-    <div class="bbg-status-l" style="color:{status_color};">■ MKT {market_status}</div>
-    <div class="bbg-status-c">◈ GLOBAL MACRO QUANTITATIVE TERMINAL · GICS MODEL · SOLOMON STRATEGY</div>
+    <div class="bbg-status-l" style="color:{status_color};">* MKT {market_status}</div>
+    <div class="bbg-status-c">* GLOBAL MACRO QUANTITATIVE TERMINAL . GICS MODEL . SOLOMON STRATEGY</div>
     <div class="bbg-status-r">
         <span id="live-clock" style="color:#AAAAAA;font-size:10px;">{time_str}</span>
         &nbsp;&nbsp;<span style="color:#AAAAAA;font-size:10px;">{date_str}</span>
@@ -271,11 +271,11 @@ tick(); setInterval(tick,1000);
 })();
 </script>”””, height=0)
 
-# ─────────────────────────────────────────────────────────────────
+# —————————————————————–
 
 # 5. GICS UNIVERSE  (corrected tickers per audit)
 
-# ─────────────────────────────────────────────────────────────────
+# —————————————————————–
 
 GICS_UNIVERSE = {
 “1010 Energy”:                    [“XLE”],
@@ -326,11 +326,11 @@ SOLOMON_SECTORS = {
 }
 BENCHMARKS = [“SPY”,“QQQ”,“DIA”,”^VIX”,”^TNX”,”^TYX”,“GC=F”,“CL=F”]
 
-# ─────────────────────────────────────────────────────────────────
+# —————————————————————–
 
 # 6. DATA LAYER
 
-# ─────────────────────────────────────────────────────────────────
+# —————————————————————–
 
 @st.cache_data(ttl=300)
 def fetch_data(ticker: str, period: str = “2y”, interval: str = “1d”) -> pd.DataFrame:
@@ -349,7 +349,7 @@ return pd.DataFrame()
 
 @st.cache_data(ttl=300)
 def fetch_multi(tickers: list, period: str = “2y”) -> pd.DataFrame:
-“”“Batch fetch — returns Close prices for all tickers.”””
+“”“Batch fetch – returns Close prices for all tickers.”””
 try:
 data = yf.download(tickers, period=period, progress=False, auto_adjust=True)
 if isinstance(data.columns, pd.MultiIndex):
@@ -387,7 +387,7 @@ df.ta.stddev(length=20, append=True)
 # Trend Strength
 df.ta.adx(length=14, append=True)
 
-# FIX #1: Ichimoku — unpack tuple, join manually
+# FIX #1: Ichimoku -- unpack tuple, join manually
 try:
     ichi_result = df.ta.ichimoku(append=False)
     if isinstance(ichi_result, tuple):
@@ -399,7 +399,7 @@ try:
         cols_to_join = [c for c in ichi_df.columns if 'ISA' in c or 'ISB' in c]
         df = df.join(ichi_df[cols_to_join], how='left')
 except Exception:
-    pass  # Ichimoku optional — skip silently if it fails
+    pass  # Ichimoku optional -- skip silently if it fails
 
 # Volume
 df['Vol_SMA_20'] = df['Volume'].rolling(window=20).mean()
@@ -421,11 +421,11 @@ df = df.dropna(subset=['Close', 'Open', 'High', 'Low'])
 return df
 ```
 
-# ─────────────────────────────────────────────────────────────────
+# —————————————————————–
 
 # 7. SIGNAL ENGINES
 
-# ─────────────────────────────────────────────────────────────────
+# —————————————————————–
 
 def _standby(msg: str) -> dict:
 return {
@@ -445,10 +445,10 @@ return float(v)
 except Exception:
 return default
 
-# ── 7a. SUREFIRE ─────────────────────────────────────────────────
+# – 7a. SUREFIRE ———————————————––
 
 def evaluate_surefire(df: pd.DataFrame) -> dict:
-“”“Ultra-strict confluence — volume + trend + breakout + momentum.
+“”“Ultra-strict confluence – volume + trend + breakout + momentum.
 FINRA 15c3-5: All signals informational only.”””
 if df.empty or len(df) < 10:
 return _standby(“Insufficient data.”)
@@ -479,37 +479,37 @@ reasons = []
 
 # Volume gate (surefire requires strong institutional participation)
 if vol_r < 1.3:
-    return _standby(f"Institutional volume insufficient ({vol_r:.2f}x avg). Surefire requires ≥1.3x.")
+    return _standby(f"Institutional volume insufficient ({vol_r:.2f}x avg). Surefire requires >=1.3x.")
 if adx < 30:
     return _standby(f"Trend too weak for surefire setup (ADX {adx:.1f} < 30). Awaiting trend velocity.")
 
 # BUY factors
 if close > ema20 > ema50 > ema200:
-    buy_score += 2; reasons.append("✅ Full bullish EMA stack (20>50>200)")
+    buy_score += 2; reasons.append("[OK] Full bullish EMA stack (20>50>200)")
 if macd > macd_sig and p_macd <= p_sig:
-    buy_score += 2; reasons.append("✅ MACD bullish crossover confirmed this bar")
+    buy_score += 2; reasons.append("[OK] MACD bullish crossover confirmed this bar")
 if 55 < rsi < 80:
-    buy_score += 1; reasons.append(f"✅ RSI in bullish momentum zone ({rsi:.1f})")
+    buy_score += 1; reasons.append(f"[OK] RSI in bullish momentum zone ({rsi:.1f})")
 if stochk > stochd and stochk > 50:
-    buy_score += 1; reasons.append("✅ Stochastic bullish cross above midline")
+    buy_score += 1; reasons.append("[OK] Stochastic bullish cross above midline")
 if close > bbu:
-    buy_score += 1; reasons.append("✅ BB upper breakout — volatility expansion buy")
+    buy_score += 1; reasons.append("[OK] BB upper breakout -- volatility expansion buy")
 if vol_r > 1.8:
-    buy_score += 1; reasons.append(f"✅ Volume anomaly: {vol_r:.1f}x institutional avg")
+    buy_score += 1; reasons.append(f"[OK] Volume anomaly: {vol_r:.1f}x institutional avg")
 
 # SELL factors
 if close < ema20 < ema50 < ema200:
-    sell_score += 2; reasons.append("🔴 Full bearish EMA stack (20<50<200)")
+    sell_score += 2; reasons.append("? Full bearish EMA stack (20<50<200)")
 if macd < macd_sig and p_macd >= p_sig:
-    sell_score += 2; reasons.append("🔴 MACD bearish crossover confirmed this bar")
+    sell_score += 2; reasons.append("? MACD bearish crossover confirmed this bar")
 if 20 < rsi < 45:
-    sell_score += 1; reasons.append(f"🔴 RSI in bearish distribution zone ({rsi:.1f})")
+    sell_score += 1; reasons.append(f"? RSI in bearish distribution zone ({rsi:.1f})")
 if stochk < stochd and stochk < 50:
-    sell_score += 1; reasons.append("🔴 Stochastic bearish cross below midline")
+    sell_score += 1; reasons.append("? Stochastic bearish cross below midline")
 if close < bbl:
-    sell_score += 1; reasons.append("🔴 BB lower breakdown — expansion to downside")
+    sell_score += 1; reasons.append("? BB lower breakdown -- expansion to downside")
 if vol_r > 1.8 and sell_score > 0:
-    sell_score += 1; reasons.append(f"🔴 Volume confirms distribution ({vol_r:.1f}x avg)")
+    sell_score += 1; reasons.append(f"? Volume confirms distribution ({vol_r:.1f}x avg)")
 
 entry = round(close, 2)
 if buy_score >= 5:
@@ -519,7 +519,7 @@ if buy_score >= 5:
     return {"signal":"EXECUTE BUY","color":"#00FF41","score":buy_score,
             "entry":entry,"stop":stop,"target":target,"rr":rr,
             "reasons":reasons,"atr":round(atr,2),"adx":round(adx,2),
-            "rsi":round(rsi,2),"vol_ratio":round(vol_r,2),"hold":"1–5 Days"}
+            "rsi":round(rsi,2),"vol_ratio":round(vol_r,2),"hold":"1-5 Days"}
 
 if sell_score >= 5:
     stop   = round(close + 2 * atr, 2)
@@ -528,16 +528,16 @@ if sell_score >= 5:
     return {"signal":"EXECUTE SELL/SHORT","color":"#FF4444","score":sell_score,
             "entry":entry,"stop":stop,"target":target,"rr":rr,
             "reasons":reasons,"atr":round(atr,2),"adx":round(adx,2),
-            "rsi":round(rsi,2),"vol_ratio":round(vol_r,2),"hold":"1–5 Days"}
+            "rsi":round(rsi,2),"vol_ratio":round(vol_r,2),"hold":"1-5 Days"}
 
 return _standby(f"Score insufficient (BUY:{buy_score}/7 SELL:{sell_score}/7). Awaiting confluence.")
 ```
 
-# ── 7b. LONG-TERM ────────────────────────────────────────────────
+# – 7b. LONG-TERM ————————————————
 
 def evaluate_longterm(df: pd.DataFrame) -> dict:
-“”“Monthly position trades — secular trend following.
-FINRA 15c3-5 compliant — informational only.”””
+“”“Monthly position trades – secular trend following.
+FINRA 15c3-5 compliant – informational only.”””
 if df.empty or len(df) < 10:
 return _standby(“Insufficient data.”)
 
@@ -557,25 +557,25 @@ buy_score = sell_score = 0
 reasons = []
 
 if close > ema200:
-    buy_score += 2; reasons.append("✅ Price above 200 EMA — secular uptrend intact")
+    buy_score += 2; reasons.append("[OK] Price above 200 EMA -- secular uptrend intact")
 else:
-    sell_score += 2; reasons.append("🔴 Price below 200 EMA — secular downtrend")
+    sell_score += 2; reasons.append("? Price below 200 EMA -- secular downtrend")
 
 if ema50 > ema200:
-    buy_score += 2; reasons.append("✅ Golden Cross active (50 EMA > 200 EMA)")
+    buy_score += 2; reasons.append("[OK] Golden Cross active (50 EMA > 200 EMA)")
 else:
-    sell_score += 2; reasons.append("🔴 Death Cross active (50 EMA < 200 EMA)")
+    sell_score += 2; reasons.append("? Death Cross active (50 EMA < 200 EMA)")
 
 if adx > 25:
-    buy_score += 1; reasons.append(f"✅ Sustained trend strength (ADX {adx:.1f} > 25)")
+    buy_score += 1; reasons.append(f"[OK] Sustained trend strength (ADX {adx:.1f} > 25)")
 if macd > macd_s:
-    buy_score += 1; reasons.append("✅ MACD above signal — positive long-term momentum")
+    buy_score += 1; reasons.append("[OK] MACD above signal -- positive long-term momentum")
 else:
-    sell_score += 1; reasons.append("🔴 MACD below signal — negative long-term momentum")
+    sell_score += 1; reasons.append("? MACD below signal -- negative long-term momentum")
 if 40 < rsi < 75:
-    buy_score += 1; reasons.append(f"✅ RSI in healthy bull range ({rsi:.1f})")
+    buy_score += 1; reasons.append(f"[OK] RSI in healthy bull range ({rsi:.1f})")
 if fib618 > 0 and close > fib618:
-    buy_score += 1; reasons.append("✅ Holding above Fib 61.8% — key support zone")
+    buy_score += 1; reasons.append("[OK] Holding above Fib 61.8% -- key support zone")
 
 entry = round(close, 2)
 stop   = round(close - 3 * atr, 2)
@@ -598,12 +598,12 @@ if sell_score >= 4:
 return _standby("Awaiting long-term structural alignment.")
 ```
 
-# ── 7c. SWING ────────────────────────────────────────────────────
+# – 7c. SWING ––––––––––––––––––––––––––
 
 def evaluate_swing(df: pd.DataFrame) -> dict:
 “””
-2–10 day mean reversion + momentum.
-FIX #6: ADX gate REMOVED from swing — low ADX is ideal for mean reversion.
+2-10 day mean reversion + momentum.
+FIX #6: ADX gate REMOVED from swing – low ADX is ideal for mean reversion.
 BB width check added instead.
 “””
 if df.empty or len(df) < 10:
@@ -631,7 +631,7 @@ vol_r   = _safe_float(l.get('Vol_Ratio'), 1.0)
 fib382  = _safe_float(l.get('Fib_0382'))
 adx     = _safe_float(l.get('ADX_14'))
 
-# BB width gate — FIX: swing works when BB is not too compressed
+# BB width gate -- FIX: swing works when BB is not too compressed
 bb_width = (bbu - bbl) / max(bbm, 1)
 if bb_width < 0.01:
     return _standby("Bollinger Bands too compressed. No swing edge in this environment.")
@@ -641,27 +641,27 @@ reasons = []
 
 # Oversold bounce
 if rsi < 35 and p_rsi < rsi:
-    buy_score += 2; reasons.append(f"✅ RSI oversold reversal ({rsi:.1f} turning up from <35)")
+    buy_score += 2; reasons.append(f"[OK] RSI oversold reversal ({rsi:.1f} turning up from <35)")
 if close <= bbl * 1.015 and close > bbl_p * 0.99:
-    buy_score += 2; reasons.append("✅ Price at lower BB — mean reversion setup")
+    buy_score += 2; reasons.append("[OK] Price at lower BB -- mean reversion setup")
 if stochk > stochd and p_stochk <= p_stochd and stochk < 30:
-    buy_score += 2; reasons.append("✅ Stochastic bullish cross from oversold (<30)")
+    buy_score += 2; reasons.append("[OK] Stochastic bullish cross from oversold (<30)")
 if close > ema20:
-    buy_score += 1; reasons.append("✅ Reclaimed 20 EMA — short-term trend restored")
+    buy_score += 1; reasons.append("[OK] Reclaimed 20 EMA -- short-term trend restored")
 if fib382 > 0 and abs(close - fib382) / close < 0.01:
-    buy_score += 1; reasons.append("✅ Touching Fib 38.2% — key swing support zone")
+    buy_score += 1; reasons.append("[OK] Touching Fib 38.2% -- key swing support zone")
 if vol_r > 1.2:
-    buy_score += 1; reasons.append(f"✅ Volume confirmation ({vol_r:.1f}x avg)")
+    buy_score += 1; reasons.append(f"[OK] Volume confirmation ({vol_r:.1f}x avg)")
 
 # Overbought fade
 if rsi > 70 and p_rsi > rsi:
-    sell_score += 2; reasons.append(f"🔴 RSI overbought rolling over ({rsi:.1f} from >70)")
+    sell_score += 2; reasons.append(f"? RSI overbought rolling over ({rsi:.1f} from >70)")
 if close >= bbu * 0.99 and close < bbu_p * 1.01:
-    sell_score += 2; reasons.append("🔴 Price at upper BB — overbought fade setup")
+    sell_score += 2; reasons.append("? Price at upper BB -- overbought fade setup")
 if stochk < stochd and p_stochk >= p_stochd and stochk > 70:
-    sell_score += 2; reasons.append("🔴 Stochastic bearish cross from overbought (>70)")
+    sell_score += 2; reasons.append("? Stochastic bearish cross from overbought (>70)")
 if vol_r > 1.2 and sell_score > 0:
-    sell_score += 1; reasons.append(f"🔴 Volume confirms selling pressure ({vol_r:.1f}x avg)")
+    sell_score += 1; reasons.append(f"? Volume confirms selling pressure ({vol_r:.1f}x avg)")
 
 entry = round(close, 2)
 if buy_score >= 4:
@@ -671,7 +671,7 @@ if buy_score >= 4:
     return {"signal":"SWING BUY","color":"#00FF41","score":buy_score,
             "entry":entry,"stop":stop,"target":target,"rr":rr,
             "reasons":reasons,"atr":round(atr,2),"adx":round(adx,2),
-            "rsi":round(rsi,2),"hold":"2–10 Days"}
+            "rsi":round(rsi,2),"hold":"2-10 Days"}
 
 if sell_score >= 4:
     stop   = round(close + 1.5 * atr, 2)
@@ -680,18 +680,18 @@ if sell_score >= 4:
     return {"signal":"SWING SELL/FADE","color":"#FF4444","score":sell_score,
             "entry":entry,"stop":stop,"target":target,"rr":rr,
             "reasons":reasons,"atr":round(atr,2),"adx":round(adx,2),
-            "rsi":round(rsi,2),"hold":"2–10 Days"}
+            "rsi":round(rsi,2),"hold":"2-10 Days"}
 
 return _standby("No swing edge detected. Awaiting mean reversion extremes.")
 ```
 
-# ── 7d. FAT PITCH (original Solomon theory) ─────────────────────
+# – 7d. FAT PITCH (original Solomon theory) ———————
 
 def evaluate_fat_pitch(df: pd.DataFrame) -> dict:
 “””
-Original ‘fat pitch’ theory — 3 ultra-strict gates.
+Original ‘fat pitch’ theory – 3 ultra-strict gates.
 Only fires on maximum-conviction asymmetric setups.
-Volume ≥ 150% avg · ADX ≥ 35 · BB breakout + MACD + RSI 60-85.
+Volume >= 150% avg . ADX >= 35 . BB breakout + MACD + RSI 60-85.
 FINRA 15c3-5: Informational only.
 “””
 if df.empty or len(df) < 10:
@@ -708,16 +708,16 @@ bbu      = _safe_float(l.get('BBU_20_2.0'))
 vol_r    = _safe_float(l.get('Vol_Ratio'), 1.0)
 atr      = _safe_float(l.get('ATRr_14'), close * 0.02)
 
-# Gate 1: Institutional volume (original: ≥ 150% of avg)
+# Gate 1: Institutional volume (original: >= 150% of avg)
 if vol_r < 1.5:
     return {"signal":"STANDBY","color":"#FFA500","score":0,
-            "reasons":[f"Gate 1 FAIL: Volume {vol_r:.2f}x avg — requires ≥1.5x institutional participation."],
+            "reasons":[f"Gate 1 FAIL: Volume {vol_r:.2f}x avg -- requires >=1.5x institutional participation."],
             "entry":None,"stop":None,"target":None,"rr":None}
 
-# Gate 2: Trend velocity (original: ADX ≥ 35)
+# Gate 2: Trend velocity (original: ADX >= 35)
 if adx < 35:
     return {"signal":"STANDBY","color":"#FFA500","score":0,
-            "reasons":[f"Gate 2 FAIL: ADX {adx:.2f} lacks terminal velocity (requires ≥35)."],
+            "reasons":[f"Gate 2 FAIL: ADX {adx:.2f} lacks terminal velocity (requires >=35)."],
             "entry":None,"stop":None,"target":None,"rr":None}
 
 # Gate 3: High-conviction structural breakout
@@ -727,15 +727,15 @@ if (close > bbu) and (macd > macd_sig) and (60 <= rsi <= 85):
     target = round(close + 4 * atr, 2)
     rr     = round((target - entry) / max(entry - stop, 0.01), 2)
     return {
-        "signal": "FAT PITCH — EXECUTE",
+        "signal": "FAT PITCH -- EXECUTE",
         "color": "#00CCFF",
         "score": 3,
         "entry": entry, "stop": stop, "target": target, "rr": rr,
         "reasons": [
-            f"✅ Gate 1 PASS: Volume anomaly {vol_r:.1f}x avg (≥1.5x institutional threshold)",
-            f"✅ Gate 2 PASS: ADX {adx:.1f} — trend has terminal velocity",
-            f"✅ Gate 3 PASS: BB upper breakout · MACD bullish · RSI {rsi:.1f} in sweet spot (60–85)",
-            "⚡ ASYMMETRIC SETUP — high probability structural breakout with volume confirmation"
+            f"[OK] Gate 1 PASS: Volume anomaly {vol_r:.1f}x avg (>=1.5x institutional threshold)",
+            f"[OK] Gate 2 PASS: ADX {adx:.1f} -- trend has terminal velocity",
+            f"[OK] Gate 3 PASS: BB upper breakout . MACD bullish . RSI {rsi:.1f} in sweet spot (60-85)",
+            "! ASYMMETRIC SETUP -- high probability structural breakout with volume confirmation"
         ],
         "atr": round(atr,2), "adx": round(adx,2),
         "rsi": round(rsi,2), "vol_ratio": round(vol_r,2),
@@ -744,19 +744,19 @@ if (close > bbu) and (macd > macd_sig) and (60 <= rsi <= 85):
 
 return {"signal":"STANDBY","color":"#FFA500","score":0,
         "reasons":[
-            f"Gate 1: Volume {vol_r:.1f}x {'✅' if vol_r>=1.5 else '❌'}  |  "
-            f"Gate 2: ADX {adx:.1f} {'✅' if adx>=35 else '❌'}  |  "
-            f"Gate 3: BB break+MACD+RSI {'✅' if close>bbu and macd>macd_sig and 60<=rsi<=85 else '❌'}",
+            f"Gate 1: Volume {vol_r:.1f}x {'[OK]' if vol_r>=1.5 else '[x]'}  |  "
+            f"Gate 2: ADX {adx:.1f} {'[OK]' if adx>=35 else '[x]'}  |  "
+            f"Gate 3: BB break+MACD+RSI {'[OK]' if close>bbu and macd>macd_sig and 60<=rsi<=85 else '[x]'}",
             "All 3 gates must pass simultaneously. Capital preserved until then."
         ],
         "entry":None,"stop":None,"target":None,"rr":None}
 ```
 
-# ─────────────────────────────────────────────────────────────────
+# —————————————————————–
 
 # 8. SOLOMON STRATEGY ENGINE (from original app)
 
-# ─────────────────────────────────────────────────────────────────
+# —————————————————————–
 
 @st.cache_data(ttl=3600)
 def fetch_solomon_data():
@@ -901,11 +901,11 @@ df["ALLOC"]  = allocs
 return df
 ```
 
-# ─────────────────────────────────────────────────────────────────
+# —————————————————————–
 
 # 9. BACKTESTING  (FIX #6, #7: proper holding windows + real PnL)
 
-# ─────────────────────────────────────────────────────────────────
+# —————————————————————–
 
 def walk_forward_backtest(df: pd.DataFrame, strategy: str = “surefire”) -> dict:
 “””
@@ -979,7 +979,7 @@ return {
 
 def monte_carlo(win_rate: float, avg_win: float, avg_loss: float,
 n: int = 500, trials: int = 200) -> dict:
-“”“Monte Carlo — FIX #7: uses real avg_win / avg_loss from backtest.”””
+“”“Monte Carlo – FIX #7: uses real avg_win / avg_loss from backtest.”””
 results = []
 for _ in range(trials):
 equity = 100.0
@@ -996,11 +996,11 @@ return {
 “ruin_prob”: round(sum(1 for r in results if r < 50) / trials * 100, 1),
 }
 
-# ─────────────────────────────────────────────────────────────────
+# —————————————————————–
 
 # 10. CHART BUILDER
 
-# ─────────────────────────────────────────────────────────────────
+# —————————————————————–
 
 def build_chart(df: pd.DataFrame, ticker: str, result: dict) -> go.Figure:
 if df.empty:
@@ -1089,7 +1089,7 @@ fig.update_layout(
     xaxis_rangeslider_visible=False,
     margin=dict(l=0, r=0, t=28, b=0),
     title=dict(
-        text=f"[ {ticker} ]  INSTITUTIONAL PRICE ACTION · ALL INDICATORS",
+        text=f"[ {ticker} ]  INSTITUTIONAL PRICE ACTION . ALL INDICATORS",
         font=dict(color='#FF8000', size=12)
     )
 )
@@ -1098,11 +1098,11 @@ fig.update_xaxes(gridcolor='#111', zerolinecolor='#1a1a1a')
 return fig
 ```
 
-# ─────────────────────────────────────────────────────────────────
+# —————————————————————–
 
 # 11. DISPLAY HELPERS
 
-# ─────────────────────────────────────────────────────────────────
+# —————————————————————–
 
 def show_signal_card(result: dict, style: str = “standard”):
 sig   = result[‘signal’]
@@ -1122,7 +1122,7 @@ st.markdown(f"""
 <div class="{css}">
     <div style="font-size:1.5rem;font-weight:700;color:{color};letter-spacing:3px;">{sig}</div>
     <div style="color:#555;font-size:0.72rem;margin-top:6px;letter-spacing:1px;">
-        {score_txt} &nbsp;·&nbsp; FINRA 15c3-5 COMPLIANT &nbsp;·&nbsp; INFORMATIONAL ONLY
+        {score_txt} &nbsp;.&nbsp; FINRA 15c3-5 COMPLIANT &nbsp;.&nbsp; INFORMATIONAL ONLY
     </div>
 </div>""", unsafe_allow_html=True)
 ```
@@ -1142,7 +1142,7 @@ delta=f”{round((tgt-entry)/entry*100,2)}%”)
 c4.metric(“RISK / REWARD”, f”{result.get(‘rr’,‘N/A’)}:1”)
 
 def show_rationale(result: dict, hold_label: str = “”):
-with st.expander(“📋 TRADE RATIONALE — FULL SIGNAL BREAKDOWN”, expanded=True):
+with st.expander(”? TRADE RATIONALE – FULL SIGNAL BREAKDOWN”, expanded=True):
 st.markdown(’<div class="rationale-box">’, unsafe_allow_html=True)
 st.markdown(”**TECHNICAL CONFLUENCE FACTORS:**”)
 for r in result.get(‘reasons’, []):
@@ -1166,7 +1166,7 @@ st.markdown(f”””
 st.markdown(’</div>’, unsafe_allow_html=True)
 
 def show_backtest_section(df: pd.DataFrame, strategy: str):
-with st.expander(“🔬 WALK-FORWARD BACKTEST + MONTE CARLO SIMULATION”):
+with st.expander(”? WALK-FORWARD BACKTEST + MONTE CARLO SIMULATION”):
 with st.spinner(“Running simulations across test window…”):
 bt = walk_forward_backtest(df, strategy)
 
@@ -1182,7 +1182,7 @@ bt = walk_forward_backtest(df, strategy)
     c4.metric("TOTAL RETURN",   f"{bt['total_return']}%")
 
     mc = monte_carlo(bt['win_rate'], bt['avg_win'], bt['avg_loss'])
-    st.markdown("**MONTE CARLO (500 trades × 200 trials — starting equity $100):**")
+    st.markdown("**MONTE CARLO (500 trades x 200 trials -- starting equity $100):**")
     mc1, mc2, mc3, mc4 = st.columns(4)
     mc1.metric("MEDIAN OUTCOME",    f"${mc['median']}")
     mc2.metric("PESSIMISTIC (P10)",  f"${mc['p10']}")
@@ -1190,19 +1190,19 @@ bt = walk_forward_backtest(df, strategy)
     mc4.metric("RUIN PROBABILITY",   f"{mc['ruin_prob']}%")
     st.markdown(
         f"<div style='color:#444;font-size:9px;margin-top:4px;'>"
-        f"Avg Win: {bt['avg_win']}% · Avg Loss: {bt['avg_loss']}% · "
+        f"Avg Win: {bt['avg_win']}% . Avg Loss: {bt['avg_loss']}% . "
         f"Derived from actual backtest trades (not fabricated)."
         f"</div>", unsafe_allow_html=True)
 ```
 
-# ─────────────────────────────────────────────────────────────────
+# —————————————————————–
 
 # 12. UNIVERSE SCANNER  (FIX #3: pre-fetch on main thread)
 
-# ─────────────────────────────────────────────────────────────────
+# —————————————————————–
 
 def _evaluate_worker(args):
-“”“Worker runs signal evaluation only — data already fetched.”””
+“”“Worker runs signal evaluation only – data already fetched.”””
 gics_name, ticker, df_computed, mode = args
 try:
 if mode == “surefire”:
@@ -1267,20 +1267,20 @@ progress.empty()
 return results
 ```
 
-# ─────────────────────────────────────────────────────────────────
+# —————————————————————–
 
 # 13. PORTFOLIO TRACKER  (FIX #15: GICS sector tagging added)
 
-# ─────────────────────────────────────────────────────────────────
+# —————————————————————–
 
 def portfolio_section():
-st.markdown(”### 💼 PORTFOLIO TRACKER — POSITION SIZING · GICS SECTOR ATTRIBUTION”)
+st.markdown(”### ? PORTFOLIO TRACKER – POSITION SIZING . GICS SECTOR ATTRIBUTION”)
 st.markdown(”—”)
 
 ```
 gics_options = ["(Manual entry)"] + list(GICS_UNIVERSE.keys())
 
-with st.expander("➕ ADD POSITION", expanded=False):
+with st.expander("+ ADD POSITION", expanded=False):
     pc1, pc2 = st.columns(2)
     with pc1:
         gics_sel = st.selectbox("GICS SECTOR NODE", gics_options, key="port_gics")
@@ -1325,7 +1325,7 @@ with st.expander("➕ ADD POSITION", expanded=False):
             })
             st.success(
                 f"Added. Suggested shares at {risk_pct}% risk: "
-                f"**{suggested_shares}** — Max risk $**{max_risk:,.0f}**"
+                f"**{suggested_shares}** -- Max risk $**{max_risk:,.0f}**"
             )
 
 if not st.session_state.portfolio:
@@ -1373,16 +1373,16 @@ if 'GICS Node' in port_df.columns:
         )
     st.markdown(conc_html, unsafe_allow_html=True)
 
-if st.button("🗑 CLEAR PORTFOLIO"):
+if st.button("? CLEAR PORTFOLIO"):
     st.session_state.portfolio = []
     st.rerun()
 ```
 
-# ─────────────────────────────────────────────────────────────────
+# —————————————————————–
 
 # 14. ALERT + EMAIL
 
-# ─────────────────────────────────────────────────────────────────
+# —————————————————————–
 
 def send_alert(ticker, signal, rationale):
 cfg = st.session_state.get(‘alert_config’, {})
@@ -1399,7 +1399,7 @@ f”DISCLAIMER: This is an algorithmic signal for informational purposes only.\n
 f”Not financial advice. Verify with your own research before acting.”
 )
 msg = MIMEText(body)
-msg[‘Subject’] = f”[QUANT TERMINAL] {signal} — {ticker}”
+msg[‘Subject’] = f”[QUANT TERMINAL] {signal} – {ticker}”
 msg[‘From’]    = cfg[‘smtp_user’]
 msg[‘To’]      = cfg[‘email’]
 with smtplib.SMTP(cfg[‘smtp_host’], int(cfg[‘smtp_port’])) as server:
@@ -1409,20 +1409,20 @@ server.send_message(msg)
 except Exception:
 pass
 
-# ─────────────────────────────────────────────────────────────────
+# —————————————————————–
 
 # 15. SIDEBAR  (FIX #12: session state pre-initialized at top)
 
-# ─────────────────────────────────────────────────────────────────
+# —————————————————————–
 
 def render_sidebar():
 with st.sidebar:
-st.markdown(”## ⚙ SYSTEM CONFIG”)
+st.markdown(”##  SYSTEM CONFIG”)
 st.markdown(”—”)
 
 ```
     # FIX #12: GICS sector selector
-    st.markdown("### 🏛 GICS SECTOR NAVIGATOR")
+    st.markdown("### ? GICS SECTOR NAVIGATOR")
     selected_gics = st.selectbox(
         "SELECT SECTOR NODE",
         ["(Free entry)"] + list(GICS_UNIVERSE.keys()),
@@ -1438,7 +1438,7 @@ st.markdown(”—”)
         st.session_state['gics_ticker'] = reps[0] if reps else ""
 
     st.markdown("---")
-    st.markdown("### 📧 EMAIL ALERTS")
+    st.markdown("### ? EMAIL ALERTS")
     email_on = st.toggle("Enable Email Alerts", value=False)
     if email_on:
         ae = st.text_input("Alert Email",  placeholder="you@email.com")
@@ -1454,16 +1454,16 @@ st.markdown(”—”)
         st.session_state['alert_config'] = {'enabled': False}
 
     st.markdown("---")
-    st.markdown("### 📊 SCAN SETTINGS")
+    st.markdown("### ? SCAN SETTINGS")
     st.session_state['scan_mode'] = st.selectbox(
         "Universe Scope", ["Core 9", "Full 25 GICS"])
 
     st.markdown("---")
     st.markdown(
-        '<div class="compliance-badge">⚖ FINRA RULE 15c3-5</div><br>'
-        '<div class="compliance-badge">⚖ SEC REG T</div><br>'
-        '<div class="compliance-badge">⚖ SEC REG NMS</div><br>'
-        '<div class="compliance-badge">⚖ INFORMATIONAL ONLY</div>',
+        '<div class="compliance-badge"> FINRA RULE 15c3-5</div><br>'
+        '<div class="compliance-badge"> SEC REG T</div><br>'
+        '<div class="compliance-badge"> SEC REG NMS</div><br>'
+        '<div class="compliance-badge"> INFORMATIONAL ONLY</div>',
         unsafe_allow_html=True
     )
     st.markdown("---")
@@ -1479,11 +1479,11 @@ st.markdown(”—”)
 
 render_sidebar()
 
-# ─────────────────────────────────────────────────────────────────
+# —————————————————————–
 
 # 16. MACRO ROW (from original app)
 
-# ─────────────────────────────────────────────────────────────────
+# —————————————————————–
 
 @st.cache_data(ttl=3600)
 def fetch_macro_quick():
@@ -1547,7 +1547,7 @@ macro_html += (
 f’<div class="bbg-macro-cell">’
 f’<div class="bbg-macro-lbl">TERMINAL</div>’
 f’<div class="bbg-macro-val" style="color:#FF8000;font-size:9px;">v3.0</div>’
-f’<div class="bbg-macro-sub">GICS · SOLOMON</div>’
+f’<div class="bbg-macro-sub">GICS . SOLOMON</div>’
 f’</div>’
 )
 macro_html += (
@@ -1560,40 +1560,40 @@ f’</div>’
 macro_html += (
 f’<div class="bbg-macro-cell">’
 f’<div class="bbg-macro-lbl">DATA</div>’
-f’<div class="bbg-macro-val" style="color:#00CC00;font-size:9px;">● LIVE</div>’
+f’<div class="bbg-macro-val" style="color:#00CC00;font-size:9px;">* LIVE</div>’
 f’<div class="bbg-macro-sub">Yahoo Finance</div>’
 f’</div>’
 )
 macro_html += ‘</div>’
 st.markdown(macro_html, unsafe_allow_html=True)
 
-# ─────────────────────────────────────────────────────────────────
+# —————————————————————–
 
 # 17. MAIN TABS
 
-# ─────────────────────────────────────────────────────────────────
+# —————————————————————–
 
 tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-“  🎯 SUREFIRE  “,
-“  📈 LONG-TERM  “,
-“  ⚡ SWING  “,
-“  🔵 FAT PITCH  “,
-“  📊 SOLOMON STRATEGY  “,
-“  💼 PORTFOLIO  “,
+“  ? SUREFIRE  “,
+“  ? LONG-TERM  “,
+“  ! SWING  “,
+“  ? FAT PITCH  “,
+“  ? SOLOMON STRATEGY  “,
+“  ? PORTFOLIO  “,
 ])
 
-# ═══════════════════════════════════════════════════════════════
+# ===============================================================
 
-# TAB 1 — SUREFIRE
+# TAB 1 – SUREFIRE
 
-# ═══════════════════════════════════════════════════════════════
+# ===============================================================
 
 with tab1:
-st.markdown(’<div class="bbg-panel"><div class="bbg-panel-hdr">🎯 SUREFIRE BUY / SELL — ULTRA-STRICT CONFLUENCE SCANNER</div><div class="bbg-panel-body">’, unsafe_allow_html=True)
+st.markdown(’<div class="bbg-panel"><div class="bbg-panel-hdr">? SUREFIRE BUY / SELL – ULTRA-STRICT CONFLUENCE SCANNER</div><div class="bbg-panel-body">’, unsafe_allow_html=True)
 st.markdown(
 “Requires 5/7 confluence score: full EMA stack, MACD crossover, BB breakout, “
-“RSI zone, Stochastic, volume spike (≥1.3x), ADX strength (≥30). “
-“Both buy and sell signals. Holding period: 1–5 days.”,
+“RSI zone, Stochastic, volume spike (>=1.3x), ADX strength (>=30). “
+“Both buy and sell signals. Holding period: 1-5 days.”,
 unsafe_allow_html=False
 )
 st.markdown(’</div></div>’, unsafe_allow_html=True)
@@ -1607,10 +1607,10 @@ with col_t:
                               placeholder="SPY, QQQ, NVDA...")
 with col_b:
     st.markdown("<br>", unsafe_allow_html=True)
-    run_sf = st.button("▶ EXECUTE SCAN", key="run_sf")
+    run_sf = st.button("> EXECUTE SCAN", key="run_sf")
 
 if run_sf:
-    with st.spinner(f"Analyzing {sf_ticker.upper()} — institutional signal scan..."):
+    with st.spinner(f"Analyzing {sf_ticker.upper()} -- institutional signal scan..."):
         df_raw  = fetch_data(sf_ticker.upper())
         df_ind  = compute_indicators(df_raw)
         result  = evaluate_surefire(df_ind)
@@ -1630,25 +1630,25 @@ if run_sf:
         show_backtest_section(df_ind, "surefire")
 
 st.markdown("---")
-st.markdown('<div class="bbg-panel-hdr">🔭 UNIVERSE SCAN — SUREFIRE ACROSS ALL 25 GICS NODES</div>', unsafe_allow_html=True)
-if st.button("🚀 SCAN ALL GICS SECTORS", key="scan_sf"):
+st.markdown('<div class="bbg-panel-hdr">? UNIVERSE SCAN -- SUREFIRE ACROSS ALL 25 GICS NODES</div>', unsafe_allow_html=True)
+if st.button("? SCAN ALL GICS SECTORS", key="scan_sf"):
     with st.spinner("Scanning 25 GICS nodes for surefire setups..."):
         results = run_universe_scan("surefire")
     if results:
-        st.success(f"✅ {len(results)} surefire signal(s) detected across GICS universe.")
+        st.success(f"[OK] {len(results)} surefire signal(s) detected across GICS universe.")
         st.dataframe(pd.DataFrame(results), use_container_width=True)
     else:
-        st.warning("No surefire signals detected. Capital preserved — awaiting confluence.")
+        st.warning("No surefire signals detected. Capital preserved -- awaiting confluence.")
 ```
 
-# ═══════════════════════════════════════════════════════════════
+# ===============================================================
 
-# TAB 2 — LONG-TERM
+# TAB 2 – LONG-TERM
 
-# ═══════════════════════════════════════════════════════════════
+# ===============================================================
 
 with tab2:
-st.markdown(’<div class="bbg-panel"><div class="bbg-panel-hdr">📈 LONG-TERM MONTHLY — POSITION TRADE SCANNER</div><div class="bbg-panel-body">’, unsafe_allow_html=True)
+st.markdown(’<div class="bbg-panel"><div class="bbg-panel-hdr">? LONG-TERM MONTHLY – POSITION TRADE SCANNER</div><div class="bbg-panel-body">’, unsafe_allow_html=True)
 st.markdown(
 “Secular trend following. Golden/Death Cross, 200 EMA positioning, “
 “Fibonacci retracement, MACD trend confirmation. Holding period: weeks to months.”
@@ -1661,10 +1661,10 @@ with col_t2:
     lt_ticker = st.text_input("TICKER", value="QQQ", key="lt_ticker")
 with col_b2:
     st.markdown("<br>", unsafe_allow_html=True)
-    run_lt = st.button("▶ EXECUTE SCAN", key="run_lt")
+    run_lt = st.button("> EXECUTE SCAN", key="run_lt")
 
 if run_lt:
-    with st.spinner(f"Analyzing {lt_ticker.upper()} — long-term structural scan..."):
+    with st.spinner(f"Analyzing {lt_ticker.upper()} -- long-term structural scan..."):
         df_raw  = fetch_data(lt_ticker.upper(), period="3y")
         df_ind  = compute_indicators(df_raw)
         result  = evaluate_longterm(df_ind)
@@ -1684,28 +1684,28 @@ if run_lt:
         show_backtest_section(df_ind, "longterm")
 
 st.markdown("---")
-st.markdown('<div class="bbg-panel-hdr">🔭 UNIVERSE SCAN — LONG-TERM SIGNALS ACROSS ALL 25 GICS</div>', unsafe_allow_html=True)
-if st.button("🚀 SCAN ALL GICS SECTORS", key="scan_lt"):
+st.markdown('<div class="bbg-panel-hdr">? UNIVERSE SCAN -- LONG-TERM SIGNALS ACROSS ALL 25 GICS</div>', unsafe_allow_html=True)
+if st.button("? SCAN ALL GICS SECTORS", key="scan_lt"):
     with st.spinner("Scanning for long-term structural setups..."):
         results = run_universe_scan("longterm")
     if results:
-        st.success(f"✅ {len(results)} long-term opportunity(ies) detected.")
+        st.success(f"[OK] {len(results)} long-term opportunity(ies) detected.")
         st.dataframe(pd.DataFrame(results), use_container_width=True)
     else:
         st.warning("No long-term signals. Awaiting structural alignment.")
 ```
 
-# ═══════════════════════════════════════════════════════════════
+# ===============================================================
 
-# TAB 3 — SWING
+# TAB 3 – SWING
 
-# ═══════════════════════════════════════════════════════════════
+# ===============================================================
 
 with tab3:
-st.markdown(’<div class="bbg-panel"><div class="bbg-panel-hdr">⚡ SWING TRADING — MEAN REVERSION + MOMENTUM SCANNER</div><div class="bbg-panel-body">’, unsafe_allow_html=True)
+st.markdown(’<div class="bbg-panel"><div class="bbg-panel-hdr">! SWING TRADING – MEAN REVERSION + MOMENTUM SCANNER</div><div class="bbg-panel-body">’, unsafe_allow_html=True)
 st.markdown(
-“2–10 day mean reversion. Targets BB extremes, oversold RSI bounces, Stochastic “
-“cross setups. ADX gate REMOVED for swing — low ADX confirms range-bound environment.”
+“2-10 day mean reversion. Targets BB extremes, oversold RSI bounces, Stochastic “
+“cross setups. ADX gate REMOVED for swing – low ADX confirms range-bound environment.”
 )
 st.markdown(’</div></div>’, unsafe_allow_html=True)
 
@@ -1715,7 +1715,7 @@ with col_t3:
     sw_ticker = st.text_input("TICKER", value="NVDA", key="sw_ticker")
 with col_b3:
     st.markdown("<br>", unsafe_allow_html=True)
-    run_sw = st.button("▶ EXECUTE SCAN", key="run_sw")
+    run_sw = st.button("> EXECUTE SCAN", key="run_sw")
 
 if run_sw:
     with st.spinner(f"Scanning {sw_ticker.upper()} for swing edge..."):
@@ -1738,30 +1738,30 @@ if run_sw:
         show_backtest_section(df_ind, "swing")
 
 st.markdown("---")
-st.markdown('<div class="bbg-panel-hdr">🔭 UNIVERSE SCAN — SWING SETUPS ACROSS ALL 25 GICS</div>', unsafe_allow_html=True)
-if st.button("🚀 SCAN ALL GICS SECTORS", key="scan_sw"):
+st.markdown('<div class="bbg-panel-hdr">? UNIVERSE SCAN -- SWING SETUPS ACROSS ALL 25 GICS</div>', unsafe_allow_html=True)
+if st.button("? SCAN ALL GICS SECTORS", key="scan_sw"):
     with st.spinner("Scanning for swing setups..."):
         results = run_universe_scan("swing")
     if results:
-        st.success(f"✅ {len(results)} swing opportunity(ies) detected.")
+        st.success(f"[OK] {len(results)} swing opportunity(ies) detected.")
         st.dataframe(pd.DataFrame(results), use_container_width=True)
     else:
         st.warning("No swing setups detected. Awaiting mean reversion extremes.")
 ```
 
-# ═══════════════════════════════════════════════════════════════
+# ===============================================================
 
-# TAB 4 — FAT PITCH (original theory)
+# TAB 4 – FAT PITCH (original theory)
 
-# ═══════════════════════════════════════════════════════════════
+# ===============================================================
 
 with tab4:
-st.markdown(’<div class="bbg-panel"><div class="bbg-panel-hdr">🔵 FAT PITCH — ORIGINAL SOLOMON SCANNER · 3-GATE MAXIMUM CONVICTION</div><div class="bbg-panel-body">’, unsafe_allow_html=True)
+st.markdown(’<div class="bbg-panel"><div class="bbg-panel-hdr">? FAT PITCH – ORIGINAL SOLOMON SCANNER . 3-GATE MAXIMUM CONVICTION</div><div class="bbg-panel-body">’, unsafe_allow_html=True)
 st.markdown(
 “The original strategy: do nothing 90% of the time. Only execute when all 3 ultra-strict gates “
-“fire simultaneously — **Gate 1:** Volume ≥ 150% avg · “
-“**Gate 2:** ADX ≥ 35 (terminal velocity) · “
-“**Gate 3:** BB upper breakout + MACD confirmation + RSI 60–85. “
+“fire simultaneously – **Gate 1:** Volume >= 150% avg . “
+“**Gate 2:** ADX >= 35 (terminal velocity) . “
+“**Gate 3:** BB upper breakout + MACD confirmation + RSI 60-85. “
 “No compromises. No partial scores.”
 )
 st.markdown(’</div></div>’, unsafe_allow_html=True)
@@ -1773,7 +1773,7 @@ with col_t4:
                               placeholder="SPY, QQQ, XLE...")
 with col_b4:
     st.markdown("<br>", unsafe_allow_html=True)
-    run_fp = st.button("▶ SCAN FOR FAT PITCH", key="run_fp")
+    run_fp = st.button("> SCAN FOR FAT PITCH", key="run_fp")
 
 if run_fp:
     with st.spinner(f"Running 3-gate fat pitch analysis on {fp_ticker.upper()}..."):
@@ -1796,29 +1796,29 @@ if run_fp:
         show_backtest_section(df_ind, "fatpitch")
 
 st.markdown("---")
-st.markdown('<div class="bbg-panel-hdr">🔭 FAT PITCH UNIVERSE SCAN — ALL 25 GICS NODES</div>', unsafe_allow_html=True)
-if st.button("🚀 SCAN ALL GICS FOR FAT PITCH SETUPS", key="scan_fp"):
+st.markdown('<div class="bbg-panel-hdr">? FAT PITCH UNIVERSE SCAN -- ALL 25 GICS NODES</div>', unsafe_allow_html=True)
+if st.button("? SCAN ALL GICS FOR FAT PITCH SETUPS", key="scan_fp"):
     with st.spinner("Running 3-gate scan across all GICS sectors..."):
         results = run_universe_scan("fatpitch")
     if results:
         st.success(
-            f"✅ {len(results)} FAT PITCH setup(s) detected — these are rare, "
+            f"[OK] {len(results)} FAT PITCH setup(s) detected -- these are rare, "
             f"maximum-conviction signals.")
         st.dataframe(pd.DataFrame(results), use_container_width=True)
     else:
         st.warning(
             "SCAN COMPLETE: Zero Fat Pitch setups detected. "
-            "Capital preserved. Standby — patience is the edge.")
+            "Capital preserved. Standby -- patience is the edge.")
 ```
 
-# ═══════════════════════════════════════════════════════════════
+# ===============================================================
 
-# TAB 5 — SOLOMON STRATEGY
+# TAB 5 – SOLOMON STRATEGY
 
-# ═══════════════════════════════════════════════════════════════
+# ===============================================================
 
 with tab5:
-st.markdown(’<div class="bbg-panel"><div class="bbg-panel-hdr">📊 SOLOMON STRATEGY — QUANTITATIVE ROTATION ENGINE · 32 ASSETS · 7-CRITERIA SCORING</div><div class="bbg-panel-body">’, unsafe_allow_html=True)
+st.markdown(’<div class="bbg-panel"><div class="bbg-panel-hdr">? SOLOMON STRATEGY – QUANTITATIVE ROTATION ENGINE . 32 ASSETS . 7-CRITERIA SCORING</div><div class="bbg-panel-body">’, unsafe_allow_html=True)
 st.markdown(
 “Multi-factor quantitative rotation across 32 ETFs spanning all major GICS sectors, “
 “macro proxies, and safe harbors. Scores each asset on RAM, Relative Strength, “
@@ -1828,10 +1828,10 @@ st.markdown(
 st.markdown(’</div></div>’, unsafe_allow_html=True)
 
 ```
-run_solomon = st.button("▶ RUN SOLOMON STRATEGY SCAN", key="run_solomon")
+run_solomon = st.button("> RUN SOLOMON STRATEGY SCAN", key="run_solomon")
 
 if run_solomon:
-    with st.spinner("Loading Solomon universe — computing 7-criteria scoring..."):
+    with st.spinner("Loading Solomon universe -- computing 7-criteria scoring..."):
         sol_data = fetch_solomon_data()
         vix_close_sol = _mval("^VIX", macro_data) or 15.0
         sol_df = calculate_solomon_factors(
@@ -1846,12 +1846,12 @@ if run_solomon:
         top5 = sol_df[sol_df["RNK"] <= 5]
 
         # Top 5 cards (from original app)
-        cards_html = '<div class="bbg-panel"><div class="bbg-panel-hdr">TOP 5 ROTATION TARGETS — SOLOMON STRATEGY</div><div class="bbg-top5">'
+        cards_html = '<div class="bbg-panel"><div class="bbg-panel-hdr">TOP 5 ROTATION TARGETS -- SOLOMON STRATEGY</div><div class="bbg-top5">'
         for tkr, row in top5.iterrows():
             strong   = row["SIGNAL"] == "STRONG BUY"
             c_class  = "bbg-t5c strong" if strong else "bbg-t5c buy"
             sig_col  = "#FF8000" if strong else "#FFCC00"
-            sig_lbl  = "◉ STRONG BUY" if strong else "◎ BUY"
+            sig_lbl  = "* STRONG BUY" if strong else "* BUY"
             ytd_cls  = "ytd-pos" if row["YTD"] > 0 else "ytd-neg"
             aw       = min(row["ALLOC"] * 5, 100)
             cards_html += f'''<div class="{c_class}">
@@ -1862,7 +1862,7 @@ if run_solomon:
                 <div class="bbg-t5-sig" style="color:{sig_col};">{sig_lbl}</div>
                 <div class="bbg-t5-alloc">ALLOC {row["ALLOC"]:.1f}%</div>
                 <div class="bar-bg"><div class="bar-fill" style="width:{aw}%;background:{sig_col};"></div></div>
-                <div class="bbg-t5-rsn">Score {row["SCORE"]:.1f} · ADX {row["ADX"]:.0f} · {row["REASON"]}</div>
+                <div class="bbg-t5-rsn">Score {row["SCORE"]:.1f} . ADX {row["ADX"]:.0f} . {row["REASON"]}</div>
             </div>'''
         cards_html += '</div></div>'
         st.markdown(cards_html, unsafe_allow_html=True)
@@ -1874,7 +1874,7 @@ if run_solomon:
             else "sig-ss" if "STRONG SELL" in s else "sig-s"
         )
         hdrs = ["RNK","SECTOR","SIGNAL","REASON","ALLOC","PRICE","STOP","ADX","SCORE","YTD","1M%","3M%","REL_STR","RAM","VOL_CF"]
-        tbl_h = '<div class="bbg-panel" style="margin-top:4px;"><div class="bbg-panel-hdr">SOLOMON FULL QUANTITATIVE LEDGER — ALL 32 ASSETS</div>'
+        tbl_h = '<div class="bbg-panel" style="margin-top:4px;"><div class="bbg-panel-hdr">SOLOMON FULL QUANTITATIVE LEDGER -- ALL 32 ASSETS</div>'
         tbl_h += '<div class="bbg-scroll"><table class="bbg-tbl"><thead><tr>'
         tbl_h += '<th class="l">TKR</th>'
         for h in hdrs:
@@ -1885,7 +1885,7 @@ if run_solomon:
         for tkr, row in sol_df.iterrows():
             sc  = sc_class(row["SIGNAL"])
             yc  = "#00CC00" if row["YTD"] > 0 else "#CC0000"
-            al  = f'{row["ALLOC"]:.1f}%' if row["ALLOC"] > 0 else "—"
+            al  = f'{row["ALLOC"]:.1f}%' if row["ALLOC"] > 0 else "--"
             rc  = "#00CC00" if row["REL_STR"] > 0 else "#CC0000"
             slc = "#00CC00" if row["50D_SLP"] > 0 else "#CC0000"
             tbl_h += f'''<tr>
@@ -1912,29 +1912,29 @@ if run_solomon:
 
         # Glossary (from original app)
         glossary = '''<div class="bbg-panel" style="margin-top:4px;">
-            <div class="bbg-panel-hdr">LEDGER COLUMN GLOSSARY — SOLOMON 7-CRITERIA</div>
+            <div class="bbg-panel-hdr">LEDGER COLUMN GLOSSARY -- SOLOMON 7-CRITERIA</div>
             <div class="bbg-panel-body">
             <table class="bbg-tbl"><thead><tr>
             <th class="l">COLUMN</th><th class="l">MEANING</th><th class="l">ROLE</th>
             </tr></thead><tbody>
             <tr><td class="l" style="color:#FF8000;">SCORE</td><td class="l" style="color:#888;">Weighted z-score of 5 factors</td><td class="l" style="color:#555;">Higher = stronger momentum edge</td></tr>
             <tr><td class="l" style="color:#FF8000;">ALLOC</td><td class="l" style="color:#888;">Suggested position size %</td><td class="l" style="color:#555;">ATR-based, capped at 20%</td></tr>
-            <tr><td class="l" style="color:#FF8000;">STOP</td><td class="l" style="color:#888;">20-day high − 2.5×ATR14</td><td class="l" style="color:#555;">Exit if closes below this</td></tr>
-            <tr><td class="l" style="color:#FF8000;">ADX</td><td class="l" style="color:#888;">Trend strength 0–100</td><td class="l" style="color:#555;">Must be &gt;25 to confirm</td></tr>
-            <tr><td class="l" style="color:#FF8000;">RAM</td><td class="l" style="color:#888;">1M return ÷ 1M volatility</td><td class="l" style="color:#555;">Highest alpha factor (25% wt)</td></tr>
-            <tr><td class="l" style="color:#FF8000;">VOL_CF</td><td class="l" style="color:#888;">20-day avg ÷ 90-day avg vol</td><td class="l" style="color:#555;">Must be &gt;1.2× to confirm</td></tr>
-            <tr><td class="l" style="color:#FF8000;">REL_STR</td><td class="l" style="color:#888;">Asset avg return vs SPY avg (1M–9M)</td><td class="l" style="color:#555;">Must outpace SPY</td></tr>
+            <tr><td class="l" style="color:#FF8000;">STOP</td><td class="l" style="color:#888;">20-day high - 2.5xATR14</td><td class="l" style="color:#555;">Exit if closes below this</td></tr>
+            <tr><td class="l" style="color:#FF8000;">ADX</td><td class="l" style="color:#888;">Trend strength 0-100</td><td class="l" style="color:#555;">Must be &gt;25 to confirm</td></tr>
+            <tr><td class="l" style="color:#FF8000;">RAM</td><td class="l" style="color:#888;">1M return / 1M volatility</td><td class="l" style="color:#555;">Highest alpha factor (25% wt)</td></tr>
+            <tr><td class="l" style="color:#FF8000;">VOL_CF</td><td class="l" style="color:#888;">20-day avg / 90-day avg vol</td><td class="l" style="color:#555;">Must be &gt;1.2x to confirm</td></tr>
+            <tr><td class="l" style="color:#FF8000;">REL_STR</td><td class="l" style="color:#888;">Asset avg return vs SPY avg (1M-9M)</td><td class="l" style="color:#555;">Must outpace SPY</td></tr>
             <tr><td class="l" style="color:#FF8000;">50D_SLP</td><td class="l" style="color:#888;">Slope of 50-day SMA over 21 days</td><td class="l" style="color:#555;">Must be rising (+)</td></tr>
             </tbody></table>
             <div style="color:#444;font-size:9px;margin-top:6px;padding-top:4px;border-top:1px solid #1A1A1A;">
-            SOLOMON 7-CRITERIA: ① Above 200MA &nbsp;② ADX &gt;25 &nbsp;③ Vol CF &gt;1.2× &nbsp;
-            ④ RAM &gt;0 &nbsp;⑤ Rel Strength &gt;SPY &nbsp;⑥ ROC Accelerating &nbsp;⑦ 50D Slope Rising
-            — ALL 7 must pass for STRONG BUY. Informational only — FINRA 15c3-5.
+            SOLOMON 7-CRITERIA: 1. Above 200MA &nbsp;2. ADX &gt;25 &nbsp;3. Vol CF &gt;1.2x &nbsp;
+            4. RAM &gt;0 &nbsp;5. Rel Strength &gt;SPY &nbsp;6. ROC Accelerating &nbsp;7. 50D Slope Rising
+            -- ALL 7 must pass for STRONG BUY. Informational only -- FINRA 15c3-5.
             </div></div></div>'''
         st.markdown(glossary, unsafe_allow_html=True)
 
         # Sector concentration heatmap
-        st.markdown('<div class="bbg-panel" style="margin-top:4px;"><div class="bbg-panel-hdr">MOMENTUM HEATMAP — ALL 32 ASSETS</div><div class="bbg-hm">', unsafe_allow_html=True)
+        st.markdown('<div class="bbg-panel" style="margin-top:4px;"><div class="bbg-panel-hdr">MOMENTUM HEATMAP -- ALL 32 ASSETS</div><div class="bbg-hm">', unsafe_allow_html=True)
         hm_html = ""
         mx_ = sol_df["SCORE"].max()
         mn_ = sol_df["SCORE"].min()
@@ -1951,25 +1951,25 @@ if run_solomon:
         st.markdown(hm_html + '</div></div>', unsafe_allow_html=True)
 
 else:
-    st.info("Click ▶ RUN SOLOMON STRATEGY SCAN to load the full rotation analysis.")
+    st.info("Click > RUN SOLOMON STRATEGY SCAN to load the full rotation analysis.")
 ```
 
-# ═══════════════════════════════════════════════════════════════
+# ===============================================================
 
-# TAB 6 — PORTFOLIO
+# TAB 6 – PORTFOLIO
 
-# ═══════════════════════════════════════════════════════════════
+# ===============================================================
 
 with tab6:
 portfolio_section()
 
-# ─────────────────────────────────────────────────────────────────
+# —————————————————————–
 
-# 18. TICKER TAPE (bottom bar — st.marquee note: no native Streamlit
+# 18. TICKER TAPE (bottom bar – st.marquee note: no native Streamlit
 
 # support; using fixed HTML bar as fallback)
 
-# ─────────────────────────────────────────────────────────────────
+# —————————————————————–
 
 tape_syms = [“SPY”,“QQQ”,“DIA”,”^VIX”,”^TNX”,“GC=F”,“CL=F”]
 tape_items = []
